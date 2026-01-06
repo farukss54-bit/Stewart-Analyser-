@@ -4,7 +4,7 @@
 
 import logging
 import sys
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from datetime import datetime
 import json
 

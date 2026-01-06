@@ -3,6 +3,7 @@
 # Centralized validation, unit normalization, and input sanitization
 
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import Optional, Dict, Any, List, Tuple, Union
 import re
 import math
@@ -252,6 +253,68 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
 # CSV ROW VALIDATION
 # =============================================================================
 
+NUMERIC_FIELDS = {
+    "ph", "pco2", "hco3", "na", "cl", "k", "ca", "mg",
+    "lactate", "albumin", "po4", "be",
+}
+
+
+def parse_maybe_number(value: Any, field: str) -> Optional[float]:
+    """Sanitize CSV cell content to a float if possible.
+
+    Special handling:
+    - Excel date/datetime objects are rejected (treated as None)
+    - Comma decimal separators are normalized
+    - Negative values are only allowed for BE
+    """
+    if isinstance(value, (date, datetime)):
+        return None
+
+    allow_negative = field == "be"
+    return sanitize_numeric(value, allow_negative=allow_negative)
+
+
+def sanitize_csv_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a sanitized copy of a CSV row.
+
+    - Normalizes keys to lowercase
+    - Strips surrounding whitespace from string values
+    - Parses numeric fields with locale-aware decimal support
+    """
+    sanitized: Dict[str, Any] = {}
+
+    for key, value in row.items():
+        key_lower = key.lower() if isinstance(key, str) else key
+
+        if key_lower in NUMERIC_FIELDS:
+            sanitized[key_lower] = parse_maybe_number(value, key_lower)
+        elif isinstance(value, str):
+            sanitized[key_lower] = value.strip()
+        else:
+            sanitized[key_lower] = value
+
+    return sanitized
+
+
+def should_try_swap_na_cl(na: Optional[float], cl: Optional[float]) -> bool:
+    """Heuristic to decide if Na/Cl swap attempt is justified.
+
+    Avoids aggressive auto-swap; only trigger when values are physiologically implausible.
+    """
+    if na is None or cl is None:
+        return False
+
+    # Strong signal: clearly hypo-Na with hyper-Cl that would otherwise be invalid
+    if na < 115 and cl > 130 and cl > na:
+        return True
+
+    # Secondary signal: Na lower than Cl by a wide margin beyond mild hyponatremia
+    if na < cl - 10 and cl >= 125 and na <= 125:
+        return True
+
+    return False
+
+
 def validate_csv_row(row: Dict[str, Any], row_index: int) -> ValidationResult:
     """
     Validate a single CSV row.
@@ -262,8 +325,22 @@ def validate_csv_row(row: Dict[str, Any], row_index: int) -> ValidationResult:
     - Missing values
     - Unit inconsistencies
     """
+    row = sanitize_csv_row(row)
     result = validate_input_dict(row, mode="quick")
-    
+
+    if not result.is_valid and should_try_swap_na_cl(row.get("na"), row.get("cl")):
+        swapped_row = {**row, "na": row.get("cl"), "cl": row.get("na")}
+        swapped_result = validate_input_dict(swapped_row, mode="quick")
+        if swapped_result.is_valid:
+            swapped_result.warnings.append(
+                f"Satır {row_index + 1}: Na/Cl kolonları yer değiştirmiş olabilir - takas edilerek analiz edildi"
+            )
+            log_calculation_warning(
+                "auto_swap_na_cl",
+                {"row": row_index, "na_original": row.get("na"), "cl_original": row.get("cl")}
+            )
+            return swapped_result
+
     if not result.is_valid:
         # Add row context to errors
         result.errors = [f"Satır {row_index + 1}: {e}" for e in result.errors]

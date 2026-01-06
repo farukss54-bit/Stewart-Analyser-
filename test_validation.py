@@ -336,6 +336,33 @@ class TestBatchValidation:
         assert errors == 1
 
 
+class TestDirtyInputNormalization:
+    def test_decimal_separator_and_albumin_unit(self):
+        data = {"ph": "7,32", "pco2": "40,5", "na": "140", "cl": "110", "albumin": "4.0"}
+        result = validate_input_dict(data)
+        assert result.is_valid
+        assert result.normalized_values["ph"] == 7.32
+        assert result.normalized_values["albumin_gl"] == 40.0
+
+    def test_swapped_na_cl_detection(self):
+        row = {"ph": 7.4, "pco2": 40, "na": 100, "cl": 140}
+        result = validate_csv_row(row, 0)
+        assert result.is_valid
+        assert result.normalized_values["na"] == 140
+        assert result.warnings
+
+    def test_negative_values_rejected(self):
+        data = {"ph": -1, "pco2": 40, "na": 140, "cl": 100}
+        result = validate_input_dict(data)
+        assert not result.is_valid
+
+    def test_missing_albumin_not_assumed(self):
+        data = {"ph": 7.4, "pco2": 40, "na": 140, "cl": 100}
+        result = validate_input_dict(data)
+        assert result.is_valid
+        assert "albumin_gl" not in result.normalized_values
+
+
 # =============================================================================
 # BOTH BE AND HCO3 PROVIDED
 # =============================================================================

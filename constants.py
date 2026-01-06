@@ -22,7 +22,7 @@ HCO3_NORMAL = 24.0
 HCO3_MISMATCH_THRESHOLD = 2.0
 
 # === Elektrolit Aralıkları (mmol/L) ===
-NA_MIN = 100.0
+NA_MIN = 110.0
 NA_MAX = 180.0
 NA_NORMAL = 140.0
 
@@ -110,9 +110,9 @@ COMPENSATION_TOLERANCE = 2
 # === Formül Sabitleri ===
 HH_CONSTANT = 6.1
 HH_SOLUBILITY = 0.03
-BE_HCO3_COEFFICIENT = 0.93
-BE_HCO3_NORMAL = 24.4
-BE_PH_COEFFICIENT = 14.8
+BE_HCO3_COEFFICIENT = 1.1
+BE_HCO3_NORMAL = 24.0
+BE_PH_COEFFICIENT = 32.0
 BE_PH_NORMAL = 7.40
 ALBUMIN_PH_COEFFICIENT = 0.123
 ALBUMIN_CONSTANT = 0.631
@@ -125,7 +125,7 @@ ATOT_PO4_COEFFICIENT = 0.309
 VALIDATION_MESSAGES = {
     "ph_out_of_range": "pH değeri fizyolojik sınırlar dışında (6.80-7.80)",
     "pco2_out_of_range": "pCO₂ değeri kabul edilebilir sınırlar dışında (10-120 mmHg)",
-    "na_out_of_range": "Na⁺ değeri kabul edilebilir sınırlar dışında (100-180 mmol/L)",
+    "na_out_of_range": "Na⁺ değeri kabul edilebilir sınırlar dışında (110-180 mmol/L)",
     "cl_out_of_range": "Cl⁻ değeri kabul edilebilir sınırlar dışında (70-140 mmol/L)",
     "k_out_of_range": "K⁺ değeri kabul edilebilir sınırlar dışında (2-8 mmol/L)",
     "ca_out_of_range": "Ca²⁺ değeri kabul edilebilir sınırlar dışında (0.5-2.5 mmol/L)",
@@ -133,8 +133,8 @@ VALIDATION_MESSAGES = {
     "lactate_out_of_range": "Laktat değeri kabul edilebilir sınırlar dışında (0-25 mmol/L)",
     "albumin_gl_out_of_range": "Albümin (g/L) değeri kabul edilebilir sınırlar dışında (5-60 g/L)",
     "po4_out_of_range": "Fosfat değeri kabul edilebilir sınırlar dışında (0.3-4 mmol/L)",
-    "be_mismatch": "Girilen BE ile hesaplanan BE arasında >2 mEq/L fark var.",
-    "hco3_mismatch": "Girilen HCO₃ ile hesaplanan arasında >2 mEq/L fark var.",
+    "be_mismatch": "BE mismatch: girilen BE ile hesaplanan BE arasında >2 mEq/L fark var.",
+    "hco3_mismatch": "HCO₃ mismatch: girilen HCO₃ ile hesaplanan arasında >2 mEq/L fark var.",
     "sig_no_lactate": "Laktat olmadan SIG muhtemelen düşük hesaplanmıştır.",
     "sig_approximate": "Ca/Mg eksik olduğundan SIG yaklaşık değerdir.",
     "sig_unreliable": "Kritik parametreler eksik, SIG güvenilir değil.",
@@ -160,6 +160,8 @@ FLAGS = {
     "SIG_APPROXIMATE": "SIG yaklaşık",
     "SIG_UNDERESTIMATED": "SIG düşük hesaplanmış olabilir",
     "SIG_UNRELIABLE": "SIG güvenilir değil",
+    "SID_FULL_APPROXIMATE": "SID_full yaklaşık",
+    "SID_EFFECTIVE_APPROXIMATE": "SID_effective yaklaşık",
     "BE_CALCULATED": "BE otomatik hesaplandı",
     "HCO3_CALCULATED": "HCO₃ hesaplandı",
 }
@@ -198,7 +200,7 @@ CDS_NOTES = {
     },
     "albumin_low": {
         "condition": "Albümin < 35 g/L",
-        "note": "Zayıf asit azalması mevcut; bu durum alkaloz yönlü maskeleme etkisi yaratabilir.",
+        "note": "Albümin düşük; zayıf asit azalması alkaloz yönlü maskeleme etkisi yaratabilir.",
         "refs": ["Kimura et al., 2018", "Quintard et al., 2007"]
     },
     "cl_na_high": {
@@ -254,6 +256,7 @@ CDS_NOTES = {
 # === KLASİK YAKLAŞIM KARŞILAŞTIRMA MESAJLARI ===
 CLASSIC_COMPARISON = {
     "hco3_normal_sid_low": "HCO₃⁻ normal görünmesine rağmen SID düşük → klasik analizde metabolik asidoz gözden kaçabilirdi.",
+    "normal_be_low_sid": "BE/HCO₃ normal görünse de SID düşük → klasik yaklaşım güçlü iyon asidozunu maskelerdi.",
     "albumin_masking": "Düşük albümin mevcut asidozu maskelemiş olabilir → klasik AG düzeltmesi gerekli.",
     "sid_primary": "SID değişikliği primer mekanizma olarak öne çıkıyor → klasik yaklaşımda bu ayrım yapılamaz.",
     "ag_vs_sig": "Anyon gap normal ama SIG yüksek olabilir → ölçülmemiş anyonlar AG'de görünmeyebilir.",
