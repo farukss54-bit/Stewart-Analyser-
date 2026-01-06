@@ -2,110 +2,143 @@
 
 Fizikokimyasal yaklaşımla kan gazı değerlendirmesi için Streamlit uygulaması.
 
-## Özellikler
+## v3.2 - Architecture Refactor & Visualization
 
-### Hesaplama Modları
+### 🏗️ Mimari Değişiklikler
 
-**Hızlı (Klinik) Mod:**
-- Fencl-derived Residual yaklaşımı
-- BE tabanlı bileşen analizi
-- Acil serviste pratik kullanım için optimize edilmiş
+**1. Modüler Yapı**
+```
+stewart_analyzer/
+├── app.py              # Ana orchestrator (minimal)
+├── core.py             # Hesaplama motoru
+├── constants.py        # Sabitler ve konfigürasyon
+├── ui_components.py    # UI bileşenleri (yeni)
+├── visualization.py    # Plotly grafikleri (yeni)
+├── validation.py       # Input validation (yeni)
+├── logger.py           # Logging module (yeni)
+├── test_core.py        # Core testleri
+├── test_validation.py  # Edge case testleri (yeni)
+├── Dockerfile          # Container (yeni)
+└── requirements.txt
+```
 
-**Gelişmiş Mod:**
-- SIDapparent ve SIDeffective hesabı
-- SIG = SIDa - SIDe (pozitif → ölçülmemiş anyonlar)
-- SIG güvenilirlik değerlendirmesi
-- Atot hesabı
+**2. Centralized Validation (`validation.py`)**
+- `sanitize_numeric()`: Dirty input temizleme (virgül decimal, whitespace, NaN)
+- `validate_input_dict()`: Dictionary validation
+- `validate_csv_row()`: CSV satır validation (swapped columns detection)
+- `detect_albumin_unit()`: Otomatik birim algılama (g/dL vs g/L)
 
-### 3 Katmanlı SID Gösterimi
+**3. Logging (`logger.py`)**
+- `log_user_action()`: INFO - kullanıcı aksiyonları
+- `log_calculation_warning()`: WARNING - yaklaşık hesaplamalar
+- `log_analysis_error()`: ERROR - başarısız analizler (sanitized)
 
-- **SID_simple:** Na - Cl
-- **SID_basic:** Na - Cl - Laktat
-- **SID_full (SIDa):** (Na + K + Ca + Mg) - (Cl + Laktat)
+### 📊 Görselleştirme (Yeni!)
 
-### Ek Özellikler
+**Gamblegram**
+- Plazma elektrolit dengesi görselleştirmesi
+- Katyonlar (Na⁺, K⁺, Ca²⁺, Mg²⁺) vs Anyonlar (Cl⁻, HCO₃⁻, Laktat, A⁻, SIG)
+- Plotly interactive chart
 
-- ✅ BE/HCO₃ otomatik hesaplama ve tutarlılık kontrolü
-- ✅ CSV export/import (batch analiz)
-- ✅ Eksik parametre uyarıları (varsayım yapılmaz!)
-- ✅ Birim dönüşümü (g/L ↔ g/dL)
-- ✅ Genişletilmiş kompanzasyon (akut/kronik respiratuvar dahil)
-- ✅ Kural tabanlı dominant disorder belirleme
-- ✅ Kapsamlı validasyon (tüm parametreler için)
+**Contribution Bar Chart**
+- Mekanizma katkılarının yatay bar grafiği
+- Asidoz (kırmızı) vs Alkaloz (mavi)
+
+**SID Waterfall**
+- SID hesaplama adımları waterfall chart
+- SID_simple → SID_basic → SID_full
+
+### 🔬 v3.1 Özellikleri (Korundu)
+
+**Contribution-Based Primary Disorder Detection**
+- Dominant mekanizma mutlak mEq/L katkısına göre belirlenir
+- Sadece varlığa değil, katkı oranına bakılır
+
+**Lactate Contribution Classification**
+- <25% katkı → "contributing"
+- 25-50% katkı → "significant"
+- >50% katkı → "dominant"
+
+**Non-Diagnostic, Mechanism-Based Language**
+- ❌ "Ketoasidoz" → ✅ "Ölçülmemiş anyon aracılı metabolik asidoz"
+- ❌ "Laktik asidoz" → ✅ "Laktat aracılı metabolik asidoz"
+
+**SID Table Interpretation Column**
+- Low SID → "Güçlü iyon aracılı metabolik asidoz yönünde"
+- High SID → "Güçlü iyon aracılı metabolik alkaloz yönünde"
 
 ## Kurulum
 
 ```bash
-# Gerekli paketleri kur
 pip install -r requirements.txt
-
-# Uygulamayı çalıştır
-python -m streamlit run app.py
-
-# veya
 streamlit run app.py
 ```
 
-## Proje Yapısı
-
-```
-stewart_analyzer/
-├── app.py          # Streamlit UI
-├── core.py         # Hesaplama motoru
-├── constants.py    # Sabitler ve normal aralıklar
-├── test_core.py    # Pytest testleri
-├── requirements.txt
-└── README.md
-```
-
-## Testler
+### Docker
 
 ```bash
-# Tüm testleri çalıştır
-pytest test_core.py -v
+docker build -t stewart-analyzer .
+docker run -p 8501:8501 stewart-analyzer
+```
+
+## Test
+
+```bash
+# Tüm testler
+pytest -v
+
+# Sadece validation testleri
+pytest test_validation.py -v
 
 # Coverage ile
-pytest test_core.py --cov=core --cov-report=html
+pytest --cov=. --cov-report=html
 ```
 
-## Formüller
+## Kullanım
 
-### SID Hesabı
-- **Basit:** SID = Na - Cl (Normal: ~38 mEq/L)
-- **Tam:** SIDa = (Na + K + Ca + Mg) - (Cl + Laktat)
+### Hızlı Mod
+- Minimum parametrelerle analiz
+- BE tabanlı bileşen ayrıştırması
 
-### SIG Hesabı
-```
-SIG = SIDapparent - SIDeffective
-```
-- Pozitif SIG → Ölçülmemiş anyonlar (HAGMA)
-- Negatif SIG → Ölçülmemiş katyonlar (nadir)
+### Gelişmiş Mod
+- SIG hesabı (SIDa - SIDe)
+- Atot hesabı
+- Tam mekanizma analizi
 
-### BE Hesabı
-```
-BE ≈ 0.93 × (HCO₃ − 24.4) + 14.8 × (pH − 7.40)
-```
+### Batch Modu
+- CSV upload
+- Toplu analiz
+- Sonuç export
 
-### Kompanzasyon (Winter's)
-```
-Beklenen pCO₂ = 1.5 × HCO₃ + 8 (± 2)
-```
+## Dosya Yapısı
 
-## Referanslar
+| Dosya | Açıklama |
+|-------|----------|
+| `app.py` | Streamlit UI orchestrator |
+| `core.py` | Hesaplama motoru, dataclass'lar |
+| `constants.py` | Sabitler, eşikler, mesajlar |
+| `ui_components.py` | UI render fonksiyonları |
+| `visualization.py` | Plotly grafikleri |
+| `validation.py` | Input validation |
+| `logger.py` | Logging utilities |
 
-- Stewart PA. Modern quantitative acid-base chemistry. Can J Physiol Pharmacol. 1983
-- Morgan TJ. The Stewart approach. Clinica Chimica Acta. 2019
-- Story DA. Stewart acid–base. Anaesthesia and Intensive Care. 2016
-- Akoğlu H. Olgularla Kan Gazı Değerlendirmesi
+## Katkıda Bulunma
 
-## Uyarı
-
-⚠️ **Bu araç eğitim amaçlıdır.** Klinik karar için mutlaka uzman değerlendirmesi gereklidir.
+1. Fork the repository
+2. Create a feature branch
+3. Run tests: `pytest -v`
+4. Submit a pull request
 
 ## Lisans
 
 MIT License
 
-## Versiyon
+## Referanslar
 
-2.0.0 - Core-UI ayrımı, batch modu, gelişmiş validasyon
+- Stewart PA. Modern quantitative acid-base chemistry. Can J Physiol Pharmacol. 1983
+- Fencl V, Leith DE. Stewart's quantitative acid-base chemistry. Respir Physiol. 1993
+- Morgan TJ. The Stewart approach. Clinica Chimica Acta. 2019
+
+---
+
+*Bu araç fizyolojik mekanizmaları tanımlar; tanı veya tedavi önerisi değildir.*
