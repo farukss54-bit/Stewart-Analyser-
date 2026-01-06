@@ -205,26 +205,62 @@ class TestValidateInputDict:
     
     # --- Out of range values ---
     def test_ph_too_low(self):
-        data = {"ph": 6.5, "pco2": 40, "na": 140, "cl": 102}
+        data = {"ph": 6.2, "pco2": 40, "na": 140, "cl": 102}
         result = validate_input_dict(data)
         assert not result.is_valid
         assert any("pH" in e for e in result.errors)
-    
+
     def test_ph_too_high(self):
         data = {"ph": 8.0, "pco2": 40, "na": 140, "cl": 102}
         result = validate_input_dict(data)
         assert not result.is_valid
-    
+
     def test_pco2_too_low(self):
-        data = {"ph": 7.40, "pco2": 5, "na": 140, "cl": 102}
+        data = {"ph": 7.40, "pco2": 4.0, "na": 140, "cl": 102}
         result = validate_input_dict(data)
         assert not result.is_valid
-    
+
     def test_na_too_low(self):
-        data = {"ph": 7.40, "pco2": 40, "na": 100, "cl": 102}
+        data = {"ph": 7.40, "pco2": 40, "na": 70, "cl": 102}
         result = validate_input_dict(data)
         assert not result.is_valid
-    
+
+    # --- Extreme but valid values should warn, not invalidate ---
+    def test_extreme_ph_warns(self):
+        data = {"ph": 6.69, "pco2": 60, "na": 140, "cl": 102}
+        result = validate_input_dict(data)
+        assert result.is_valid
+        assert any("Extreme value detected" in w for w in result.warnings)
+
+    def test_extreme_pco2_warns(self):
+        data = {"ph": 7.10, "pco2": 153, "na": 140, "cl": 102}
+        result = validate_input_dict(data)
+        assert result.is_valid
+        assert any("pCO₂" in w for w in result.warnings)
+
+    def test_extreme_lactate_warns(self):
+        data = {"ph": 7.05, "pco2": 40, "na": 140, "cl": 102, "lactate": 29}
+        result = validate_input_dict(data)
+        assert result.is_valid
+        assert any("Laktat" in w for w in result.warnings)
+
+    def test_extreme_na_warns(self):
+        data = {"ph": 7.10, "pco2": 40, "na": 188, "cl": 102}
+        result = validate_input_dict(data)
+        assert result.is_valid
+        assert any("Na" in w or "Na⁺" in w for w in result.warnings)
+
+    # --- Hard stop for impossible values ---
+    def test_invalid_low_ph(self):
+        data = {"ph": 6.3, "pco2": 40, "na": 140, "cl": 102}
+        result = validate_input_dict(data)
+        assert not result.is_valid
+
+    def test_invalid_negative_lactate(self):
+        data = {"ph": 7.20, "pco2": 40, "na": 140, "cl": 102, "lactate": -1}
+        result = validate_input_dict(data)
+        assert not result.is_valid
+
     # --- String values (from CSV) ---
     def test_string_values_comma_decimal(self):
         """String values with comma decimal from CSV"""
@@ -300,7 +336,7 @@ class TestCSVRowValidation:
     
     def test_row_context_in_errors(self):
         """Error messages include row number"""
-        data = {"ph": 6.5, "pco2": 40, "na": 140, "cl": 102}
+        data = {"ph": 6.2, "pco2": 40, "na": 140, "cl": 102}
         result = validate_csv_row(data, 5)
         assert any("Satır 6" in e for e in result.errors)
     
@@ -328,7 +364,7 @@ class TestBatchValidation:
     def test_batch_some_invalid(self):
         rows = [
             {"ph": 7.40, "pco2": 40, "na": 140, "cl": 102},
-            {"ph": 6.5, "pco2": 40, "na": 140, "cl": 102},  # Invalid pH
+            {"ph": 6.2, "pco2": 40, "na": 140, "cl": 102},  # Invalid pH
             {"ph": 7.35, "pco2": 35, "na": 138, "cl": 100},
         ]
         results, valid, errors = validate_batch_input(rows)
@@ -348,8 +384,9 @@ class TestDirtyInputNormalization:
         row = {"ph": 7.4, "pco2": 40, "na": 100, "cl": 140}
         result = validate_csv_row(row, 0)
         assert result.is_valid
-        assert result.normalized_values["na"] == 140
-        assert result.warnings
+        # Values remain as provided but warning highlights possible swap
+        assert result.normalized_values["na"] == 100
+        assert any("kolonlar" in w for w in result.warnings)
 
     def test_negative_values_rejected(self):
         data = {"ph": -1, "pco2": 40, "na": 140, "cl": 100}

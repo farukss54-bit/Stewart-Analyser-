@@ -16,7 +16,8 @@ from core import (
     generate_contribution_breakdown, generate_headline,
     generate_classic_comparison, generate_cds_notes,
     determine_dominant_disorder, validate_input,
-    analyze_mechanisms, classify_contribution_level, interpret_sid_direction
+    analyze_mechanisms, classify_contribution_level, interpret_sid_direction,
+    determine_metabolic_dominance,
 )
 from constants import (
     SID_NORMAL_SIMPLE, SIG_THRESHOLD, CLINICAL_SIGNIFICANCE_THRESHOLD,
@@ -182,6 +183,64 @@ class TestMechanismAnalysis:
         lactate_mech = [m for m in mechanism.all_mechanisms if "laktat" in m.name.lower()][0]
         assert lactate_mech.level in ("contributing", "significant")
 
+    def test_single_source_unmeasured_anion_dominance(self):
+        mechanism = analyze_mechanisms(
+            be=-14, sid_effect=-2, albumin_effect=0, lactate_effect=-1,
+            residual_effect=-9, sig=8, pco2=32, compensation_status=""
+        )
+
+        assert mechanism.dominant_mechanism is not None
+        assert mechanism.dominant_mechanism.identifier == "unmeasured"
+        assert "laktat" not in mechanism.dominant_mechanism.description.lower()
+
+    def test_true_lactic_acidosis_dominant(self):
+        mechanism = analyze_mechanisms(
+            be=-18, sid_effect=-3, albumin_effect=0, lactate_effect=-12,
+            residual_effect=-2, sig=10, pco2=28, compensation_status=""
+        )
+
+        assert mechanism.dominant_mechanism is not None
+        assert mechanism.dominant_mechanism.identifier == "lactate"
+
+    def test_hyperchloremic_dominance(self):
+        mechanism = analyze_mechanisms(
+            be=-10, sid_effect=-8, albumin_effect=0, lactate_effect=-1,
+            residual_effect=-1, sig=2, pco2=40, compensation_status=""
+        )
+
+        assert mechanism.dominant_mechanism is not None
+        assert mechanism.dominant_mechanism.identifier == "sid"
+
+    def test_masked_acidosis_flag_present(self):
+        dominance = determine_metabolic_dominance(
+            {
+                "be": -2.5,
+                "sig": 6,
+                "mechanisms": [
+                    {"identifier": "sid", "name": "SID etkisi", "description": "SID etkisi", "effect": -6, "direction": "acidosis"},
+                    {"identifier": "albumin", "name": "Albümin", "description": "Albümin", "effect": 4, "direction": "alkalosis"},
+                ],
+            },
+            [],
+        )
+
+        assert "masked_acidosis_risk" in dominance.pattern_flags
+
+    def test_non_acidotic_be_avoids_acidosis_dominance(self):
+        dominance = determine_metabolic_dominance(
+            {
+                "be": 1.0,
+                "sig": None,
+                "mechanisms": [
+                    {"identifier": "sid", "name": "SID etkisi", "description": "SID", "effect": -4, "direction": "acidosis"},
+                    {"identifier": "albumin", "name": "Albümin", "description": "Albümin", "effect": 3.5, "direction": "alkalosis"},
+                ],
+            },
+            [],
+        )
+
+        assert dominance.dominant is None or dominance.dominant.direction != "acidosis"
+
 
 class TestClassicComparison:
     def test_sid_low_hco3_normal(self):
@@ -296,7 +355,7 @@ class TestFullAnalysis:
 
 class TestValidation:
     def test_invalid_ph(self):
-        inp = StewartInput(ph=6.5, pco2=40, na=140, cl=100)
+        inp = StewartInput(ph=6.2, pco2=40, na=140, cl=100)
         val = validate_input(inp)
         assert not val.is_valid
     

@@ -102,6 +102,7 @@ class ContributionBreakdown:
 class MechanismContribution:
     """Bir mekanizmanın BE'ye katkısı"""
     name: str                    # Mekanizma adı (non-diagnostic)
+    identifier: str              # Tekil kimlik ("sid", "lactate", "albumin", "unmeasured")
     effect_meq: float           # mEq/L olarak etki
     contribution_percent: float  # BE'ye yüzde katkı
     level: str                  # "dominant", "significant", "contributing", "minimal"
@@ -128,6 +129,17 @@ class MechanismAnalysis:
     # Respiratory status
     respiratory_status: str = ""
     respiratory_details: str = ""
+
+
+@dataclass
+class DominanceResult:
+    """Tekil kaynak: metabolik dominans sonucu"""
+    total_metabolic_effect: float
+    all_mechanisms: List[MechanismContribution]
+    dominant: Optional[MechanismContribution]
+    significant: List[MechanismContribution]
+    contributing: List[MechanismContribution]
+    pattern_flags: List[str] = field(default_factory=list)
 
 
 @dataclass
@@ -658,6 +670,114 @@ def classify_contribution_level(percent: float, mechanism_name: str = "") -> str
     return "minimal"
 
 
+def determine_metabolic_dominance(contributions: Dict[str, Any], flags: List[str]) -> DominanceResult:
+    """
+    Tekil kaynak: mekanizma katkılarından dominant metabolik mekanizmayı belirler.
+
+    Beklenen giriş:
+        contributions = {
+            "be": float,
+            "sig": Optional[float],
+            "mechanisms": [
+                {"identifier": "sid", "name": "SID etkisi", "description": str,
+                 "effect": float, "direction": "acidosis"|"alkalosis"},
+                ...
+            ],
+            "compensation": Optional[str]
+        }
+    """
+
+    be = contributions.get("be", 0.0)
+    sig = contributions.get("sig")
+    mechanism_inputs = contributions.get("mechanisms", [])
+
+    total_acidosis = sum(abs(m.get("effect", 0.0)) for m in mechanism_inputs if m.get("direction") == "acidosis")
+    total_alkalosis = sum(m.get("effect", 0.0) for m in mechanism_inputs if m.get("direction") == "alkalosis")
+
+    if be < -CLINICAL_SIGNIFICANCE_THRESHOLD:
+        total_reference = max(abs(be), total_acidosis)
+    elif be > CLINICAL_SIGNIFICANCE_THRESHOLD:
+        total_reference = max(abs(be), total_alkalosis)
+    else:
+        total_reference = max(abs(be), total_acidosis, total_alkalosis)
+
+    mechanism_contributions: List[MechanismContribution] = []
+    for m in mechanism_inputs:
+        effect = m.get("effect", 0.0)
+        if abs(effect) < CLINICAL_SIGNIFICANCE_THRESHOLD:
+            continue
+        percent = calculate_contribution_percent(effect, total_reference)
+        level = classify_contribution_level(percent, m.get("name", ""))
+        mechanism_contributions.append(
+            MechanismContribution(
+                name=m.get("name", ""),
+                identifier=m.get("identifier", ""),
+                effect_meq=round(effect, 1),
+                contribution_percent=percent,
+                level=level,
+                direction=m.get("direction", ""),
+                description=m.get("description", m.get("name", "")),
+            )
+        )
+
+    mechanism_contributions.sort(key=lambda x: x.contribution_percent, reverse=True)
+
+    dominant = None
+    significant: List[MechanismContribution] = []
+    contributing: List[MechanismContribution] = []
+
+    for mc in mechanism_contributions:
+        if mc.level == "dominant" and dominant is None:
+            dominant = mc
+        elif mc.level == "significant":
+            significant.append(mc)
+        elif mc.level == "contributing":
+            contributing.append(mc)
+
+    if dominant is None and mechanism_contributions:
+        dominant = mechanism_contributions[0]
+
+    pattern_flags: List[str] = []
+    if dominant:
+        if dominant.identifier == "unmeasured":
+            pattern_flags.append("unmeasured_anion")
+        if dominant.identifier == "sid" and dominant.direction == "acidosis":
+            pattern_flags.append("hyperchloremic_pattern")
+        if dominant.identifier == "lactate":
+            pattern_flags.append("lactate_dominant")
+
+    lactate_component = next((m for m in mechanism_contributions if m.identifier == "lactate"), None)
+    if lactate_component and lactate_component.level in ("significant", "dominant") and "lactate_dominant" not in pattern_flags:
+        pattern_flags.append("lactate_significant")
+
+    if sig is not None and sig > SIG_THRESHOLD:
+        pattern_flags.append("sig_elevated")
+
+    if total_acidosis > 2 and total_alkalosis > 2:
+        pattern_flags.append("masking_present")
+
+    albumin_component = next((m for m in mechanism_contributions if m.identifier == "albumin" and m.direction == "alkalosis"), None)
+    if albumin_component and total_acidosis > CLINICAL_SIGNIFICANCE_THRESHOLD:
+        pattern_flags.append("masked_acidosis_risk")
+
+    if be >= 0 and dominant and dominant.direction == "acidosis":
+        alkalosis_leader = next((m for m in mechanism_contributions if m.direction == "alkalosis"), None)
+        dominant = alkalosis_leader
+
+    if abs(total_reference) < CLINICAL_SIGNIFICANCE_THRESHOLD:
+        dominant = None
+        pattern_flags = []
+
+    return DominanceResult(
+        total_metabolic_effect=be,
+        all_mechanisms=mechanism_contributions,
+        dominant=dominant,
+        significant=significant,
+        contributing=contributing,
+        pattern_flags=pattern_flags,
+    )
+
+
 def analyze_mechanisms(
     be: float,
     sid_effect: float,
@@ -672,121 +792,71 @@ def analyze_mechanisms(
     Contribution-based mechanism analysis.
     Determines dominant mechanism based on absolute mEq/L contribution, not presence.
     """
-    
-    mechanisms = []
-    total_acidosis = 0.0
-    total_alkalosis = 0.0
-    
-    # SID effect
+
+    mechanisms: List[Dict[str, Any]] = []
+
     if abs(sid_effect) > CLINICAL_SIGNIFICANCE_THRESHOLD:
         direction = "acidosis" if sid_effect < 0 else "alkalosis"
-        name = "Güçlü iyon (SID) etkisi"
         mechanisms.append({
-            "name": f"SID etkisi",
-            "full_name": f"Güçlü iyon (SID) aracılı metabolik {'asidoz' if direction == 'acidosis' else 'alkaloz'}",
+            "identifier": "sid",
+            "name": "SID etkisi",
+            "description": f"Güçlü iyon (SID) aracılı metabolik {'asidoz' if direction == 'acidosis' else 'alkaloz'}",
             "effect": sid_effect,
-            "direction": direction
+            "direction": direction,
         })
-        if direction == "acidosis":
-            total_acidosis += abs(sid_effect)
-        else:
-            total_alkalosis += sid_effect
 
-    # Lactate effect
     if lactate_effect is not None and abs(lactate_effect) > 0.5:
         mechanisms.append({
+            "identifier": "lactate",
             "name": "Laktat aracılı etki",
-            "full_name": "Laktat aracılı metabolik asidoz mekanizması",
+            "description": "Laktat aracılı metabolik asidoz mekanizması",
             "effect": lactate_effect,
-            "direction": "acidosis"
+            "direction": "acidosis",
         })
-        total_acidosis += abs(lactate_effect)
-    
-    # Albumin effect
+
     if albumin_effect is not None and abs(albumin_effect) > CLINICAL_SIGNIFICANCE_THRESHOLD:
         direction = "alkalosis" if albumin_effect > 0 else "acidosis"
         mechanisms.append({
+            "identifier": "albumin",
             "name": "Albümin etkisi",
-            "full_name": f"Zayıf asit {'azalması (hipoalbüminemi)' if direction == 'alkalosis' else 'artışı'} etkisi",
+            "description": f"Zayıf asit {'azalması (hipoalbüminemi)' if direction == 'alkalosis' else 'artışı'} etkisi",
             "effect": albumin_effect,
-            "direction": direction
+            "direction": direction,
         })
-        if direction == "acidosis":
-            total_acidosis += abs(albumin_effect)
-        else:
-            total_alkalosis += albumin_effect
-    
-    # Residual/Unmeasured anion effect
+
     if residual_effect is not None and abs(residual_effect) > CLINICAL_SIGNIFICANCE_THRESHOLD:
         direction = "acidosis" if residual_effect < 0 else "alkalosis"
         mechanisms.append({
+            "identifier": "unmeasured",
             "name": "Ölçülmemiş bileşen etkisi",
-            "full_name": f"Ölçülmemiş {'anyon' if direction == 'acidosis' else 'katyon'} aracılı etki",
+            "description": f"Ölçülmemiş {'anyon' if direction == 'acidosis' else 'katyon'} aracılı etki",
             "effect": residual_effect,
-            "direction": direction
+            "direction": direction,
         })
-        if direction == "acidosis":
-            total_acidosis += abs(residual_effect)
-        else:
-            total_alkalosis += residual_effect
-    
-    # Calculate contributions
-    if be < -CLINICAL_SIGNIFICANCE_THRESHOLD:
-        total_metabolic = max(abs(be), total_acidosis)
-    elif be > CLINICAL_SIGNIFICANCE_THRESHOLD:
-        total_metabolic = max(abs(be), total_alkalosis)
-    else:
-        total_metabolic = max(abs(be), total_acidosis, total_alkalosis)
-    
-    mechanism_contributions = []
-    for m in mechanisms:
-        percent = calculate_contribution_percent(m["effect"], total_metabolic)
-        level = classify_contribution_level(percent, m["name"])
-        
-        mechanism_contributions.append(MechanismContribution(
-            name=m["name"],
-            effect_meq=m["effect"],
-            contribution_percent=percent,
-            level=level,
-            direction=m["direction"],
-            description=m["full_name"]
-        ))
-    
-    # Sort by absolute contribution
-    mechanism_contributions.sort(key=lambda x: abs(x.effect_meq), reverse=True)
-    
-    # Classify mechanisms
-    dominant = None
-    significant = []
-    contributing = []
-    
-    for mc in mechanism_contributions:
-        if mc.level == "dominant" and dominant is None:
-            dominant = mc
-        elif mc.level == "significant":
-            significant.append(mc)
-        elif mc.level == "contributing":
-            contributing.append(mc)
-    
-    # If no dominant found, use the highest contributor
-    if dominant is None and mechanism_contributions:
-        dominant = mechanism_contributions[0]
-    
-    # Generate pattern description (non-diagnostic)
+
+    dominance_result = determine_metabolic_dominance(
+        {
+            "be": be,
+            "sig": sig,
+            "mechanisms": mechanisms,
+        },
+        [],
+    )
+
     pattern = ""
-    if dominant:
-        if "Ölçülmemiş" in dominant.name:
-            pattern = "Bu patern, ölçülmemiş anyon aracılı metabolik asidoz ile uyumludur (örn. keton birikimi, toksinler, organik asitler)."
-        elif "SID" in dominant.name and dominant.direction == "acidosis":
-            pattern = "Bu patern, hiperkloremik (dilüsyonel) metabolik asidoz ile uyumludur."
-        elif "Laktat" in dominant.name:
-            pattern = "Dominant metabolik asidoz mekanizması: laktat aracılı (fizyoloji odaklı, tanı dışı bildirim)."
-    
-    # Check for masking
-    if total_acidosis > 2 and total_alkalosis > 2:
-        pattern += " Karşıt yönlü etkiler birbirini kısmen maskelemektedir."
-    
-    # Respiratory status
+    if dominance_result.dominant:
+        if dominance_result.dominant.identifier == "unmeasured":
+            pattern = (
+                "Patern: ölçülmemiş anyon birikimi ile uyumlu (örn. keton birikimi, toksik metabolitler, organik asitler)."
+            )
+        elif dominance_result.dominant.identifier == "sid" and dominance_result.dominant.direction == "acidosis":
+            pattern = "Patern: hiperkloremik (dilüsyonel) güçlü iyon aracılı metabolik asidoz."
+        elif dominance_result.dominant.identifier == "lactate":
+            pattern = "Patern: laktat aracılı metabolik asidoz (fizyoloji odaklı, tanı dışı bilgilendirme)."
+
+    if "masking_present" in dominance_result.pattern_flags:
+        pattern = f"{pattern} Karşıt yönlü metabolik etkiler birbirini kısmen maskeleyebilir.".strip()
+
     resp_status = ""
     if pco2 > PCO2_NORMAL_HIGH:
         if "kompanzasyon" in compensation_status.lower() and "uygun" in compensation_status.lower():
@@ -800,16 +870,16 @@ def analyze_mechanisms(
             resp_status = "Respiratuvar alkaloz bileşeni mevcut"
     else:
         resp_status = "Solunumsal bileşen normal"
-    
+
     return MechanismAnalysis(
         total_metabolic_effect=be,
-        dominant_mechanism=dominant,
-        significant_mechanisms=significant,
-        contributing_mechanisms=contributing,
-        all_mechanisms=mechanism_contributions,
+        dominant_mechanism=dominance_result.dominant,
+        significant_mechanisms=dominance_result.significant,
+        contributing_mechanisms=dominance_result.contributing,
+        all_mechanisms=dominance_result.all_mechanisms,
         pattern_description=pattern,
         respiratory_status=resp_status,
-        respiratory_details=compensation_status
+        respiratory_details=compensation_status,
     )
 
 

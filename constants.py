@@ -3,14 +3,16 @@
 # v3.0 - Klinik Karar Destek Entegrasyonu
 
 # === pH Aralıkları ===
-PH_MIN = 6.80
-PH_MAX = 7.80
+# Hard physiologic acceptance limits (very permissive for critical care)
+PH_MIN = 6.50
+PH_MAX = 7.90
 PH_NORMAL_LOW = 7.35
 PH_NORMAL_HIGH = 7.45
 
 # === pCO2 Aralıkları (mmHg) ===
-PCO2_MIN = 10.0
-PCO2_MAX = 120.0
+# Hard physiologic acceptance limits (very permissive for critical care)
+PCO2_MIN = 5.0
+PCO2_MAX = 250.0
 PCO2_NORMAL_LOW = 35.0
 PCO2_NORMAL_HIGH = 45.0
 PCO2_NORMAL = 40.0
@@ -22,16 +24,17 @@ HCO3_NORMAL = 24.0
 HCO3_MISMATCH_THRESHOLD = 2.0
 
 # === Elektrolit Aralıkları (mmol/L) ===
-NA_MIN = 110.0
-NA_MAX = 180.0
+# Hard physiologic acceptance limits (very permissive for critical care)
+NA_MIN = 80.0
+NA_MAX = 220.0
 NA_NORMAL = 140.0
 
-K_MIN = 2.0
-K_MAX = 8.0
+K_MIN = 1.5
+K_MAX = 10.0
 K_NORMAL = 4.0
 
-CL_MIN = 70.0
-CL_MAX = 140.0
+CL_MIN = 50.0
+CL_MAX = 200.0
 CL_NORMAL = 100.0
 
 CA_MIN = 0.5
@@ -43,7 +46,7 @@ MG_MAX = 3.0
 MG_NORMAL = 0.85
 
 LACTATE_MIN = 0.0
-LACTATE_MAX = 25.0
+LACTATE_MAX = 40.0
 LACTATE_NORMAL = 1.0
 LACTATE_THRESHOLD = 2.0
 
@@ -138,6 +141,37 @@ VALIDATION_MESSAGES = {
     "sig_no_lactate": "Laktat olmadan SIG muhtemelen düşük hesaplanmıştır.",
     "sig_approximate": "Ca/Mg eksik olduğundan SIG yaklaşık değerdir.",
     "sig_unreliable": "Kritik parametreler eksik, SIG güvenilir değil.",
+}
+
+# === Validasyon Eşikleri ===
+# Three-tier model: hard physiologic limits, extreme-but-valid warnings, and reference ranges (bilgilendirme)
+PHYSIOLOGIC_LIMITS = {
+    "ph": (PH_MIN, PH_MAX),
+    "pco2": (PCO2_MIN, PCO2_MAX),
+    "na": (NA_MIN, NA_MAX),
+    "cl": (CL_MIN, CL_MAX),
+    "k": (K_MIN, K_MAX),
+    "lactate": (LACTATE_MIN, LACTATE_MAX),
+}
+
+EXTREME_THRESHOLDS = {
+    # Two-sided thresholds where applicable
+    "ph": {"low": 7.0, "high": 7.7},
+    # Very high pCO₂ is life-threatening but possible
+    "pco2": {"high": 120.0},
+    "na": {"low": 120.0, "high": 170.0},
+    "cl": {"low": 70.0, "high": 130.0},
+    "k": {"low": 2.0, "high": 7.0},
+    "lactate": {"high": 10.0},
+}
+
+REFERENCE_RANGES = {
+    "ph": (PH_NORMAL_LOW, PH_NORMAL_HIGH),
+    "pco2": (PCO2_NORMAL_LOW, PCO2_NORMAL_HIGH),
+    "na": (135.0, 145.0),
+    "cl": (98.0, 110.0),
+    "k": (3.5, 5.0),
+    "lactate": (0.5, 2.0),
 }
 
 # === YUMUŞAK MESAJLAR (Yargılamayan dil) ===

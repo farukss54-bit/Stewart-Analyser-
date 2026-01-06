@@ -17,7 +17,9 @@ from constants import (
     ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL,
     PO4_MIN, PO4_MAX,
     BE_MIN, BE_MAX,
-    VALIDATION_MESSAGES
+    VALIDATION_MESSAGES,
+    PHYSIOLOGIC_LIMITS,
+    EXTREME_THRESHOLDS,
 )
 from logger import log_calculation_warning, log_analysis_error
 
@@ -120,6 +122,45 @@ def detect_albumin_unit(value: float) -> str:
     return "g/L"
 
 
+def get_param_label(param: str) -> str:
+    labels = {
+        "ph": "pH",
+        "pco2": "pCO₂",
+        "na": "Na⁺",
+        "cl": "Cl⁻",
+        "k": "K⁺",
+        "lactate": "Laktat",
+    }
+    return labels.get(param, param)
+
+
+def apply_three_tier_validation(param: str, value: float, result: ValidationResult) -> None:
+    """Apply hard-limit and extreme-threshold validation for a single parameter."""
+    limits = PHYSIOLOGIC_LIMITS.get(param)
+    label = get_param_label(param)
+
+    if limits:
+        min_v, max_v = limits
+        if value < min_v or value > max_v:
+            result.is_valid = False
+            result.errors.append(
+                f"{label}: {value} fizyolojik sınırların dışında ({min_v}-{max_v})"
+            )
+            return
+
+    thresholds = EXTREME_THRESHOLDS.get(param, {})
+    warn = False
+    if "low" in thresholds and value < thresholds["low"]:
+        warn = True
+    if "high" in thresholds and value > thresholds["high"]:
+        warn = True
+
+    if warn:
+        result.warnings.append(
+            f"{label}={value} → Extreme value detected — analysis remains valid but clinical urgency is high."
+        )
+
+
 # =============================================================================
 # INPUT VALIDATION
 # =============================================================================
@@ -165,19 +206,9 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     if not result.is_valid:
         return result
     
-    # Validate ranges for required params
-    range_checks = [
-        (normalized["ph"], PH_MIN, PH_MAX, "pH"),
-        (normalized["pco2"], PCO2_MIN, PCO2_MAX, "pCO₂"),
-        (normalized["na"], NA_MIN, NA_MAX, "Na⁺"),
-        (normalized["cl"], CL_MIN, CL_MAX, "Cl⁻"),
-    ]
-    
-    for value, min_v, max_v, name in range_checks:
-        is_valid, error = validate_range(value, min_v, max_v, name)
-        if not is_valid:
-            result.is_valid = False
-            result.errors.append(error)
+    # Apply three-tier validation for required params
+    for param in required:
+        apply_three_tier_validation(param, normalized[param], result)
     
     # Optional parameters with validation
     optional_params = {
@@ -187,18 +218,25 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
         "lactate": (LACTATE_MIN, LACTATE_MAX, "Laktat"),
         "po4": (PO4_MIN, PO4_MAX, "Fosfat"),
     }
-    
+
     for param, (min_v, max_v, name) in optional_params.items():
         raw_value = data.get(param)
         value = sanitize_numeric(raw_value, allow_negative=False)
-        
+
+        if raw_value is not None and value is None and str(raw_value).strip() != "":
+            result.is_valid = False
+            result.errors.append(f"{name} değeri geçersiz")
+            continue
+
         if value is not None:
-            is_valid, error = validate_range(value, min_v, max_v, name)
-            if not is_valid:
-                result.warnings.append(error)
-                log_calculation_warning("out_of_range", {"param": param, "value": value})
+            if param in PHYSIOLOGIC_LIMITS or param in EXTREME_THRESHOLDS:
+                apply_three_tier_validation(param, value, result)
             else:
-                normalized[param] = value
+                is_valid, error = validate_range(value, min_v, max_v, name)
+                if not is_valid:
+                    result.warnings.append(error)
+                    log_calculation_warning("out_of_range", {"param": param, "value": value})
+            normalized[param] = value
     
     # BE (can be negative)
     be_raw = data.get("be")
