@@ -14,8 +14,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # === CORE IMPORTS ===
 from core import (
     StewartInput, analyze_stewart, output_to_dict, dict_to_input,
-    calculate_hco3, interpret_sid_direction
+    calculate_hco3, interpret_sid_direction, normalize_input,
+    stewart_input_from_normalized
 )
+from validation import validate_csv_row
 
 # === CONSTANTS ===
 from constants import (
@@ -51,7 +53,7 @@ from ui_components import (
 from visualization import render_visualization_section
 
 # === LOGGING ===
-from logger import log_user_action, log_analysis_error
+from logger import log_user_action, log_analysis_error, log_batch_progress
 
 
 # =============================================================================
@@ -122,23 +124,44 @@ def process_batch(df, mode):
     """Process batch CSV data"""
     results = []
     errors = []
-    
+    total = max(len(df), 1)
+
     for idx, row in df.iterrows():
+        _progress = min((idx + 1) / total, 1.0)
+        log_batch_progress(idx + 1, total, "processing")
+
+        row_dict = row.to_dict()
+        validation = validate_csv_row(row_dict, idx)
+
+        if not validation.is_valid:
+            error_msg = "; ".join(validation.errors)
+            results.append({"row": idx + 1, "status": "ERROR", "errors": error_msg})
+            errors.append({"row": idx + 1, "errors": error_msg})
+            continue
+
         try:
-            inp = dict_to_input(row.to_dict())
+            inp = stewart_input_from_normalized(validation.normalized_values)
             out, val = analyze_stewart(inp, mode)
-            
+
             if val.is_valid:
                 result = output_to_dict(inp, out)
-                result["row"] = idx + 1
-                result["status"] = "OK"
+                result.update({
+                    "row": idx + 1,
+                    "status": "OK",
+                    "warnings": "|".join(val.warnings),
+                })
                 results.append(result)
             else:
-                errors.append({"row": idx + 1, "errors": "; ".join(val.errors)})
+                error_text = "; ".join(val.errors)
+                results.append({"row": idx + 1, "status": "ERROR", "errors": error_text})
+                errors.append({"row": idx + 1, "errors": error_text})
         except Exception as e:
-            errors.append({"row": idx + 1, "errors": str(e)})
-            log_analysis_error("batch_row_failed", {"row": idx, "error": str(e)})
-    
+            err = str(e)
+            results.append({"row": idx + 1, "status": "ERROR", "errors": err})
+            errors.append({"row": idx + 1, "errors": err})
+            log_analysis_error("batch_row_failed", {"row": idx, "error": err})
+
+    log_batch_progress(total, total, "complete")
     return results, errors
 
 

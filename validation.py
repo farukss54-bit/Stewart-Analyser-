@@ -3,6 +3,7 @@
 # Centralized validation, unit normalization, and input sanitization
 
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import Optional, Dict, Any, List, Tuple, Union
 import re
 import math
@@ -16,7 +17,9 @@ from constants import (
     ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL,
     PO4_MIN, PO4_MAX,
     BE_MIN, BE_MAX,
-    VALIDATION_MESSAGES
+    VALIDATION_MESSAGES,
+    PHYSIOLOGIC_LIMITS,
+    EXTREME_THRESHOLDS,
 )
 from logger import log_calculation_warning, log_analysis_error
 
@@ -119,6 +122,45 @@ def detect_albumin_unit(value: float) -> str:
     return "g/L"
 
 
+def get_param_label(param: str) -> str:
+    labels = {
+        "ph": "pH",
+        "pco2": "pCO₂",
+        "na": "Na⁺",
+        "cl": "Cl⁻",
+        "k": "K⁺",
+        "lactate": "Laktat",
+    }
+    return labels.get(param, param)
+
+
+def apply_three_tier_validation(param: str, value: float, result: ValidationResult) -> None:
+    """Apply hard-limit and extreme-threshold validation for a single parameter."""
+    limits = PHYSIOLOGIC_LIMITS.get(param)
+    label = get_param_label(param)
+
+    if limits:
+        min_v, max_v = limits
+        if value < min_v or value > max_v:
+            result.is_valid = False
+            result.errors.append(
+                f"{label}: {value} fizyolojik sınırların dışında ({min_v}-{max_v})"
+            )
+            return
+
+    thresholds = EXTREME_THRESHOLDS.get(param, {})
+    warn = False
+    if "low" in thresholds and value < thresholds["low"]:
+        warn = True
+    if "high" in thresholds and value > thresholds["high"]:
+        warn = True
+
+    if warn:
+        result.warnings.append(
+            f"{label}={value} → Extreme value detected — analysis remains valid but clinical urgency is high."
+        )
+
+
 # =============================================================================
 # INPUT VALIDATION
 # =============================================================================
@@ -164,19 +206,9 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     if not result.is_valid:
         return result
     
-    # Validate ranges for required params
-    range_checks = [
-        (normalized["ph"], PH_MIN, PH_MAX, "pH"),
-        (normalized["pco2"], PCO2_MIN, PCO2_MAX, "pCO₂"),
-        (normalized["na"], NA_MIN, NA_MAX, "Na⁺"),
-        (normalized["cl"], CL_MIN, CL_MAX, "Cl⁻"),
-    ]
-    
-    for value, min_v, max_v, name in range_checks:
-        is_valid, error = validate_range(value, min_v, max_v, name)
-        if not is_valid:
-            result.is_valid = False
-            result.errors.append(error)
+    # Apply three-tier validation for required params
+    for param in required:
+        apply_three_tier_validation(param, normalized[param], result)
     
     # Optional parameters with validation
     optional_params = {
@@ -186,18 +218,25 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
         "lactate": (LACTATE_MIN, LACTATE_MAX, "Laktat"),
         "po4": (PO4_MIN, PO4_MAX, "Fosfat"),
     }
-    
+
     for param, (min_v, max_v, name) in optional_params.items():
         raw_value = data.get(param)
         value = sanitize_numeric(raw_value, allow_negative=False)
-        
+
+        if raw_value is not None and value is None and str(raw_value).strip() != "":
+            result.is_valid = False
+            result.errors.append(f"{name} değeri geçersiz")
+            continue
+
         if value is not None:
-            is_valid, error = validate_range(value, min_v, max_v, name)
-            if not is_valid:
-                result.warnings.append(error)
-                log_calculation_warning("out_of_range", {"param": param, "value": value})
+            if param in PHYSIOLOGIC_LIMITS or param in EXTREME_THRESHOLDS:
+                apply_three_tier_validation(param, value, result)
             else:
-                normalized[param] = value
+                is_valid, error = validate_range(value, min_v, max_v, name)
+                if not is_valid:
+                    result.warnings.append(error)
+                    log_calculation_warning("out_of_range", {"param": param, "value": value})
+            normalized[param] = value
     
     # BE (can be negative)
     be_raw = data.get("be")
@@ -252,6 +291,68 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
 # CSV ROW VALIDATION
 # =============================================================================
 
+NUMERIC_FIELDS = {
+    "ph", "pco2", "hco3", "na", "cl", "k", "ca", "mg",
+    "lactate", "albumin", "po4", "be",
+}
+
+
+def parse_maybe_number(value: Any, field: str) -> Optional[float]:
+    """Sanitize CSV cell content to a float if possible.
+
+    Special handling:
+    - Excel date/datetime objects are rejected (treated as None)
+    - Comma decimal separators are normalized
+    - Negative values are only allowed for BE
+    """
+    if isinstance(value, (date, datetime)):
+        return None
+
+    allow_negative = field == "be"
+    return sanitize_numeric(value, allow_negative=allow_negative)
+
+
+def sanitize_csv_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a sanitized copy of a CSV row.
+
+    - Normalizes keys to lowercase
+    - Strips surrounding whitespace from string values
+    - Parses numeric fields with locale-aware decimal support
+    """
+    sanitized: Dict[str, Any] = {}
+
+    for key, value in row.items():
+        key_lower = key.lower() if isinstance(key, str) else key
+
+        if key_lower in NUMERIC_FIELDS:
+            sanitized[key_lower] = parse_maybe_number(value, key_lower)
+        elif isinstance(value, str):
+            sanitized[key_lower] = value.strip()
+        else:
+            sanitized[key_lower] = value
+
+    return sanitized
+
+
+def should_try_swap_na_cl(na: Optional[float], cl: Optional[float]) -> bool:
+    """Heuristic to decide if Na/Cl swap attempt is justified.
+
+    Avoids aggressive auto-swap; only trigger when values are physiologically implausible.
+    """
+    if na is None or cl is None:
+        return False
+
+    # Strong signal: clearly hypo-Na with hyper-Cl that would otherwise be invalid
+    if na < 115 and cl > 130 and cl > na:
+        return True
+
+    # Secondary signal: Na lower than Cl by a wide margin beyond mild hyponatremia
+    if na < cl - 10 and cl >= 125 and na <= 125:
+        return True
+
+    return False
+
+
 def validate_csv_row(row: Dict[str, Any], row_index: int) -> ValidationResult:
     """
     Validate a single CSV row.
@@ -262,8 +363,22 @@ def validate_csv_row(row: Dict[str, Any], row_index: int) -> ValidationResult:
     - Missing values
     - Unit inconsistencies
     """
+    row = sanitize_csv_row(row)
     result = validate_input_dict(row, mode="quick")
-    
+
+    if not result.is_valid and should_try_swap_na_cl(row.get("na"), row.get("cl")):
+        swapped_row = {**row, "na": row.get("cl"), "cl": row.get("na")}
+        swapped_result = validate_input_dict(swapped_row, mode="quick")
+        if swapped_result.is_valid:
+            swapped_result.warnings.append(
+                f"Satır {row_index + 1}: Na/Cl kolonları yer değiştirmiş olabilir - takas edilerek analiz edildi"
+            )
+            log_calculation_warning(
+                "auto_swap_na_cl",
+                {"row": row_index, "na_original": row.get("na"), "cl_original": row.get("cl")}
+            )
+            return swapped_result
+
     if not result.is_valid:
         # Add row context to errors
         result.errors = [f"Satır {row_index + 1}: {e}" for e in result.errors]
