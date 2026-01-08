@@ -153,6 +153,122 @@ def log_debug(component: str, message: str, data: Optional[Dict[str, Any]] = Non
 
 
 # =============================================================================
+# ANALYSIS LOGGING - Sprint 3 (#4)
+# =============================================================================
+
+def log_analysis_start(mode: str, input_summary: Optional[Dict[str, Any]] = None):
+    """
+    Log analysis start at INFO level.
+    
+    Examples:
+        log_analysis_start("quick", {"ph": 7.25, "pco2": 30})
+        log_analysis_start("advanced", {"ph": 7.40, "has_albumin": True})
+    """
+    msg = f"ANALYSIS_START: mode={mode}"
+    if input_summary:
+        safe_summary = {k: str(v)[:50] for k, v in input_summary.items()}
+        msg += f" | {json.dumps(safe_summary)}"
+    logger.info(msg)
+
+
+def log_analysis_complete(
+    mode: str,
+    duration_ms: Optional[float] = None,
+    result_summary: Optional[Dict[str, Any]] = None
+):
+    """
+    Log analysis completion at INFO level.
+    
+    Examples:
+        log_analysis_complete("quick", 45.2, {"dominant": "sid_acidosis", "be": -8})
+        log_analysis_complete("advanced", 120.5, {"sig": 5.2, "flags": ["SIG_HIGH"]})
+    """
+    msg = f"ANALYSIS_COMPLETE: mode={mode}"
+    if duration_ms is not None:
+        msg += f" | duration={duration_ms:.1f}ms"
+    if result_summary:
+        safe_summary = {k: str(v)[:100] for k, v in result_summary.items()}
+        msg += f" | {json.dumps(safe_summary)}"
+    logger.info(msg)
+
+
+def log_extreme_value(param: str, value: float, threshold_type: str, clinical_note: str = ""):
+    """
+    Log extreme value detection at WARNING level.
+    
+    Args:
+        param: Parameter name (ph, pco2, lactate, etc.)
+        value: The extreme value detected
+        threshold_type: "low" or "high"
+        clinical_note: Optional clinical significance note
+    
+    Examples:
+        log_extreme_value("ph", 6.92, "low", "Şiddetli asidemi - acil müdahale")
+        log_extreme_value("lactate", 15.0, "high", "Şok düzeyinde laktat")
+    """
+    msg = f"EXTREME_VALUE: {param}={value} ({threshold_type})"
+    if clinical_note:
+        msg += f" | Note: {clinical_note}"
+    logger.warning(msg)
+
+
+def log_mechanism_result(
+    dominant_mechanism: Optional[str],
+    significant_mechanisms: Optional[list] = None,
+    pattern_flags: Optional[list] = None
+):
+    """
+    Log mechanism analysis result at INFO level.
+    
+    Examples:
+        log_mechanism_result("sid_acidosis", ["lactate"], ["hyperchloremic"])
+        log_mechanism_result("unmeasured_anion", None, ["sig_elevated", "masked_acidosis"])
+    """
+    msg = f"MECHANISM_RESULT: dominant={dominant_mechanism or 'none'}"
+    if significant_mechanisms:
+        msg += f" | significant={significant_mechanisms}"
+    if pattern_flags:
+        msg += f" | patterns={pattern_flags}"
+    logger.info(msg)
+
+
+def log_sid_calculation(sid_simple: float, sid_basic: Optional[float], sid_full: Optional[float]):
+    """
+    Log SID calculation results at DEBUG level.
+    
+    Examples:
+        log_sid_calculation(38.0, 36.5, 40.2)
+        log_sid_calculation(32.0, None, None)  # Missing lactate
+    """
+    msg = f"SID_CALC: simple={sid_simple}"
+    if sid_basic is not None:
+        msg += f" | basic={sid_basic}"
+    if sid_full is not None:
+        msg += f" | full={sid_full}"
+    logger.debug(msg)
+
+
+def log_compensation_assessment(
+    primary_disorder: str,
+    expected_value: Optional[float],
+    observed_value: float,
+    compensation_status: str
+):
+    """
+    Log compensation assessment at DEBUG level.
+    
+    Examples:
+        log_compensation_assessment("metabolic_acidosis", 25.0, 28.0, "Uygun kompanzasyon")
+        log_compensation_assessment("respiratory_acidosis", 28.0, 24.0, "Ek metabolik asidoz")
+    """
+    msg = f"COMPENSATION: primary={primary_disorder}"
+    if expected_value is not None:
+        msg += f" | expected={expected_value} | observed={observed_value}"
+    msg += f" | status={compensation_status}"
+    logger.debug(msg)
+
+
+# =============================================================================
 # STREAMLIT INTEGRATION
 # =============================================================================
 
@@ -175,7 +291,7 @@ class StreamlitLogHandler(logging.Handler):
             msg = self.format(record)
             
             if record.levelno >= logging.ERROR:
-                st.error(f"⚠️ {msg}")
+                st.error(f"âš ï¸ {msg}")
             elif record.levelno >= logging.WARNING:
                 # Don't show internal warnings to user unless critical
                 pass

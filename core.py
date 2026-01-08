@@ -33,10 +33,22 @@ from constants import (
     RESP_ALKALOSIS_ACUTE_COEFFICIENT, RESP_ALKALOSIS_CHRONIC_COEFFICIENT,
     COMPENSATION_TOLERANCE,
     VALIDATION_MESSAGES, SOFT_MESSAGES, FLAGS,
-    CDS_NOTES, CLASSIC_COMPARISON
+    CDS_NOTES, CLASSIC_COMPARISON,
+    EXTREME_THRESHOLDS
 )
 from validation import validate_input_dict, validate_csv_row
-from logger import log_calculation_warning, log_analysis_error, log_batch_progress
+from logger import (
+    log_calculation_warning, 
+    log_analysis_error, 
+    log_batch_progress,
+    log_analysis_start,
+    log_analysis_complete,
+    log_extreme_value,
+    log_mechanism_result,
+    log_sid_calculation,
+    log_compensation_assessment,
+    log_debug
+)
 
 
 # === DATA CLASSES ===
@@ -313,11 +325,11 @@ def calculate_sid_full(na: float, cl: float, k: Optional[float], ca: Optional[fl
     missing = []
     cations = na
     if k is not None: cations += k
-    else: missing.append("K⁺")
+    else: missing.append("K+")
     if ca is not None: cations += ca
-    else: missing.append("Ca²⁺")
+    else: missing.append("Ca2+")
     if mg is not None: cations += mg
-    else: missing.append("Mg²⁺")
+    else: missing.append("Mg2+")
     
     anions = cl
     if lactate is not None: anions += lactate
@@ -399,7 +411,7 @@ def calculate_respiratory_effect(pco2: float) -> float:
     """pCO2'nin yaklaşık BE etkisi"""
     # pCO2 yüksekse asidoz yönünde, düşükse alkaloz yönünde
     delta_pco2 = pco2 - PCO2_NORMAL
-    # Her 10 mmHg değişim için yaklaşık ±1-2 mEq/L etki
+    # Her 10 mmHg değişim için yaklaşık Â±1-2 mEq/L etki
     return round(-0.1 * delta_pco2, 1)
 
 
@@ -483,39 +495,39 @@ def assess_compensation(ph: float, pco2: float, hco3: float, be: float) -> Tuple
         expected_pco2 = calculate_expected_pco2_metabolic_acidosis(hco3)
         diff = pco2 - expected_pco2
         if abs(diff) <= WINTERS_TOLERANCE:
-            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO₂: {expected_pco2:.0f} ± 2", round(diff, 1)
+            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} Â± 2", round(diff, 1)
         elif diff < -WINTERS_TOLERANCE:
-            return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO₂ beklenenden {abs(diff):.0f} düşük", round(diff, 1)
+            return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO2 beklenenden {abs(diff):.0f} düşük", round(diff, 1)
         else:
-            return expected_pco2, None, "Ek respiratuvar asidoz", f"pCO₂ beklenenden {diff:.0f} yüksek", round(diff, 1)
+            return expected_pco2, None, "Ek respiratuvar asidoz", f"pCO2 beklenenden {diff:.0f} yüksek", round(diff, 1)
     
     if is_met_alkalosis and (is_alkalemia or ph >= PH_NORMAL_LOW):
         expected_pco2 = calculate_expected_pco2_metabolic_alkalosis(hco3)
         diff = pco2 - expected_pco2
         if abs(diff) <= ALKALOSIS_TOLERANCE:
-            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO₂: {expected_pco2:.0f} ± 2", round(diff, 1)
+            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} Â± 2", round(diff, 1)
         elif diff < -ALKALOSIS_TOLERANCE:
-            return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO₂ beklenenden düşük", round(diff, 1)
+            return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO2 beklenenden düşük", round(diff, 1)
         else:
-            return expected_pco2, None, "Ek respiratuvar asidoz", f"pCO₂ beklenenden yüksek", round(diff, 1)
+            return expected_pco2, None, "Ek respiratuvar asidoz", f"pCO2 beklenenden yüksek", round(diff, 1)
     
     if is_pco2_high and is_acidemia:
         exp_acute = calculate_expected_hco3_respiratory_acidosis(pco2, False)
         exp_chronic = calculate_expected_hco3_respiratory_acidosis(pco2, True)
         if hco3 <= exp_acute + COMPENSATION_TOLERANCE:
-            return None, exp_acute, "Akut respiratuvar asidoz", f"Beklenen HCO₃⁻ (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
+            return None, exp_acute, "Akut respiratuvar asidoz", f"Beklenen HCO3- (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
         elif hco3 >= exp_chronic - COMPENSATION_TOLERANCE:
-            return None, exp_chronic, "Kronik respiratuvar asidoz", f"Beklenen HCO₃⁻ (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
-        return None, exp_acute, "Subakut respiratuvar asidoz", f"HCO₃⁻ akut ve kronik arasında", None
+            return None, exp_chronic, "Kronik respiratuvar asidoz", f"Beklenen HCO3- (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
+        return None, exp_acute, "Subakut respiratuvar asidoz", f"HCO3- akut ve kronik arasında", None
     
     if is_pco2_low and is_alkalemia:
         exp_acute = calculate_expected_hco3_respiratory_alkalosis(pco2, False)
         exp_chronic = calculate_expected_hco3_respiratory_alkalosis(pco2, True)
         if hco3 >= exp_acute - COMPENSATION_TOLERANCE:
-            return None, exp_acute, "Akut respiratuvar alkaloz", f"Beklenen HCO₃⁻ (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
+            return None, exp_acute, "Akut respiratuvar alkaloz", f"Beklenen HCO3- (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
         elif hco3 <= exp_chronic + COMPENSATION_TOLERANCE:
-            return None, exp_chronic, "Kronik respiratuvar alkaloz", f"Beklenen HCO₃⁻ (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
-        return None, exp_acute, "Subakut respiratuvar alkaloz", f"HCO₃⁻ akut ve kronik arasında", None
+            return None, exp_chronic, "Kronik respiratuvar alkaloz", f"Beklenen HCO3- (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
+        return None, exp_acute, "Subakut respiratuvar alkaloz", f"HCO3- akut ve kronik arasında", None
     
     return None, None, "Belirgin primer bozukluk yok", "", None
 
@@ -605,11 +617,11 @@ def generate_contribution_breakdown(
     # Respiratuvar etki
     respiratory_effect_val = calculate_respiratory_effect(pco2)
     if pco2 > PCO2_NORMAL_HIGH:
-        resp = ("Asidoz yönünde", respiratory_effect_val, f"pCO₂ yüksek ({pco2:.0f} mmHg)")
+        resp = ("Asidoz yönünde", respiratory_effect_val, f"pCO2 yüksek ({pco2:.0f} mmHg)")
     elif pco2 < PCO2_NORMAL_LOW:
-        resp = ("Alkaloz yönünde", respiratory_effect_val, f"pCO₂ düşük ({pco2:.0f} mmHg)")
+        resp = ("Alkaloz yönünde", respiratory_effect_val, f"pCO2 düşük ({pco2:.0f} mmHg)")
     else:
-        resp = ("Nötr", 0.0, "pCO₂ normal")
+        resp = ("Nötr", 0.0, "pCO2 normal")
     
     # Net metabolik etki
     net_metabolic = sid_effect
@@ -1045,7 +1057,7 @@ def generate_cds_notes(
             cds = CDS_NOTES["albumin_low_lactate_high"]
             notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
     
-    # C Kategorisi: Patern → Mekanizma
+    # C Kategorisi: Patern â†’ Mekanizma
     
     # Hiperkloremik patern
     if sid_effect < -CLINICAL_SIGNIFICANCE_THRESHOLD and cl > 105:
@@ -1109,13 +1121,81 @@ def calculate_atot(albumin_gl: Optional[float], po4: Optional[float]) -> Optiona
     return round(atot, 1)
 
 
+# === LOGGING HELPERS ===
+
+def _check_and_log_extreme_values(inp: StewartInput) -> None:
+    """
+    Extreme değerleri kontrol et ve logla.
+    EXTREME_THRESHOLDS'daki eşiklere göre uyarı üretir.
+    """
+    # pH kontrolü
+    ph_thresholds = EXTREME_THRESHOLDS.get("ph", {})
+    if "low" in ph_thresholds and inp.ph < ph_thresholds["low"]:
+        log_extreme_value("ph", inp.ph, "low", "Şiddetli asidemi - acil müdahale gerekebilir")
+    elif "high" in ph_thresholds and inp.ph > ph_thresholds["high"]:
+        log_extreme_value("ph", inp.ph, "high", "Şiddetli alkalemi - acil müdahale gerekebilir")
+    
+    # pCO2 kontrolü
+    pco2_thresholds = EXTREME_THRESHOLDS.get("pco2", {})
+    if "high" in pco2_thresholds and inp.pco2 > pco2_thresholds["high"]:
+        log_extreme_value("pco2", inp.pco2, "high", "Şiddetli hiperkapni")
+    
+    # Na kontrolü
+    na_thresholds = EXTREME_THRESHOLDS.get("na", {})
+    if "low" in na_thresholds and inp.na < na_thresholds["low"]:
+        log_extreme_value("na", inp.na, "low", "Ciddi hiponatremi")
+    elif "high" in na_thresholds and inp.na > na_thresholds["high"]:
+        log_extreme_value("na", inp.na, "high", "Ciddi hipernatremi")
+    
+    # Cl kontrolü
+    cl_thresholds = EXTREME_THRESHOLDS.get("cl", {})
+    if "low" in cl_thresholds and inp.cl < cl_thresholds["low"]:
+        log_extreme_value("cl", inp.cl, "low", "Ciddi hipokloremi")
+    elif "high" in cl_thresholds and inp.cl > cl_thresholds["high"]:
+        log_extreme_value("cl", inp.cl, "high", "Ciddi hiperkloremi")
+    
+    # K kontrolü
+    if inp.k is not None:
+        k_thresholds = EXTREME_THRESHOLDS.get("k", {})
+        if "low" in k_thresholds and inp.k < k_thresholds["low"]:
+            log_extreme_value("k", inp.k, "low", "Ciddi hipokalemi - aritmi riski")
+        elif "high" in k_thresholds and inp.k > k_thresholds["high"]:
+            log_extreme_value("k", inp.k, "high", "Ciddi hiperkalemi - kardiyak arrest riski")
+    
+    # Laktat kontrolü
+    if inp.lactate is not None:
+        lac_thresholds = EXTREME_THRESHOLDS.get("lactate", {})
+        if "high" in lac_thresholds and inp.lactate > lac_thresholds["high"]:
+            log_extreme_value("lactate", inp.lactate, "high", "Şiddetli laktik asidoz - şok/hipoperfüzyon")
+
+
 # === ANA ANALİZ FONKSİYONU ===
 
 def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutput, ValidationResult]:
     """Ana Stewart analizi"""
+    import time
+    start_time = time.time()
+    
+    # === LOGGING: Analiz başlangıcı ===
+    log_analysis_start(mode, {
+        "ph": inp.ph,
+        "pco2": inp.pco2,
+        "na": inp.na,
+        "cl": inp.cl,
+        "has_lactate": inp.lactate is not None,
+        "has_albumin": inp.albumin_gl is not None
+    })
+    
+    # === LOGGING: Extreme value kontrolü ===
+    _check_and_log_extreme_values(inp)
     
     validation = validate_input(inp)
     if not validation.is_valid:
+        # === LOGGING: Validasyon başarısız ===
+        log_analysis_error("validation_failed", {
+            "ph": inp.ph, "pco2": inp.pco2, "na": inp.na, "cl": inp.cl,
+            "errors": "; ".join(validation.errors)
+        })
         empty_sid = SIDValues(0, "", None, "", None, "", [])
         return StewartOutput(
             hco3_calculated=0, hco3_used=0, hco3_source="",
@@ -1155,6 +1235,9 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     # SID
     sid_values = calculate_all_sids(inp)
     albumin_gdl = inp.albumin_gl / 10 if inp.albumin_gl is not None else None
+
+    # === LOGGING: SID hesaplama sonuçları ===
+    log_sid_calculation(sid_values.sid_simple, sid_values.sid_basic, sid_values.sid_full)
 
     if sid_values.sid_full_status != "complete":
         missing_list = ", ".join(sid_values.sid_full_missing)
@@ -1206,6 +1289,15 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     expected_pco2, expected_hco3, comp_status, comp_details, obs_exp_diff = assess_compensation(
         inp.ph, inp.pco2, hco3_used, be_used)
     
+    # === LOGGING: Kompanzasyon değerlendirmesi ===
+    primary_type = "metabolic_acidosis" if be_used < -2 else ("metabolic_alkalosis" if be_used > 2 else "normal")
+    log_compensation_assessment(
+        primary_type,
+        expected_pco2 or expected_hco3,
+        inp.pco2 if expected_pco2 else hco3_used,
+        comp_status
+    )
+    
     # Contribution Breakdown
     contribution = generate_contribution_breakdown(
         sid_effect, albumin_effect, lactate_effect, residual_effect, inp.pco2, be_used)
@@ -1214,6 +1306,13 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     mechanism_analysis = analyze_mechanisms(
         be_used, sid_effect, albumin_effect, lactate_effect, 
         residual_effect, sig, inp.pco2, comp_status)
+    
+    # === LOGGING: Mekanizma analizi sonucu ===
+    log_mechanism_result(
+        mechanism_analysis.dominant_mechanism.identifier if mechanism_analysis.dominant_mechanism else None,
+        [m.identifier for m in mechanism_analysis.significant_mechanisms] if mechanism_analysis.significant_mechanisms else None,
+        None  # pattern_flags ayrıca DominanceResult'ta
+    )
     
     # Headline (refactored - mechanism-based)
     headline = generate_headline(mechanism_analysis, inp.ph, inp.pco2, be_used)
@@ -1232,7 +1331,7 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     ph_interp, _ = interpret_ph(inp.ph)
     if ph_interp != "Normal": interpretations.append(f"pH: {ph_interp}")
     pco2_interp, _ = interpret_pco2(inp.pco2)
-    if pco2_interp != "Normal": interpretations.append(f"pCO₂: {pco2_interp}")
+    if pco2_interp != "Normal": interpretations.append(f"pCO2: {pco2_interp}")
     
     if mode == "quick":
         sid_interp, _ = interpret_sid_effect(sid_effect)
@@ -1270,6 +1369,17 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     # Dominant disorder
     dominant, disorder_components = determine_dominant_disorder(
         inp.ph, inp.pco2, be_used, sid_effect, albumin_effect, inp.lactate, residual_effect, sig)
+    
+    # === LOGGING: Analiz tamamlandı ===
+    duration_ms = (time.time() - start_time) * 1000
+    log_analysis_complete(mode, duration_ms, {
+        "dominant": dominant,
+        "be": be_used,
+        "sid_simple": sid_values.sid_simple,
+        "sig": sig,
+        "flags_count": len(flags),
+        "warnings_count": len(warnings)
+    })
     
     return StewartOutput(
         hco3_calculated=hco3_calculated, hco3_used=hco3_used, hco3_source=hco3_source,

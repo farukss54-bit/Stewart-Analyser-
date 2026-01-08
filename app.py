@@ -1,6 +1,6 @@
 # app.py
 # Stewart Asit-Baz Analizi - Streamlit UI Orchestrator
-# v3.2 - Modular Architecture
+# v3.4 - Derived Value Management & Sign Error Detection
 # UI components are imported from ui_components.py
 
 import streamlit as st
@@ -14,8 +14,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # === CORE IMPORTS ===
 from core import (
     StewartInput, analyze_stewart, output_to_dict, dict_to_input,
-    calculate_hco3, interpret_sid_direction, normalize_input,
-    stewart_input_from_normalized
+    calculate_hco3, calculate_be, interpret_sid_direction,
+    normalize_input, stewart_input_from_normalized
 )
 from validation import validate_csv_row
 
@@ -29,6 +29,7 @@ from constants import (
     ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL, ALBUMIN_NORMAL_GDL,
     PO4_MIN, PO4_MAX, PO4_NORMAL,
     BE_MIN, BE_MAX,
+    PH_NORMAL_LOW, PH_NORMAL_HIGH,
     UI_TEXTS, SAMPLE_CASES, REFERENCES
 )
 
@@ -165,6 +166,135 @@ def process_batch(df, mode):
     return results, errors
 
 
+def check_be_sign_error(ph: float, be: float) -> dict:
+    """
+    BE işaret hatası kontrolü.
+    
+    Returns:
+        dict with keys:
+        - has_error: bool
+        - message: str
+        - suggested_be: float (işaret düzeltilmiş)
+    """
+    # pH asidemi gösteriyor ama BE pozitif (alkaloz)
+    if ph < PH_NORMAL_LOW and be > 2:
+        return {
+            "has_error": True,
+            "message": f"⚠️ pH ({ph:.2f}) asidemi gösteriyor ama BE ({be:+.1f}) pozitif. İşaret hatası olabilir!",
+            "suggested_be": -be
+        }
+    
+    # pH alkalemi gösteriyor ama BE negatif (asidoz)
+    if ph > PH_NORMAL_HIGH and be < -2:
+        return {
+            "has_error": True,
+            "message": f"⚠️ pH ({ph:.2f}) alkalemi gösteriyor ama BE ({be:+.1f}) negatif. İşaret hatası olabilir!",
+            "suggested_be": -be
+        }
+    
+    return {"has_error": False, "message": "", "suggested_be": be}
+
+
+def render_derived_values_section(ph: float, pco2: float, mode_prefix: str):
+    """
+    Türetilmiş değerler (HCO₃ ve BE) için ortak UI bileşeni.
+    Her iki modda da aynı mantığı kullanır.
+    
+    Returns:
+        tuple: (hco3_to_use, be_to_use, is_be_base_deficit, should_stop)
+    """
+    # Hesaplanan değerler
+    hco3_calc = calculate_hco3(ph, pco2)
+    be_calc = calculate_be(ph, hco3_calc)
+    
+    st.markdown("---")
+    st.markdown("##### 📊 Türetilmiş Değerler")
+    
+    # Hesaplanan değerleri göster
+    calc_col1, calc_col2 = st.columns(2)
+    with calc_col1:
+        st.metric("HCO₃⁻ (hesaplanan)", f"{hco3_calc:.1f} mEq/L")
+    with calc_col2:
+        st.metric("BE (hesaplanan)", f"{be_calc:+.1f} mEq/L")
+    
+    # Doğrulama modu checkbox
+    verify_mode = st.checkbox(
+        "🔍 Cihaz değerlerini doğrula",
+        help="Kan gazı cihazınızın gösterdiği HCO₃ veya BE değerini girerek tutarlılığı kontrol edebilirsiniz.",
+        key=f"{mode_prefix}_verify_mode"
+    )
+    
+    # Varsayılan değerler
+    hco3_to_use = None  # None = hesaplansın
+    be_to_use = None    # None = hesaplansın
+    is_bd = False
+    should_stop = False
+    
+    if verify_mode:
+        st.info("💡 Cihaz değerini girmek tutarlılık kontrolü sağlar. Fark >2 mEq/L ise uyarı alırsınız.")
+        
+        verify_col1, verify_col2 = st.columns(2)
+        
+        with verify_col1:
+            hco3_verify = st.checkbox("HCO₃⁻ doğrula", key=f"{mode_prefix}_hco3_verify")
+            if hco3_verify:
+                hco3_manual = st.number_input(
+                    "Cihaz HCO₃⁻ (mEq/L)", 
+                    5.0, 50.0, hco3_calc, 0.1,
+                    key=f"{mode_prefix}_hco3_manual"
+                )
+                hco3_diff = abs(hco3_manual - hco3_calc)
+                
+                if hco3_diff > 2:
+                    st.error(f"🚨 HCO₃ farkı: {hco3_diff:.1f} mEq/L (hesaplanan: {hco3_calc:.1f})")
+                    st.warning("Bu fark önemli. Örnek kalitesi, cihaz kalibrasyonu veya giriş hatası olabilir.")
+                else:
+                    st.success(f"✅ HCO₃ tutarlı (fark: {hco3_diff:.1f} mEq/L)")
+                
+                hco3_to_use = hco3_manual
+        
+        with verify_col2:
+            be_verify = st.checkbox("BE doğrula", key=f"{mode_prefix}_be_verify")
+            if be_verify:
+                be_col1, be_col2 = st.columns([3, 1])
+                with be_col1:
+                    be_manual = st.number_input(
+                        "Cihaz BE (mEq/L)", 
+                        BE_MIN, BE_MAX, be_calc, 0.1,
+                        key=f"{mode_prefix}_be_manual"
+                    )
+                with be_col2:
+                    is_bd = st.checkbox("BD", key=f"{mode_prefix}_is_bd", help="Base Deficit olarak girdiyseniz işaretleyin")
+                
+                # BD ise işareti çevir
+                be_effective = -be_manual if is_bd else be_manual
+                be_diff = abs(be_effective - be_calc)
+                
+                # İşaret hatası kontrolü
+                sign_check = check_be_sign_error(ph, be_effective)
+                
+                if sign_check["has_error"]:
+                    st.error(sign_check["message"])
+                    
+                    # Net yönlendirme
+                    if be_manual > 0:
+                        st.info(f"💡 **Düzeltmek için:** Değeri **{-be_manual:.1f}** olarak değiştirin veya **BD** kutusunu işaretleyin.")
+                    else:
+                        st.info(f"💡 **Düzeltmek için:** Değeri **{-be_manual:.1f}** olarak değiştirin.")
+                    
+                    should_stop = True
+                
+                elif be_diff > 2:
+                    st.error(f"🚨 BE farkı: {be_diff:.1f} mEq/L (hesaplanan: {be_calc:+.1f})")
+                    st.warning("Bu fark önemli. Örnek kalitesi, cihaz kalibrasyonu veya giriş hatası olabilir.")
+                else:
+                    st.success(f"✅ BE tutarlı (fark: {be_diff:.1f} mEq/L)")
+                
+                be_to_use = be_effective
+    
+    return hco3_to_use, be_to_use, is_bd, should_stop
+
+
 # =============================================================================
 # BATCH MODE
 # =============================================================================
@@ -237,16 +367,12 @@ elif mod == "Hızlı (Klinik)":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Kan Gazı")
+        st.subheader("Kan Gazı (Ölçülen)")
         ph = st.number_input("pH", PH_MIN, PH_MAX, get_case_value("ph", 7.40), 0.01, key="quick_ph")
         pco2 = st.number_input("pCO₂ (mmHg)", PCO2_MIN, PCO2_MAX, get_case_value("pco2", 40.0), 0.1, key="quick_pco2")
         
-        st.markdown("---")
-        be_col1, be_col2 = st.columns([3, 1])
-        with be_col1:
-            be_input = st.number_input("BE / BD", BE_MIN, BE_MAX, get_case_value("be", 0.0), 0.1, key="quick_be")
-        with be_col2:
-            is_bd = st.checkbox("BD", help="Base Deficit olarak girdiyseniz işaretleyin")
+        # Türetilmiş değerler bölümü
+        hco3, be_input, is_bd, should_stop = render_derived_values_section(ph, pco2, "quick")
     
     with col2:
         st.subheader("Elektrolitler")
@@ -270,15 +396,14 @@ elif mod == "Hızlı (Klinik)":
                 albumin_gl = alb * 10
         else:
             albumin_gl = None
-        
-        st.markdown("---")
-        hco3_man = st.checkbox("HCO₃⁻ manuel gir")
-        hco3 = st.number_input("HCO₃⁻", 5.0, 50.0, 24.0, 0.1, key="quick_hco3") if hco3_man else None
-        if not hco3_man:
-            st.caption(f"HCO₃⁻ hesaplanacak: ~{calculate_hco3(ph, pco2):.1f}")
     
     # === ANALYZE BUTTON ===
-    if st.button("🔬 Analiz Et", type="primary", use_container_width=True):
+    analyze_disabled = should_stop
+    
+    if should_stop:
+        st.error("🚫 İşaret hatası düzeltilmeden analiz yapılamaz. Lütfen yukarıdaki uyarıyı kontrol edin.")
+    
+    if st.button("🔬 Analiz Et", type="primary", use_container_width=True, disabled=analyze_disabled):
         inp = StewartInput(
             ph=ph, pco2=pco2, na=na, cl=cl, hco3=hco3, be=be_input,
             is_be_base_deficit=is_bd, lactate=lactate, albumin_gl=albumin_gl
@@ -317,7 +442,7 @@ elif mod == "Hızlı (Klinik)":
         st.divider()
         
         # SID table
-        st.subheader("📐 SID Değerleri")
+        st.subheader("🔍 SID Değerleri")
         render_sid_table(out, interpret_sid_direction)
         
         # Compensation
@@ -350,19 +475,12 @@ else:  # Gelişmiş mod
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.subheader("Kan Gazı")
+        st.subheader("Kan Gazı (Ölçülen)")
         ph = st.number_input("pH", PH_MIN, PH_MAX, get_case_value("ph", 7.40), 0.01, key="adv_ph")
         pco2 = st.number_input("pCO₂", PCO2_MIN, PCO2_MAX, get_case_value("pco2", 40.0), 0.1, key="adv_pco2")
         
-        st.markdown("---")
-        be_col1, be_col2 = st.columns([3, 1])
-        with be_col1:
-            be_input = st.number_input("BE / BD", BE_MIN, BE_MAX, get_case_value("be", 0.0), 0.1, key="adv_be")
-        with be_col2:
-            is_bd = st.checkbox("BD", key="adv_bd", help="Base Deficit")
-        
-        hco3_man = st.checkbox("HCO₃⁻ manuel", key="adv_hco3_check")
-        hco3 = st.number_input("HCO₃⁻", 5.0, 50.0, 24.0, 0.1, key="adv_hco3") if hco3_man else None
+        # Türetilmiş değerler bölümü
+        hco3, be_input, is_bd, should_stop = render_derived_values_section(ph, pco2, "adv")
     
     with col2:
         st.subheader("Elektrolitler")
@@ -391,7 +509,12 @@ else:  # Gelişmiş mod
                              help="mmol/L")
     
     # === ANALYZE BUTTON ===
-    if st.button("🔬 Gelişmiş Analiz", type="primary", use_container_width=True):
+    analyze_disabled = should_stop
+    
+    if should_stop:
+        st.error("🚫 İşaret hatası düzeltilmeden analiz yapılamaz. Lütfen yukarıdaki uyarıyı kontrol edin.")
+    
+    if st.button("🔬 Gelişmiş Analiz", type="primary", use_container_width=True, disabled=analyze_disabled):
         inp = StewartInput(
             ph=ph, pco2=pco2, na=na, cl=cl, k=k,
             ca=ca, mg=mg, lactate=lactate,
@@ -432,7 +555,7 @@ else:  # Gelişmiş mod
         st.divider()
         
         # SID table
-        st.subheader("📐 SID Değerleri")
+        st.subheader("🔍 SID Değerleri")
         render_sid_table(out, interpret_sid_direction)
         
         # Stewart parameters (advanced only)

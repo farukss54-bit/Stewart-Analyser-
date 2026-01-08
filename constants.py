@@ -1,187 +1,449 @@
 # constants.py
 # Stewart Asit-Baz Analizi - Sabitler, CDS Notları ve Hazır Vakalar
-# v3.0 - Klinik Karar Destek Entegrasyonu
+# v3.5 - Literatür Referanslı Threshold Dokümantasyonu
 
-# === pH Aralıkları ===
-# Hard physiologic acceptance limits (very permissive for critical care)
-PH_MIN = 6.50
-PH_MAX = 7.90
-PH_NORMAL_LOW = 7.35
-PH_NORMAL_HIGH = 7.45
+# =============================================================================
+# 📚 LİTERATÜR REFERANSLARI
+# =============================================================================
+# Bu dosyadaki eşik değerleri aşağıdaki kaynaklara dayanmaktadır:
+#
+# [STEWART-1983]   Stewart PA. Modern quantitative acid-base chemistry.
+#                  Can J Physiol Pharmacol. 1983;61(12):1444-61
+#
+# [FIGGE-1991]     Figge J, Mydosh T, Fencl V. Serum proteins and acid-base
+#                  equilibria. J Lab Clin Med. 1991;117(6):453-67
+#
+# [FENCL-2000]     Fencl V, Jabor A, Kazda A, Figge J. Diagnosis of metabolic
+#                  acid-base disturbances. Am J Respir Crit Care. 2000;162:2246-51
+#
+# [MORGAN-2009]    Morgan TJ. The Stewart approach. Crit Care Clin. 2009;25:261-78
+#
+# [KELLUM-2009]    Kellum JA. Disorders of acid-base balance.
+#                  Crit Care Med. 2009;37(1):76-86
+#
+# [STORY-2016]     Story DA. Stewart acid-base: A simplified bedside approach.
+#                  Anesth Analg. 2016;123(2):511-5
+#
+# [BEREND-2014]    Berend K, et al. Physiological approach to assessment of
+#                  acid-base disturbances. NEJM. 2014;371:1434-45
+# =============================================================================
 
-# === pCO2 Aralıkları (mmHg) ===
-# Hard physiologic acceptance limits (very permissive for critical care)
-PCO2_MIN = 5.0
-PCO2_MAX = 250.0
-PCO2_NORMAL_LOW = 35.0
-PCO2_NORMAL_HIGH = 45.0
-PCO2_NORMAL = 40.0
+# =============================================================================
+# 🔬 pH ARALIKLARI
+# =============================================================================
+# Referans: [BEREND-2014], [KELLUM-2009]
+# Normal arteriyel kan pH'ı: 7.35-7.45
+# Yaşamla bağdaşan sınırlar: ~6.8 - ~7.8
+# pH < 6.8 veya > 7.8: Ciddi enzim disfonksiyonu, kardiyak arrest riski
 
-# === HCO3 Aralıkları (mEq/L) ===
-HCO3_MIN = 5.0
-HCO3_MAX = 50.0
-HCO3_NORMAL = 24.0
-HCO3_MISMATCH_THRESHOLD = 2.0
+PH_MIN = 6.50              # Hard limit - bu altı fizyolojik olarak imkansız
+PH_MAX = 7.90              # Hard limit - bu üstü fizyolojik olarak imkansız
+PH_NORMAL_LOW = 7.35       # [BEREND-2014] Normal aralık alt sınırı
+PH_NORMAL_HIGH = 7.45      # [BEREND-2014] Normal aralık üst sınırı
 
-# === Elektrolit Aralıkları (mmol/L) ===
-# Hard physiologic acceptance limits (very permissive for critical care)
-NA_MIN = 80.0
-NA_MAX = 220.0
-NA_NORMAL = 140.0
+# Klinik yorumlama eşikleri:
+# pH < 7.20: Şiddetli asidemi - acil müdahale
+# pH < 7.35: Asidemi
+# pH > 7.45: Alkalemi
+# pH > 7.55: Şiddetli alkalemi - acil müdahale
 
-K_MIN = 1.5
-K_MAX = 10.0
-K_NORMAL = 4.0
+# =============================================================================
+# 🌬️ pCO2 ARALIKLARI (mmHg)
+# =============================================================================
+# Referans: [BEREND-2014], [KELLUM-2009]
+# Normal: 35-45 mmHg (deniz seviyesinde)
+# Fizyolojik kompanzasyon sınırları: ~10-80 mmHg
+# Kritik değerler: <20 (şiddetli hipokapni), >80 (şiddetli hiperkapni)
 
-CL_MIN = 50.0
-CL_MAX = 200.0
-CL_NORMAL = 100.0
+PCO2_MIN = 5.0             # Hard limit - mekanik ventilasyon altında bile nadir
+PCO2_MAX = 250.0           # Hard limit - şiddetli hiperkapnik solunum yetmezliği
+PCO2_NORMAL_LOW = 35.0     # [BEREND-2014] Normal aralık alt sınırı
+PCO2_NORMAL_HIGH = 45.0    # [BEREND-2014] Normal aralık üst sınırı
+PCO2_NORMAL = 40.0         # Hesaplamalarda kullanılan referans değer
 
-CA_MIN = 0.5
-CA_MAX = 2.5
-CA_NORMAL = 1.25
+# =============================================================================
+# 🧪 HCO3 ARALIKLARI (mEq/L)
+# =============================================================================
+# Referans: [BEREND-2014]
+# Not: HCO3 doğrudan ölçülmez, Henderson-Hasselbalch ile hesaplanır
+# Normal: 22-26 mEq/L
+# Metabolik asidoz: <22, Metabolik alkaloz: >26
 
-MG_MIN = 0.3
-MG_MAX = 3.0
-MG_NORMAL = 0.85
+HCO3_MIN = 5.0             # Şiddetli metabolik asidoz (hayati tehlike)
+HCO3_MAX = 50.0            # Şiddetli metabolik alkaloz
+HCO3_NORMAL = 24.0         # [BEREND-2014] Referans değer
+HCO3_MISMATCH_THRESHOLD = 2.0  # Manuel-hesaplanan fark toleransı
 
-LACTATE_MIN = 0.0
-LACTATE_MAX = 40.0
-LACTATE_NORMAL = 1.0
-LACTATE_THRESHOLD = 2.0
+# =============================================================================
+# ⚡ ELEKTROLİT ARALIKLARI (mmol/L)
+# =============================================================================
+# Referans: [KELLUM-2009], [STORY-2016]
 
-# === Albümin ===
-ALBUMIN_MIN_GL = 5.0
-ALBUMIN_MAX_GL = 60.0
-ALBUMIN_NORMAL_GL = 40.0
-ALBUMIN_LOW_GL = 35.0  # CDS için eşik
-ALBUMIN_MIN_GDL = 0.5
-ALBUMIN_MAX_GDL = 6.0
-ALBUMIN_NORMAL_GDL = 4.0
+# --- Sodyum (Na⁺) ---
+# Normal: 135-145 mmol/L
+# SID hesaplamasının temel katyonu
+NA_MIN = 80.0              # Hard limit - <120 ciddi hiponatremi
+NA_MAX = 220.0             # Hard limit - >160 ciddi hipernatremi
+NA_NORMAL = 140.0          # [KELLUM-2009] Referans değer
 
-# === Fosfat (mmol/L) ===
-PO4_MIN = 0.3
-PO4_MAX = 4.0
-PO4_NORMAL = 1.0
+# --- Potasyum (K⁺) ---
+# Normal: 3.5-5.0 mmol/L
+# SID_full hesaplamasında kullanılır (minör katkı)
+K_MIN = 1.5                # Hard limit - kardiyak arrest riski
+K_MAX = 10.0               # Hard limit - kardiyak arrest riski
+K_NORMAL = 4.0             # Referans değer
 
-# === Base Excess (mEq/L) ===
-BE_MIN = -30.0
-BE_MAX = 30.0
-BE_NORMAL = 0.0
-BE_MISMATCH_THRESHOLD = 2.0
+# --- Klor (Cl⁻) ---
+# Normal: 98-106 mmol/L
+# SID hesaplamasının temel anyonu - hiperkloremik asidoz belirleyicisi
+CL_MIN = 50.0              # Hard limit
+CL_MAX = 200.0             # Hard limit
+CL_NORMAL = 100.0          # [KELLUM-2009] Referans değer
 
-# === SID Değerleri (mEq/L) ===
-SID_NORMAL_SIMPLE = 38.0
-SID_NORMAL_BASIC = 37.0
-SID_NORMAL_FULL = 40.0
-SID_LOW_THRESHOLD = 38.0   # CDS: SID düşük
-SID_HIGH_THRESHOLD = 44.0  # CDS: SID yüksek
-SID_NORMAL_RANGE = 2.0
-SID_THRESHOLD = 2.0
+# --- Kalsiyum İyonize (Ca²⁺) ---
+# Normal: 1.1-1.4 mmol/L (iyonize)
+# SID_full'da minör katkı (2x valans)
+CA_MIN = 0.5               # Ciddi hipokalsemi
+CA_MAX = 2.5               # Ciddi hiperkalsemi
+CA_NORMAL = 1.25           # Referans değer
 
-# === SIG Değerleri (mEq/L) ===
-SIG_NORMAL = 0.0
-SIG_THRESHOLD = 2.0
-SIG_HIGH = 2.0   # CDS: Ölçülmemiş anyon
-SIG_LOW = -2.0   # CDS: Ölçülmemiş katyon
+# --- Magnezyum (Mg²⁺) ---
+# Normal: 0.7-1.0 mmol/L
+# SID_full'da minör katkı (2x valans)
+MG_MIN = 0.3               # Ciddi hipomagnezemi
+MG_MAX = 3.0               # Ciddi hipermagnezemi
+MG_NORMAL = 0.85           # Referans değer
 
-# === Cl/Na Oranı ===
-CL_NA_RATIO_THRESHOLD = 0.75  # CDS: Hiperkloremik asidoz
+# =============================================================================
+# 🔥 LAKTAT (mmol/L)
+# =============================================================================
+# Referans: [KELLUM-2009], [MORGAN-2009]
+# Normal: <2 mmol/L
+# Laktat güçlü bir anyondur ve SID'i düşürür (asidoz yönünde)
+# Yüksek laktat = doku hipoperfüzyonu, sepsis, şok göstergesi
 
-# === Anyon Gap (mEq/L) ===
-AG_NORMAL = 12.0
-AG_THRESHOLD = 2.0
+LACTATE_MIN = 0.0          # Alt sınır
+LACTATE_MAX = 40.0         # Hayatta kalma bildirilen en yüksek değerler
+LACTATE_NORMAL = 1.0       # Normal üst sınır ~2
+LACTATE_THRESHOLD = 2.0    # [KELLUM-2009] Klinik anlamlılık eşiği
 
-# === Klinik Yorum Eşikleri ===
+# Klinik yorumlama:
+# <2: Normal
+# 2-4: Hafif yükselme (hipoperfüzyon olabilir)
+# 4-10: Orta-şiddetli (ciddi hipoperfüzyon)
+# >10: Kritik (şok, çoklu organ yetmezliği)
+
+# =============================================================================
+# 🥚 ALBÜMİN
+# =============================================================================
+# Referans: [FIGGE-1991], [FENCL-2000]
+# Albümin zayıf bir asittir (Atot'un ana bileşeni)
+# Düşük albümin = alkaloz yönünde etki (maskeleme!)
+# Kritik hasta popülasyonunda sık görülür
+
+ALBUMIN_MIN_GL = 5.0       # Şiddetli hipoalbüminemi
+ALBUMIN_MAX_GL = 60.0      # Nadir görülen üst değerler
+ALBUMIN_NORMAL_GL = 40.0   # [FIGGE-1991] Normal değer (4 g/dL)
+ALBUMIN_LOW_GL = 35.0      # CDS eşiği - bu altı "düşük" kabul edilir
+ALBUMIN_MIN_GDL = 0.5      # g/dL cinsinden alt sınır
+ALBUMIN_MAX_GDL = 6.0      # g/dL cinsinden üst sınır
+ALBUMIN_NORMAL_GDL = 4.0   # [FIGGE-1991] Normal değer
+
+# =============================================================================
+# 🧫 FOSFAT (mmol/L)
+# =============================================================================
+# Referans: [FIGGE-1991]
+# Fosfat da zayıf asit olarak Atot'a katkıda bulunur
+# Albümine göre daha az etkili
+
+PO4_MIN = 0.3              # Ciddi hipofosfatemi
+PO4_MAX = 4.0              # Ciddi hiperfosfatemi
+PO4_NORMAL = 1.0           # Referans değer
+
+# =============================================================================
+# ⚖️ BASE EXCESS (mEq/L)
+# =============================================================================
+# Referans: [BEREND-2014]
+# BE = metabolik komponentin miktarsal göstergesi
+# Negatif = metabolik asidoz, Pozitif = metabolik alkaloz
+
+BE_MIN = -30.0             # Şiddetli metabolik asidoz
+BE_MAX = 30.0              # Şiddetli metabolik alkaloz
+BE_NORMAL = 0.0            # İdeal değer
+BE_MISMATCH_THRESHOLD = 2.0  # Manuel-hesaplanan fark toleransı
+
+# =============================================================================
+# 🔬 SID DEĞERLERİ (mEq/L) - STEWART YAKLAŞIMI
+# =============================================================================
+# Referans: [STEWART-1983], [FENCL-2000], [MORGAN-2009]
+#
+# SID (Strong Ion Difference) = Güçlü katyonlar - Güçlü anyonlar
+# Stewart'a göre SID, pH'ın bağımsız belirleyicilerinden biridir
+#
+# SID_simple  = Na - Cl (pratik, hızlı değerlendirme)
+# SID_basic   = Na - Cl - Lactate (laktat etkisi dahil)
+# SID_full    = (Na + K + Ca×2 + Mg×2) - (Cl + Lactate) (tam hesaplama)
+
+SID_NORMAL_SIMPLE = 38.0   # [FENCL-2000] Na-Cl için normal değer
+SID_NORMAL_BASIC = 37.0    # Laktat dahil normal değer
+SID_NORMAL_FULL = 40.0     # [STEWART-1983] Tam SIDa için normal
+SID_LOW_THRESHOLD = 38.0   # Bu altı = metabolik asidoz yönünde
+SID_HIGH_THRESHOLD = 44.0  # Bu üstü = metabolik alkaloz yönünde
+SID_NORMAL_RANGE = 2.0     # Normal kabul edilen varyasyon
+SID_THRESHOLD = 2.0        # Klinik anlamlılık eşiği
+
+# =============================================================================
+# 🔍 SIG DEĞERLERİ (mEq/L) - STRONG ION GAP
+# =============================================================================
+# Referans: [FENCL-2000], [KELLUM-2009]
+#
+# SIG = SIDapparent - SIDeffective
+# SIG > 0: Ölçülmemiş anyonlar mevcut (ketonlar, laktat dışı organik asitler,
+#          toksik alkoller, sülfatlar, üremik toksinler)
+# SIG < 0: Ölçülmemiş katyonlar veya ölçüm hatası (nadir)
+#
+# Klasik AG'den farkı: Albümin düzeltmesi otomatik dahil
+
+SIG_NORMAL = 0.0           # İdeal değer
+SIG_THRESHOLD = 2.0        # Klinik anlamlılık eşiği
+SIG_HIGH = 2.0             # Bu üstü = ölçülmemiş anyon varlığı
+SIG_LOW = -2.0             # Bu altı = ölçülmemiş katyon (nadir, genellikle hata)
+
+# =============================================================================
+# 📊 Cl/Na ORANI
+# =============================================================================
+# Referans: [STORY-2016]
+# Normal oran: ~0.75-0.79
+# Yüksek oran (>0.79): Hiperkloremik asidoz lehine
+# Düşük oran (<0.75): Hipokloremik alkaloz lehine
+
+CL_NA_RATIO_THRESHOLD = 0.75  # Bu üstü hiperkloremik patern
+
+# =============================================================================
+# 🎯 ANYON GAP (mEq/L) - KLASİK YAKLAŞIM
+# =============================================================================
+# Referans: [BEREND-2014]
+# AG = Na - (Cl + HCO3)
+# Normal: 8-12 mEq/L (albüminsiz)
+# Düzeltilmiş AG = AG + 2.5 × (4.2 - Albümin_g/dL)
+
+AG_NORMAL = 12.0           # [BEREND-2014] Normal üst sınır
+AG_THRESHOLD = 2.0         # Klinik anlamlılık toleransı
+
+# =============================================================================
+# ⚖️ KLİNİK ANLAMLILIK EŞİĞİ
+# =============================================================================
+# Bu değer, hesaplanan etkilerin "anlamlı" kabul edilme sınırıdır
+# <2 mEq/L farklar genellikle klinik olarak önemsizdir
+
 CLINICAL_SIGNIFICANCE_THRESHOLD = 2.0
 
-# === Kompanzasyon Sabitleri ===
+# =============================================================================
+# 🫁 KOMPANZASYON SABİTLERİ
+# =============================================================================
+# Referans: [BEREND-2014], Standard fizyoloji kitapları
+#
+# --- Metabolik Asidoz için Winter's Formülü ---
+# Beklenen pCO2 = 1.5 × HCO3 + 8 (±2)
+# [BEREND-2014]: En yaygın kullanılan kompanzasyon formülü
+
 WINTERS_HCO3_COEFFICIENT = 1.5
 WINTERS_CONSTANT = 8
 WINTERS_TOLERANCE = 2
+
+# --- Metabolik Alkaloz için Kompanzasyon ---
+# Beklenen pCO2 = 0.7 × HCO3 + 21 (±2)
+# Not: Metabolik alkalozda kompanzasyon daha az öngörülebilir
 
 ALKALOSIS_PCO2_COEFFICIENT = 0.7
 ALKALOSIS_PCO2_CONSTANT = 21
 ALKALOSIS_TOLERANCE = 2
 
+# --- Respiratuvar Asidoz Kompanzasyonu ---
+# Akut: HCO3 = 24 + 0.1 × (pCO2 - 40)  → Her 10↑ pCO2 = 1↑ HCO3
+# Kronik: HCO3 = 24 + 0.35 × (pCO2 - 40) → Her 10↑ pCO2 = 3.5↑ HCO3
+
 RESP_ACIDOSIS_ACUTE_COEFFICIENT = 0.1
 RESP_ACIDOSIS_CHRONIC_COEFFICIENT = 0.35
+
+# --- Respiratuvar Alkaloz Kompanzasyonu ---
+# Akut: HCO3 = 24 - 0.2 × (40 - pCO2)  → Her 10↓ pCO2 = 2↓ HCO3
+# Kronik: HCO3 = 24 - 0.5 × (40 - pCO2) → Her 10↓ pCO2 = 5↓ HCO3
+
 RESP_ALKALOSIS_ACUTE_COEFFICIENT = 0.2
 RESP_ALKALOSIS_CHRONIC_COEFFICIENT = 0.5
 COMPENSATION_TOLERANCE = 2
 
-# === Formül Sabitleri ===
-HH_CONSTANT = 6.1
-HH_SOLUBILITY = 0.03
+# =============================================================================
+# 🧮 FORMÜL SABİTLERİ
+# =============================================================================
+# Referans: [STEWART-1983], [FIGGE-1991]
+
+# --- Henderson-Hasselbalch Denklemi ---
+# pH = pK + log([HCO3] / (0.03 × pCO2))
+HH_CONSTANT = 6.1          # pK değeri (karbondioksit/bikarbonat sistemi)
+HH_SOLUBILITY = 0.03       # CO2 çözünürlük katsayısı (mmol/L per mmHg)
+
+# --- Van Slyke BE Hesaplama ---
+# BE ≈ 1.1 × (HCO3 - 24) + 32 × (pH - 7.40)
 BE_HCO3_COEFFICIENT = 1.1
 BE_HCO3_NORMAL = 24.0
+
 BE_PH_COEFFICIENT = 32.0
 BE_PH_NORMAL = 7.40
-ALBUMIN_PH_COEFFICIENT = 0.123
-ALBUMIN_CONSTANT = 0.631
-PO4_PH_COEFFICIENT = 0.309
-PO4_CONSTANT = 0.469
+
+# --- Figge-Fencl Albümin/Fosfat Katsayıları ---
+# Referans: [FIGGE-1991]
+# SIDeffective hesaplamasında kullanılır
+# Atot = (0.123 × pH - 0.631) × Albumin_g/L + (0.309 × pH - 0.469) × PO4_mmol/L
+ALBUMIN_PH_COEFFICIENT = 0.123   # [FIGGE-1991]
+ALBUMIN_CONSTANT = 0.631        # [FIGGE-1991]
+PO4_PH_COEFFICIENT = 0.309      # [FIGGE-1991]
+PO4_CONSTANT = 0.469            # [FIGGE-1991]
+
+# --- Atot Basitleştirilmiş Katsayılar ---
+# Atot ≈ 0.123 × Albumin + 0.309 × PO4 (pH 7.4'te)
 ATOT_ALBUMIN_COEFFICIENT = 0.123
 ATOT_PO4_COEFFICIENT = 0.309
 
 # === VALIDASYON MESAJLARI ===
 VALIDATION_MESSAGES = {
     "ph_out_of_range": "pH değeri fizyolojik sınırlar dışında (6.80-7.80)",
-    "pco2_out_of_range": "pCO₂ değeri kabul edilebilir sınırlar dışında (10-120 mmHg)",
-    "na_out_of_range": "Na⁺ değeri kabul edilebilir sınırlar dışında (110-180 mmol/L)",
-    "cl_out_of_range": "Cl⁻ değeri kabul edilebilir sınırlar dışında (70-140 mmol/L)",
-    "k_out_of_range": "K⁺ değeri kabul edilebilir sınırlar dışında (2-8 mmol/L)",
-    "ca_out_of_range": "Ca²⁺ değeri kabul edilebilir sınırlar dışında (0.5-2.5 mmol/L)",
-    "mg_out_of_range": "Mg²⁺ değeri kabul edilebilir sınırlar dışında (0.3-3 mmol/L)",
+    "pco2_out_of_range": "pCO2 değeri kabul edilebilir sınırlar dışında (10-120 mmHg)",
+    "na_out_of_range": "Na+ değeri kabul edilebilir sınırlar dışında (110-180 mmol/L)",
+    "cl_out_of_range": "Cl- değeri kabul edilebilir sınırlar dışında (70-140 mmol/L)",
+    "k_out_of_range": "K+ değeri kabul edilebilir sınırlar dışında (2-8 mmol/L)",
+    "ca_out_of_range": "Ca2+ değeri kabul edilebilir sınırlar dışında (0.5-2.5 mmol/L)",
+    "mg_out_of_range": "Mg2+ değeri kabul edilebilir sınırlar dışında (0.3-3 mmol/L)",
     "lactate_out_of_range": "Laktat değeri kabul edilebilir sınırlar dışında (0-25 mmol/L)",
     "albumin_gl_out_of_range": "Albümin (g/L) değeri kabul edilebilir sınırlar dışında (5-60 g/L)",
     "po4_out_of_range": "Fosfat değeri kabul edilebilir sınırlar dışında (0.3-4 mmol/L)",
     "be_mismatch": "BE mismatch: girilen BE ile hesaplanan BE arasında >2 mEq/L fark var.",
-    "hco3_mismatch": "HCO₃ mismatch: girilen HCO₃ ile hesaplanan arasında >2 mEq/L fark var.",
+    "hco3_mismatch": "HCO3 mismatch: girilen HCO3 ile hesaplanan arasında >2 mEq/L fark var.",
     "sig_no_lactate": "Laktat olmadan SIG muhtemelen düşük hesaplanmıştır.",
     "sig_approximate": "Ca/Mg eksik olduğundan SIG yaklaşık değerdir.",
     "sig_unreliable": "Kritik parametreler eksik, SIG güvenilir değil.",
 }
 
-# === Validasyon Eşikleri ===
-# Three-tier model: hard physiologic limits, extreme-but-valid warnings, and reference ranges (bilgilendirme)
+# =============================================================================
+# 🚦 SEVERITY / CRITICAL MESSAGE MAPS (validation.py uyumu)
+# =============================================================================
+
+SEVERITY_LEVELS = {
+    "critical": "⚠️ KRİTİK",
+    "severe": "🔴",
+    "normal": "",
+}
+
+# validation.py şu key formatını üretir:
+#   f"{param}_critical_low/high"
+#   f"{param}_severe_low/high"
+CRITICAL_MESSAGES = {
+    # pH
+    "ph_critical_low": "⚠️ KRİTİK: pH çok düşük (hayati düzey).",
+    "ph_critical_high": "⚠️ KRİTİK: pH çok yüksek (hayati düzey).",
+    "ph_severe_low": "🔴 pH çok düşük (şiddetli asidemi patern).",
+    "ph_severe_high": "🔴 pH çok yüksek (şiddetli alkalemi patern).",
+
+    # pCO2
+    "pco2_critical_low": "⚠️ KRİTİK: pCO₂ çok düşük (hayati düzey).",
+    "pco2_critical_high": "⚠️ KRİTİK: pCO₂ çok yüksek (hayati düzey).",
+    "pco2_severe_low": "🔴 pCO₂ çok düşük (şiddetli hipokapni patern).",
+    "pco2_severe_high": "🔴 pCO₂ çok yüksek (şiddetli hiperkapni patern).",
+
+    # Na
+    "na_critical_low": "⚠️ KRİTİK: Na⁺ çok düşük (hayati düzey).",
+    "na_critical_high": "⚠️ KRİTİK: Na⁺ çok yüksek (hayati düzey).",
+    "na_severe_low": "🔴 Na⁺ çok düşük (ciddi hiponatremi patern).",
+    "na_severe_high": "🔴 Na⁺ çok yüksek (ciddi hipernatremi patern).",
+
+    # Cl
+    "cl_critical_low": "⚠️ KRİTİK: Cl⁻ çok düşük (hayati düzey).",
+    "cl_critical_high": "⚠️ KRİTİK: Cl⁻ çok yüksek (hayati düzey).",
+    "cl_severe_low": "🔴 Cl⁻ çok düşük (ciddi hipokloremi patern).",
+    "cl_severe_high": "🔴 Cl⁻ çok yüksek (ciddi hiperkloremi patern).",
+
+    # K
+    "k_critical_low": "⚠️ KRİTİK: K⁺ çok düşük (hayati düzey).",
+    "k_critical_high": "⚠️ KRİTİK: K⁺ çok yüksek (hayati düzey).",
+    "k_severe_low": "🔴 K⁺ çok düşük (ciddi aritmi riski patern).",
+    "k_severe_high": "🔴 K⁺ çok yüksek (ciddi aritmi riski patern).",
+
+    # Lactate
+    "lactate_critical_high": "⚠️ KRİTİK: Laktat çok yüksek (hayati düzey).",
+    "lactate_severe_high": "🔴 Laktat çok yüksek (şiddetli hipoperfüzyon/şok patern).",
+}
+
+
+# =============================================================================
+# 🚦 VALİDASYON EŞİKLERİ - ÜÇ KATMANLI MODEL
+# =============================================================================
+# Referans: Klinik pratiğe dayalı, literatür destekli
+#
+# KATMAN 1: PHYSIOLOGIC_LIMITS (Hard Limits)
+# - Bu sınırların dışındaki değerler FİZYOLOJİK OLARAK İMKANSIZ
+# - Giriş reddedilir, analiz yapılmaz
+# - Örn: pH 5.0 veya Na 300 → Ölçüm hatası kesin
+#
+# KATMAN 2: EXTREME_THRESHOLDS (Extreme but Valid)
+# - Fizyolojik olarak MÜMKÜN ama NADİR ve KRİTİK
+# - Uyarı verilir ama analiz devam eder
+# - Klinik aciliyet vurgulanır
+# - Örn: pH 6.9 → Şiddetli asidemi, acil müdahale gerekir
+#
+# KATMAN 3: REFERENCE_RANGES (Normal Ranges)
+# - Sağlıklı bireylerdeki tipik değerler
+# - Bilgilendirme amaçlı, kısıtlayıcı değil
+
 PHYSIOLOGIC_LIMITS = {
-    "ph": (PH_MIN, PH_MAX),
-    "pco2": (PCO2_MIN, PCO2_MAX),
-    "na": (NA_MIN, NA_MAX),
-    "cl": (CL_MIN, CL_MAX),
-    "k": (K_MIN, K_MAX),
-    "lactate": (LACTATE_MIN, LACTATE_MAX),
+    "ph": (PH_MIN, PH_MAX),           # 6.50-7.90
+    "pco2": (PCO2_MIN, PCO2_MAX),     # 5-250 mmHg
+    "na": (NA_MIN, NA_MAX),           # 80-220 mmol/L
+    "cl": (CL_MIN, CL_MAX),           # 50-200 mmol/L
+    "k": (K_MIN, K_MAX),              # 1.5-10 mmol/L
+    "lactate": (LACTATE_MIN, LACTATE_MAX),  # 0-40 mmol/L
 }
 
 EXTREME_THRESHOLDS = {
-    # Two-sided thresholds where applicable
+    # pH: <7.0 şiddetli asidemi, >7.7 şiddetli alkalemi
+    # [KELLUM-2009]: pH <7.1 veya >7.6 acil müdahale gerektirir
     "ph": {"low": 7.0, "high": 7.7},
-    # Very high pCO₂ is life-threatening but possible
+    
+    # pCO2: >80 şiddetli hiperkapni, <20 şiddetli hipokapni
+    # >120 genellikle mekanik ventilasyon gerektirir
     "pco2": {"high": 120.0},
+    
+    # Na: <120 ciddi hiponatremi (serebral ödem riski)
+    #     >160 ciddi hipernatremi (nörolojik hasar riski)
     "na": {"low": 120.0, "high": 170.0},
+    
+    # Cl: <70 şiddetli hipokloremi, >130 şiddetli hiperkloremi
     "cl": {"low": 70.0, "high": 130.0},
+    
+    # K: <2.5 kardiyak aritmi riski, >6.5 kardiyak arrest riski
     "k": {"low": 2.0, "high": 7.0},
+    
+    # Laktat: >4 ciddi hipoperfüzyon, >10 şok/çoklu organ yetmezliği
     "lactate": {"high": 10.0},
 }
 
 REFERENCE_RANGES = {
-    "ph": (PH_NORMAL_LOW, PH_NORMAL_HIGH),
-    "pco2": (PCO2_NORMAL_LOW, PCO2_NORMAL_HIGH),
-    "na": (135.0, 145.0),
-    "cl": (98.0, 110.0),
-    "k": (3.5, 5.0),
-    "lactate": (0.5, 2.0),
+    "ph": (PH_NORMAL_LOW, PH_NORMAL_HIGH),    # 7.35-7.45
+    "pco2": (PCO2_NORMAL_LOW, PCO2_NORMAL_HIGH),  # 35-45 mmHg
+    "na": (135.0, 145.0),           # Normal sodyum
+    "cl": (98.0, 110.0),            # Normal klor (bazı kaynaklar 98-106)
+    "k": (3.5, 5.0),                # Normal potasyum
+    "lactate": (0.5, 2.0),          # Normal laktat
 }
 
 # === YUMUŞAK MESAJLAR (Yargılamayan dil) ===
 SOFT_MESSAGES = {
     "missing_albumin": "Albümin değeri girilmediği için hipoalbüminemi etkisi değerlendirilemedi.",
     "missing_lactate": "Laktat değeri girilmediği için laktik asidoz değerlendirmesi yapılamadı.",
-    "missing_ca": "Ca²⁺ girilmediği için ileri SID analizi kısıtlı.",
-    "missing_mg": "Mg²⁺ girilmediği için SIDapparent yaklaşık hesaplandı.",
+    "missing_ca": "Ca2+ girilmediği için ileri SID analizi kısıtlı.",
+    "missing_mg": "Mg2+ girilmediği için SIDapparent yaklaşık hesaplandı.",
     "missing_po4": "Fosfat girilmediği için SIDeffective yaklaşık hesaplandı.",
-    "missing_k": "K⁺ girilmediği için SIDapparent kısıtlı hesaplandı.",
+    "missing_k": "K+ girilmediği için SIDapparent kısıtlı hesaplandı.",
     "sig_not_calculated": "Yeterli veri olmadığı için SIG hesaplanamadı.",
 }
 
@@ -197,11 +459,11 @@ FLAGS = {
     "SID_FULL_APPROXIMATE": "SID_full yaklaşık",
     "SID_EFFECTIVE_APPROXIMATE": "SID_effective yaklaşık",
     "BE_CALCULATED": "BE otomatik hesaplandı",
-    "HCO3_CALCULATED": "HCO₃ hesaplandı",
+    "HCO3_CALCULATED": "HCO3 hesaplandı",
 }
 
 # ============================================================
-# 🧠 KLİNİK KARAR DESTEK (CDS) NOT SETİ
+# ðŸ§  KLİNİK KARAR DESTEK (CDS) NOT SETİ
 # Literatür dayanaklı, deterministik, eylemsiz ifadeler
 # ============================================================
 
@@ -228,7 +490,7 @@ CDS_NOTES = {
         "refs": ["Fencl & Leith, 1993"]
     },
     "sig_normal": {
-        "condition": "|SIG| ≤ 2 mmol/L",
+        "condition": "|SIG| â‰¤ 2 mmol/L",
         "note": "SIG normal aralıkta; klinik olarak anlamlı ölçülmemiş iyon birikimi saptanmadı.",
         "refs": []
     },
@@ -238,7 +500,7 @@ CDS_NOTES = {
         "refs": ["Kimura et al., 2018", "Quintard et al., 2007"]
     },
     "cl_na_high": {
-        "condition": "Cl⁻/Na⁺ > 0.75",
+        "condition": "Cl-/Na+ > 0.75",
         "note": "Yüksek klorür yükü mevcut; hiperkloremik asidoz yönlü etki ile uyumlu patern.",
         "refs": ["Szrama & Smuszkiewicz, 2016", "Kilic et al., 2020"]
     },
@@ -250,7 +512,7 @@ CDS_NOTES = {
         "refs": ["Szrama & Smuszkiewicz, 2016", "Masevicius & Dubin, 2015"]
     },
     "normal_be_low_sid": {
-        "condition": "Normal BE/HCO₃ + düşük SID",
+        "condition": "Normal BE/HCO3 + düşük SID",
         "note": "Klasik analizde normal görünebilir; maskelenmiş güçlü iyon asidozu olasılığı.",
         "refs": ["Quintard et al., 2007"]
     },
@@ -260,21 +522,21 @@ CDS_NOTES = {
         "refs": ["Szrama & Smuszkiewicz, 2016", "Fencl & Leith, 1993"]
     },
     
-    # === C KATEGORİSİ: PATERN → OLASI MEKANİZMA KÜMELERİ ===
+    # === C KATEGORİSİ: PATERN â†’ OLASI MEKANİZMA KÜMELERİ ===
     "pattern_hyperchloremic": {
-        "condition": "SID↓ + Cl⁻↑",
+        "condition": "SIDâ†“ + Cl-â†‘",
         "note": "Bu patern hiperkloremik/dilüsyonel asidoz mekanizmalarıyla uyumlu olabilir.",
         "mechanisms": ["İzotonik salin infüzyonu", "Renal tübüler asidoz", "Diyare kaynaklı bikarbonat kaybı"],
         "refs": ["Kilic et al., 2020"]
     },
     "pattern_unmeasured_anion": {
-        "condition": "Normal laktat + SIG↑",
+        "condition": "Normal laktat + SIGâ†‘",
         "note": "Bu patern ölçülmemiş anyon birikimi mekanizmalarıyla uyumlu olabilir.",
         "mechanisms": ["Ketoasidoz", "Üremik asidoz", "Toksin (metanol, etilen glikol)", "Sülfat birikimi"],
         "refs": ["Franconieri et al., 2025"]
     },
     "pattern_masked_mixed": {
-        "condition": "Albümin↓ + pH normal + Laktat↑",
+        "condition": "Albüminâ†“ + pH normal + Laktatâ†‘",
         "note": "Bu patern maskelenmiş karışık bozukluk mekanizmalarıyla uyumlu olabilir.",
         "mechanisms": ["Sepsis + hipoalbüminemi", "Karaciğer yetmezliği", "Malnutrisyon + enfeksiyon"],
         "refs": ["Szrama & Smuszkiewicz, 2016"]
@@ -289,16 +551,16 @@ CDS_NOTES = {
 
 # === KLASİK YAKLAŞIM KARŞILAŞTIRMA MESAJLARI ===
 CLASSIC_COMPARISON = {
-    "hco3_normal_sid_low": "HCO₃⁻ normal görünmesine rağmen SID düşük → klasik analizde metabolik asidoz gözden kaçabilirdi.",
-    "normal_be_low_sid": "BE/HCO₃ normal görünse de SID düşük → klasik yaklaşım güçlü iyon asidozunu maskelerdi.",
-    "albumin_masking": "Düşük albümin mevcut asidozu maskelemiş olabilir → klasik AG düzeltmesi gerekli.",
-    "sid_primary": "SID değişikliği primer mekanizma olarak öne çıkıyor → klasik yaklaşımda bu ayrım yapılamaz.",
-    "ag_vs_sig": "Anyon gap normal ama SIG yüksek olabilir → ölçülmemiş anyonlar AG'de görünmeyebilir.",
-    "mixed_hidden": "Karşıt etkiler birbirini dengelemiş → klasik tek parametre değerlendirmesi yetersiz kalabilir.",
+    "hco3_normal_sid_low": "HCO3- normal görünmesine rağmen SID düşük â†’ klasik analizde metabolik asidoz gözden kaçabilirdi.",
+    "normal_be_low_sid": "BE/HCO3 normal görünse de SID düşük â†’ klasik yaklaşım güçlü iyon asidozunu maskelerdi.",
+    "albumin_masking": "Düşük albümin mevcut asidozu maskelemiş olabilir â†’ klasik AG düzeltmesi gerekli.",
+    "sid_primary": "SID değişikliği primer mekanizma olarak öne çıkıyor â†’ klasik yaklaşımda bu ayrım yapılamaz.",
+    "ag_vs_sig": "Anyon gap normal ama SIG yüksek olabilir â†’ ölçülmemiş anyonlar AG'de görünmeyebilir.",
+    "mixed_hidden": "Karşıt etkiler birbirini dengelemiş â†’ klasik tek parametre değerlendirmesi yetersiz kalabilir.",
 }
 
 # ============================================================
-# 📚 HAZIR VAKALAR (Case-Based Learning)
+# ðŸ“š HAZIR VAKALAR (Case-Based Learning)
 # ============================================================
 
 SAMPLE_CASES = {
@@ -336,7 +598,7 @@ SAMPLE_CASES = {
             "ph": 7.28, "pco2": 68.0, "na": 140.0, "cl": 98.0,
             "k": 4.5, "lactate": 1.0, "albumin_gl": 36.0, "be": 4.0
         },
-        "teaching_point": "Akut respiratuvar asidoz. HCO₃ hafif yükselmiş ama kronik kompanzasyon düzeyinde değil."
+        "teaching_point": "Akut respiratuvar asidoz. HCO3 hafif yükselmiş ama kronik kompanzasyon düzeyinde değil."
     },
     "vomiting": {
         "name": "Uzamış Kusma",
@@ -378,18 +640,18 @@ SAMPLE_CASES = {
 
 # === UI METİNLERİ ===
 UI_TEXTS = {
-    "app_title": "🩸 Stewart Asit-Baz Analizi",
+    "app_title": "Stewart Asit-Baz Analizi",
     "app_subtitle": "Fizikokimyasal yaklaşımla kan gazı değerlendirmesi",
     "landing_description": """
 Bu araç, kompleks asit-baz bozukluklarını **Stewart-Fencl sentezi** ile analiz etmek için 
 geliştirilmiş bir eğitim ve klinik destek aracıdır.
 
 **Klasik yaklaşımdan farkı:**
-- Sadece pH ve HCO₃'e bakmak yerine, asit-baz dengesini etkileyen **tüm güçlü iyonları** değerlendirir
+- Sadece pH ve HCO3'e bakmak yerine, asit-baz dengesini etkileyen **tüm güçlü iyonları** değerlendirir
 - **Maskelenmiş bozuklukları** (örn. hipoalbüminemi + asidoz) ortaya çıkarır  
 - Her bileşenin **ayrı ayrı katkısını** gösterir
 """,
-    "disclaimer": "⚕️ Bu araç klinik karar destek sistemi değildir. Eğitim amaçlıdır. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.",
+    "disclaimer": "âš•ï¸ Bu araç klinik karar destek sistemi değildir. Eğitim amaçlıdır. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.",
     "disclaimer_short": "Eğitim amaçlıdır. Klinik karar için uzman değerlendirmesi gerekir.",
 }
 
@@ -452,74 +714,74 @@ REFERENCES = {
 }
 
 # ============================================================
-# 📖 PARAMETRE TANIMLARI (Tooltip / Help için)
+# ðŸ“– PARAMETRE TANIMLARI (Tooltip / Help için)
 # ============================================================
 
 PARAM_DEFINITIONS = {
     # === SID Tanımları ===
     "sid_simple": {
-        "short": "Na − Cl farkı. Klor yükünü değerlendirmek için pratik gösterge.",
-        "long": """**SID_simple (Na − Cl)**
+        "short": "Na âˆ’ Cl farkı. Klor yükünü değerlendirmek için pratik gösterge.",
+        "long": """**SID_simple (Na âˆ’ Cl)**
 
 Sodyum ile klor arasındaki farktır. Klor yükünü değerlendirmek için pratik bir göstergedir.
 
-**Normal:** ≈ 36–40 mmol/L
+**Normal:** â‰ˆ 36â€“40 mmol/L
 
 **Düşükse:**
-• Klor göreceli olarak yüksek
-• Hiperkloremik metabolik asidoz eğilimi
+â€¢ Klor göreceli olarak yüksek
+â€¢ Hiperkloremik metabolik asidoz eğilimi
 
 **Yüksekse:**
-• Klor göreceli olarak düşük
-• Metabolik alkaloz eğilimi (örn. kusma, diüretik)""",
-        "normal": "≈ 38 mmol/L"
+â€¢ Klor göreceli olarak düşük
+â€¢ Metabolik alkaloz eğilimi (örn. kusma, diüretik)""",
+        "normal": "â‰ˆ 38 mmol/L"
     },
     
     "sid_basic": {
-        "short": "Na − Cl − Laktat. Laktatın asidoz yükünü SID üzerinden yansıtır.",
-        "long": """**SID_basic (Na − Cl − Lactate)**
+        "short": "Na âˆ’ Cl âˆ’ Laktat. Laktatın asidoz yükünü SID üzerinden yansıtır.",
+        "long": """**SID_basic (Na âˆ’ Cl âˆ’ Lactate)**
 
-Na–Cl farkına laktatın eklenmiş halidir. Laktatın asidoz yükünü SID üzerinden yansıtır.
+Naâ€“Cl farkına laktatın eklenmiş halidir. Laktatın asidoz yükünü SID üzerinden yansıtır.
 
-**Normal:** ≈ 36–38 mmol/L
+**Normal:** â‰ˆ 36â€“38 mmol/L
 
 **Düşükse:**
-• Laktat artışı ve/veya klor fazlalığı
-• Laktik ± hiperkloremik metabolik asidoz
+â€¢ Laktat artışı ve/veya klor fazlalığı
+â€¢ Laktik Â± hiperkloremik metabolik asidoz
 
 **Yüksekse:**
-• Metabolik alkaloz yönlü durumlar""",
-        "normal": "≈ 37 mmol/L"
+â€¢ Metabolik alkaloz yönlü durumlar""",
+        "normal": "â‰ˆ 37 mmol/L"
     },
     
     "sid_full": {
         "short": "Tüm güçlü iyonlarla hesaplanan apparent SID. Stewart'ın ana değişkeni.",
-        "long": """**SID_full / SIDapparent (Na+K+Ca+Mg − Cl − Lactate)**
+        "long": """**SID_full / SIDapparent (Na+K+Ca+Mg âˆ’ Cl âˆ’ Lactate)**
 
 Tüm ölçülen güçlü iyonlar kullanılarak hesaplanan teorik apparent SID. Stewart yaklaşımının ana değişkenlerinden biridir.
 
-**Normal:** ≈ 40–44 mmol/L
+**Normal:** â‰ˆ 40â€“44 mmol/L
 
 **Düşükse:**
-• Güçlü anyon fazlalığı veya katyon azlığı
-• Primer metabolik asidoz
+â€¢ Güçlü anyon fazlalığı veya katyon azlığı
+â€¢ Primer metabolik asidoz
 
 **Yüksekse:**
-• Güçlü katyon fazlalığı veya anyon azlığı
-• Primer metabolik alkaloz
+â€¢ Güçlü katyon fazlalığı veya anyon azlığı
+â€¢ Primer metabolik alkaloz
 
-⚠️ Ca²⁺/Mg²⁺ eksikse yaklaşık (approximate) kabul edilir.""",
-        "normal": "≈ 40-44 mmol/L"
+âš ï¸ Ca2+/Mg2+ eksikse yaklaşık (approximate) kabul edilir.""",
+        "normal": "â‰ˆ 40-44 mmol/L"
     },
     
     "sid_effective": {
-        "short": "HCO₃ ve zayıf asitlerin etkisini içeren 'etkin' SID. SIG hesabında kullanılır.",
+        "short": "HCO3 ve zayıf asitlerin etkisini içeren 'etkin' SID. SIG hesabında kullanılır.",
         "long": """**SIDeffective**
 
 Bikarbonat ve zayıf asitlerin (albümin, fosfat) etkisini içeren "etkin" SID değeridir.
 
 SIG hesaplamasında kullanılır:
-**SIG = SIDapparent − SIDeffective**
+**SIG = SIDapparent âˆ’ SIDeffective**
 
 Doğrudan referans aralığı yoktur; SIDapparent ile karşılaştırılarak yorumlanır.""",
         "normal": "SIDa ile karşılaştırılır"
@@ -532,17 +794,17 @@ Doğrudan referans aralığı yoktur; SIDapparent ile karşılaştırılarak yor
 
 Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
 
-**Normal:** ≈ 2.5–3.0 mmol/L (albümin ~40 g/L varsayımıyla)
+**Normal:** â‰ˆ 2.5â€“3.0 mmol/L (albümin ~40 g/L varsayımıyla)
 
 **Düşükse:**
-• Albümin düşüklüğü
-• pH alkaloz yönüne itilir
-• Metabolik asidoz maskelenebilir
+â€¢ Albümin düşüklüğü
+â€¢ pH alkaloz yönüne itilir
+â€¢ Metabolik asidoz maskelenebilir
 
 **Yüksekse:**
-• Albümin/fosfat artışı
-• Metabolik asidoz eğilimi""",
-        "normal": "≈ 2.5-3.0 mmol/L"
+â€¢ Albümin/fosfat artışı
+â€¢ Metabolik asidoz eğilimi""",
+        "normal": "â‰ˆ 2.5-3.0 mmol/L"
     },
     
     "sig": {
@@ -551,20 +813,20 @@ Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
 
 Ölçülmemiş anyonların (ketonlar, toksinler, sülfatlar vb.) varlığını gösterir.
 
-**Formül:** SIG = SIDapparent − SIDeffective
+**Formül:** SIG = SIDapparent âˆ’ SIDeffective
 
-**Normal:** ≈ −2 ile +2 mmol/L
+**Normal:** â‰ˆ âˆ’2 ile +2 mmol/L
 
 **Yüksekse (> +2):**
-• Ölçülmemiş anyon artışı
-• Klasik AG normal olsa bile gizli asidoz olabilir
+â€¢ Ölçülmemiş anyon artışı
+â€¢ Klasik AG normal olsa bile gizli asidoz olabilir
 
-**Düşükse (< −2):**
-• Ölçülmemiş katyonlar veya ölçüm artefaktı
-• Klinik olarak nadir
+**Düşükse (< âˆ’2):**
+â€¢ Ölçülmemiş katyonlar veya ölçüm artefaktı
+â€¢ Klinik olarak nadir
 
-⚠️ Eksik elektrolitlerde yaklaşık kabul edilir.""",
-        "normal": "−2 ile +2 mmol/L"
+âš ï¸ Eksik elektrolitlerde yaklaşık kabul edilir.""",
+        "normal": "âˆ’2 ile +2 mmol/L"
     },
     
     "cl_na_ratio": {
@@ -573,35 +835,35 @@ Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
 
 Klor yükünü sodyuma göre değerlendiren pratik bir orandır.
 
-**Normal:** ≈ 0.75 – 0.80
+**Normal:** â‰ˆ 0.75 â€“ 0.80
 
 **Yüksekse:**
-• Göreceli klor fazlalığı
-• Hiperkloremik metabolik asidoz lehine
+â€¢ Göreceli klor fazlalığı
+â€¢ Hiperkloremik metabolik asidoz lehine
 
 **Düşükse:**
-• Klor kaybı
-• Metabolik alkaloz lehine""",
+â€¢ Klor kaybı
+â€¢ Metabolik alkaloz lehine""",
         "normal": "0.75-0.80"
     },
     
     # === Anyon Gap ===
     "anion_gap": {
-        "short": "Klasik yaklaşımla ölçülen anyon-katyon farkı. AG = Na − (Cl + HCO₃)",
+        "short": "Klasik yaklaşımla ölçülen anyon-katyon farkı. AG = Na âˆ’ (Cl + HCO3)",
         "long": """**Anyon Gap (AG)**
 
-Klasik yaklaşımla ölçülen anyon–katyon farkı.
+Klasik yaklaşımla ölçülen anyonâ€“katyon farkı.
 
-**Formül:** AG = Na − (Cl + HCO₃)
+**Formül:** AG = Na âˆ’ (Cl + HCO3)
 
-**Normal:** ≈ 8–12 mmol/L
+**Normal:** â‰ˆ 8â€“12 mmol/L
 
 **Yüksekse:**
-• Laktat, keton, toksin gibi asit yükleri
-• Yüksek AG metabolik asidoz (HAGMA)
+â€¢ Laktat, keton, toksin gibi asit yükleri
+â€¢ Yüksek AG metabolik asidoz (HAGMA)
 
 **Normal/Düşükse:**
-• Asidoz yok veya hiperkloremik asidoz (NAGMA) olabilir""",
+â€¢ Asidoz yok veya hiperkloremik asidoz (NAGMA) olabilir""",
         "normal": "8-12 mmol/L"
     },
     
@@ -611,16 +873,16 @@ Klasik yaklaşımla ölçülen anyon–katyon farkı.
 
 Albümin düzeyi dikkate alınarak hesaplanan AG.
 
-**Formül:** AG_düz = AG + 2.5 × (4.2 − Albümin_g/dL)
+**Formül:** AG_düz = AG + 2.5 Ã— (4.2 âˆ’ Albümin_g/dL)
 
-**Normal:** ≈ 12–16 mmol/L
+**Normal:** â‰ˆ 12â€“16 mmol/L
 
 **Yüksekse:**
-• Albümin düşüklüğüne rağmen gerçek AG artışı
-• Gizli yüksek AG asidozu
+â€¢ Albümin düşüklüğüne rağmen gerçek AG artışı
+â€¢ Gizli yüksek AG asidozu
 
 **Normal görünüyorsa:**
-• Albümin düşüklüğü klasik AG'yi maskelemiş olabilir""",
+â€¢ Albümin düşüklüğü klasik AG'yi maskelemiş olabilir""",
         "normal": "12-16 mmol/L"
     },
     
@@ -631,11 +893,11 @@ Albümin düzeyi dikkate alınarak hesaplanan AG.
 
 SID'in Base Excess'e katkısıdır.
 
-**Formül:** SID_effect = SID_simple − 38
+**Formül:** SID_effect = SID_simple âˆ’ 38
 
 **Negatif değer:** Asidoz yönünde etki (hiperkloremik)
 **Pozitif değer:** Alkaloz yönünde etki (hipokloremik)""",
-        "normal": "0 ± 2 mEq/L"
+        "normal": "0 Â± 2 mEq/L"
     },
     
     "albumin_effect": {
@@ -644,23 +906,23 @@ SID'in Base Excess'e katkısıdır.
 
 Albüminin Base Excess'e katkısıdır.
 
-**Formül:** Alb_effect = 2.5 × (4.2 − Albümin_g/dL)
+**Formül:** Alb_effect = 2.5 Ã— (4.2 âˆ’ Albümin_g/dL)
 
 **Pozitif değer (düşük albümin):** Alkaloz yönünde etki, asidozu maskeleyebilir
 **Negatif değer (yüksek albümin):** Asidoz yönünde etki""",
-        "normal": "0 ± 2 mEq/L"
+        "normal": "0 Â± 2 mEq/L"
     },
     
     "lactate_effect": {
-        "short": "Laktatın BE'ye katkısı. Her mmol/L laktat ≈ 1 mEq/L asidoz.",
+        "short": "Laktatın BE'ye katkısı. Her mmol/L laktat â‰ˆ 1 mEq/L asidoz.",
         "long": """**Laktat Etkisi**
 
 Laktatın Base Excess'e katkısıdır.
 
-**Formül:** Lac_effect = −Laktat
+**Formül:** Lac_effect = âˆ’Laktat
 
-Her 1 mmol/L laktat artışı ≈ 1 mEq/L asidoz etkisi yapar.""",
-        "normal": "−1 ile 0 mEq/L"
+Her 1 mmol/L laktat artışı â‰ˆ 1 mEq/L asidoz etkisi yapar.""",
+        "normal": "âˆ’1 ile 0 mEq/L"
     },
     
     "residual_effect": {
@@ -669,13 +931,13 @@ Her 1 mmol/L laktat artışı ≈ 1 mEq/L asidoz etkisi yapar.""",
 
 BE'den bilinen bileşenlerin çıkarılmasıyla elde edilen açıklanamayan kısımdır.
 
-**Formül:** Residual = BE − SID_effect − Alb_effect − Lac_effect
+**Formül:** Residual = BE âˆ’ SID_effect âˆ’ Alb_effect âˆ’ Lac_effect
 
 **Negatif değer:** Ölçülmemiş anyonlar (keton, toksin vb.) olabilir
 **Pozitif değer:** Ölçülmemiş katyonlar (nadir)
 
-⚠️ Bu tam SIG değildir, Fencl-derived yaklaşık değerdir.""",
-        "normal": "0 ± 2 mEq/L"
+âš ï¸ Bu tam SIG değildir, Fencl-derived yaklaşık değerdir.""",
+        "normal": "0 Â± 2 mEq/L"
     },
     
     # === Temel Kan Gazı ===
@@ -685,7 +947,7 @@ BE'den bilinen bileşenlerin çıkarılmasıyla elde edilen açıklanamayan kıs
 
 Kanın asitlik derecesini gösteren logaritmik ölçek.
 
-**Normal:** 7.35 – 7.45
+**Normal:** 7.35 â€“ 7.45
 
 **< 7.35:** Asidemi
 **> 7.45:** Alkalemi""",
@@ -694,11 +956,11 @@ Kanın asitlik derecesini gösteren logaritmik ölçek.
     
     "pco2": {
         "short": "Karbondioksit parsiyel basıncı. Solunumsal bileşeni yansıtır.",
-        "long": """**pCO₂ (mmHg)**
+        "long": """**pCO2 (mmHg)**
 
 Karbondioksit parsiyel basıncı. Asit-baz dengesinin solunumsal bileşenini yansıtır.
 
-**Normal:** 35–45 mmHg
+**Normal:** 35â€“45 mmHg
 
 **Yüksekse:** Respiratuvar asidoz (hipoventilasyon)
 **Düşükse:** Respiratuvar alkaloz (hiperventilasyon)""",
@@ -707,11 +969,11 @@ Karbondioksit parsiyel basıncı. Asit-baz dengesinin solunumsal bileşenini yan
     
     "hco3": {
         "short": "Bikarbonat. Metabolik bileşeni yansıtır.",
-        "long": """**HCO₃⁻ (mEq/L)**
+        "long": """**HCO3- (mEq/L)**
 
 Bikarbonat konsantrasyonu. Asit-baz dengesinin metabolik bileşenini yansıtır.
 
-**Normal:** 22–26 mEq/L
+**Normal:** 22â€“26 mEq/L
 
 **Düşükse:** Metabolik asidoz
 **Yüksekse:** Metabolik alkaloz""",
@@ -724,11 +986,11 @@ Bikarbonat konsantrasyonu. Asit-baz dengesinin metabolik bileşenini yansıtır.
 
 Metabolik asit-baz bozukluğunun miktarını gösteren değer.
 
-**Normal:** −2 ile +2 mEq/L
+**Normal:** âˆ’2 ile +2 mEq/L
 
 **Negatif:** Metabolik asidoz (baz eksikliği)
 **Pozitif:** Metabolik alkaloz (baz fazlalığı)""",
-        "normal": "−2 ile +2 mEq/L"
+        "normal": "âˆ’2 ile +2 mEq/L"
     },
 }
 
