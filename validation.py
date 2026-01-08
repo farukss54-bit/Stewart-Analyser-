@@ -20,6 +20,8 @@ from constants import (
     VALIDATION_MESSAGES,
     PHYSIOLOGIC_LIMITS,
     EXTREME_THRESHOLDS,
+    CRITICAL_MESSAGES,
+    SEVERITY_LEVELS,
 )
 from logger import log_calculation_warning, log_analysis_error
 
@@ -130,15 +132,54 @@ def get_param_label(param: str) -> str:
         "cl": "Cl⁻",
         "k": "K⁺",
         "lactate": "Laktat",
+        "be": "BE",
+        "hco3": "HCO₃⁻",
     }
     return labels.get(param, param)
 
 
+def assess_severity(param: str, value: float) -> Tuple[str, Optional[str]]:
+    """
+    Assess severity level and return (severity, critical_message).
+    
+    Severity levels: "normal", "mild", "moderate", "severe", "critical"
+    
+    Returns:
+        Tuple of (severity_level, critical_message_key or None)
+    """
+    thresholds = EXTREME_THRESHOLDS.get(param, {})
+    
+    if not thresholds:
+        return "normal", None
+    
+    # Check critical levels first (highest priority)
+    if "critical_low" in thresholds and value <= thresholds["critical_low"]:
+        return "critical", f"{param}_critical_low"
+    if "critical_high" in thresholds and value >= thresholds["critical_high"]:
+        return "critical", f"{param}_critical_high"
+    
+    # Check severe levels
+    if "low" in thresholds and value < thresholds["low"]:
+        return "severe", f"{param}_severe_low"
+    if "high" in thresholds and value > thresholds["high"]:
+        return "severe", f"{param}_severe_high"
+    
+    return "normal", None
+
+
 def apply_three_tier_validation(param: str, value: float, result: ValidationResult) -> None:
-    """Apply hard-limit and extreme-threshold validation for a single parameter."""
+    """
+    Apply three-tier validation for a single parameter.
+    
+    Tiers:
+        1. PHYSIOLOGIC_LIMITS - Hard reject (is_valid = False)
+        2. EXTREME_THRESHOLDS (critical) - Accept + Critical warning
+        3. EXTREME_THRESHOLDS (severe) - Accept + Severe warning
+    """
     limits = PHYSIOLOGIC_LIMITS.get(param)
     label = get_param_label(param)
 
+    # Tier 1: Hard physiologic limits - REJECT
     if limits:
         min_v, max_v = limits
         if value < min_v or value > max_v:
@@ -148,17 +189,27 @@ def apply_three_tier_validation(param: str, value: float, result: ValidationResu
             )
             return
 
-    thresholds = EXTREME_THRESHOLDS.get(param, {})
-    warn = False
-    if "low" in thresholds and value < thresholds["low"]:
-        warn = True
-    if "high" in thresholds and value > thresholds["high"]:
-        warn = True
-
-    if warn:
-        result.warnings.append(
-            f"{label}={value} → Extreme value detected — analysis remains valid but clinical urgency is high."
-        )
+    # Tier 2 & 3: Extreme thresholds - WARN with severity
+    severity, message_key = assess_severity(param, value)
+    
+    if severity == "critical":
+        # Get critical message from constants
+        critical_msg = CRITICAL_MESSAGES.get(message_key, "")
+        if critical_msg:
+            result.warnings.insert(0, critical_msg)  # Insert at beginning (high priority)
+        else:
+            result.warnings.insert(0, f"⚠️ KRİTİK: {label}={value} — Hayati tehlike!")
+        log_calculation_warning("critical_value", {"param": param, "value": value, "severity": "critical"})
+        
+    elif severity == "severe":
+        severe_msg = CRITICAL_MESSAGES.get(message_key, "")
+        if severe_msg:
+            result.warnings.append(severe_msg)
+        else:
+            result.warnings.append(
+                f"🔴 {label}={value} → Ciddi değer — Klinik aciliyet yüksek."
+            )
+        log_calculation_warning("extreme_value", {"param": param, "value": value, "severity": "severe"})
 
 
 # =============================================================================
@@ -334,69 +385,167 @@ def sanitize_csv_row(row: Dict[str, Any]) -> Dict[str, Any]:
     return sanitized
 
 
-def should_try_swap_na_cl(na: Optional[float], cl: Optional[float]) -> bool:
-    """Heuristic to decide if Na/Cl swap attempt is justified.
+@dataclass
+class SwapSuspicion:
+    """Na/Cl swap şüphesi analiz sonucu - KULLANICIYA ŞEFFAF BİLDİRİM İÇİN"""
+    is_suspicious: bool = False
+    confidence: str = "none"  # "none", "low", "medium", "high"
+    reason: str = ""
+    original_na: Optional[float] = None
+    original_cl: Optional[float] = None
+    suggested_na: Optional[float] = None  # Takas sonrası önerilen
+    suggested_cl: Optional[float] = None
+    user_action_required: bool = False  # True = kullanıcı karar vermeli
 
-    Avoids aggressive auto-swap; only trigger when values are physiologically implausible.
+
+def analyze_na_cl_swap_suspicion(na: Optional[float], cl: Optional[float]) -> SwapSuspicion:
+    """
+    Na/Cl kolonlarının yer değiştirmiş olabileceğini ŞÜPHE OLARAK analiz et.
+    
+    ⚠️ ÖNEMLİ: Bu fonksiyon HİÇBİR ZAMAN otomatik düzeltme yapmaz.
+    Sadece şüpheyi raporlar ve kullanıcının karar vermesini bekler.
+    
+    Kriterler (çok katı - sadece bariz durumlar):
+    1. YÜKSEK GÜVEN: Na tipik Cl aralığında (95-110) VE Cl tipik Na aralığında (135-145)
+    2. YÜKSEK GÜVEN: Na < 100 VE Cl > 135 VE fark > 35
+    3. ORTA GÜVEN: Na < 115 VE Cl > 125 VE Cl > Na
+    
+    Returns:
+        SwapSuspicion with analysis results
     """
     if na is None or cl is None:
-        return False
-
-    # Strong signal: clearly hypo-Na with hyper-Cl that would otherwise be invalid
-    if na < 115 and cl > 130 and cl > na:
-        return True
-
-    # Secondary signal: Na lower than Cl by a wide margin beyond mild hyponatremia
-    if na < cl - 10 and cl >= 125 and na <= 125:
-        return True
-
-    return False
+        return SwapSuspicion()
+    
+    # Kriter 1: YÜKSEK GÜVEN - Değerler tam ters aralıklarda
+    # Na tipik Cl aralığında (95-110) VE Cl tipik Na aralığında (135-145)
+    na_in_cl_range = 95 <= na <= 110
+    cl_in_na_range = 135 <= cl <= 145
+    
+    if na_in_cl_range and cl_in_na_range:
+        return SwapSuspicion(
+            is_suspicious=True,
+            confidence="high",
+            reason=(
+                f"Na ({na}) tipik Cl aralığında (95-110), "
+                f"Cl ({cl}) tipik Na aralığında (135-145). "
+                f"Kolonlar yer değiştirmiş olabilir."
+            ),
+            original_na=na,
+            original_cl=cl,
+            suggested_na=cl,
+            suggested_cl=na,
+            user_action_required=True
+        )
+    
+    # Kriter 2: YÜKSEK GÜVEN - Aşırı düşük Na + Aşırı yüksek Cl + Büyük fark
+    if na < 100 and cl > 135 and (cl - na) > 35:
+        return SwapSuspicion(
+            is_suspicious=True,
+            confidence="high",
+            reason=(
+                f"Na ({na}) fizyolojik olarak çok düşük, "
+                f"Cl ({cl}) fizyolojik olarak çok yüksek, "
+                f"fark ({cl - na:.0f}) anormal büyük. "
+                f"Kolonlar yer değiştirmiş olabilir."
+            ),
+            original_na=na,
+            original_cl=cl,
+            suggested_na=cl,
+            suggested_cl=na,
+            user_action_required=True
+        )
+    
+    # Kriter 3: ORTA GÜVEN - Şüpheli ama kesin değil
+    if na < 115 and cl > 125 and cl > na and (cl - na) > 20:
+        return SwapSuspicion(
+            is_suspicious=True,
+            confidence="medium",
+            reason=(
+                f"Na ({na}) düşük, Cl ({cl}) yüksek. "
+                f"Kolon hatası olabilir ama kesin değil."
+            ),
+            original_na=na,
+            original_cl=cl,
+            suggested_na=cl,
+            suggested_cl=na,
+            user_action_required=True
+        )
+    
+    # Kriter 4: DÜŞÜK GÜVEN - Sadece uyarı, aksiyon gerektirmez
+    if na < cl and cl > 120:
+        return SwapSuspicion(
+            is_suspicious=True,
+            confidence="low",
+            reason=f"Na ({na}) < Cl ({cl}) - olağandışı ama mümkün.",
+            original_na=na,
+            original_cl=cl,
+            suggested_na=cl,
+            suggested_cl=na,
+            user_action_required=False  # Sadece bilgi, aksiyon gerektirmez
+        )
+    
+    return SwapSuspicion()
 
 
 def validate_csv_row(row: Dict[str, Any], row_index: int) -> ValidationResult:
     """
     Validate a single CSV row.
     
+    ⚠️ ÖNEMLİ: Bu fonksiyon HİÇBİR ZAMAN otomatik Na/Cl swap yapmaz.
+    Şüpheli durumları raporlar ama orijinal değerleri korur.
+    Kullanıcı kararı gerektiğinde bunu açıkça belirtir.
+    
     Handles common CSV issues:
-    - Swapped Na/Cl columns
+    - Na/Cl swap DETECTION (not correction!)
     - Comma decimal separators
     - Missing values
     - Unit inconsistencies
     """
     row = sanitize_csv_row(row)
     result = validate_input_dict(row, mode="quick")
-
-    if not result.is_valid and should_try_swap_na_cl(row.get("na"), row.get("cl")):
-        swapped_row = {**row, "na": row.get("cl"), "cl": row.get("na")}
-        swapped_result = validate_input_dict(swapped_row, mode="quick")
-        if swapped_result.is_valid:
-            swapped_result.warnings.append(
-                f"Satır {row_index + 1}: Na/Cl kolonları yer değiştirmiş olabilir - takas edilerek analiz edildi"
+    
+    # Na/Cl swap şüphesi analizi - ASLA OTOMATİK DÜZELTME YOK
+    na_val = row.get("na")
+    cl_val = row.get("cl")
+    swap_suspicion = analyze_na_cl_swap_suspicion(na_val, cl_val)
+    
+    if swap_suspicion.is_suspicious:
+        if swap_suspicion.confidence == "high":
+            # YÜKSEK GÜVEN: Belirgin uyarı
+            result.warnings.insert(0, 
+                f"⚠️ KOLON HATASI ŞÜPHESİ (Satır {row_index + 1}): "
+                f"{swap_suspicion.reason} "
+                f"→ Orijinal değerler korundu, düzeltme YAPILMADI. "
+                f"Lütfen kontrol edin!"
             )
             log_calculation_warning(
-                "auto_swap_na_cl",
-                {"row": row_index, "na_original": row.get("na"), "cl_original": row.get("cl")}
+                "swap_suspicion_high",
+                {"row": row_index, "na": na_val, "cl": cl_val, "confidence": "high"}
             )
-            return swapped_result
-
+        elif swap_suspicion.confidence == "medium":
+            # ORTA GÜVEN: Normal uyarı
+            result.warnings.append(
+                f"⚠️ Satır {row_index + 1}: {swap_suspicion.reason} "
+                f"Orijinal değerler kullanıldı."
+            )
+            log_calculation_warning(
+                "swap_suspicion_medium",
+                {"row": row_index, "na": na_val, "cl": cl_val, "confidence": "medium"}
+            )
+        elif swap_suspicion.confidence == "low":
+            # DÜŞÜK GÜVEN: Sadece bilgi
+            result.warnings.append(
+                f"ℹ️ Satır {row_index + 1}: {swap_suspicion.reason}"
+            )
+    
     if not result.is_valid:
         # Add row context to errors
         result.errors = [f"Satır {row_index + 1}: {e}" for e in result.errors]
         log_analysis_error("csv_row_validation_failed", {"row": row_index, "errors": result.errors})
         return result
     
-    # Additional CSV-specific checks
-    normalized = result.normalized_values
-    
-    # Check for likely swapped Na/Cl
-    na = normalized.get("na", 0)
-    cl = normalized.get("cl", 0)
-    
-    if na < cl and cl > 130:
-        result.warnings.append(f"Satır {row_index + 1}: Na ({na}) < Cl ({cl}) - kolonlar yer değiştirmiş olabilir")
-        log_calculation_warning("possible_swapped_columns", {"row": row_index, "na": na, "cl": cl})
-    
     # Check for physiologically impossible combinations
+    normalized = result.normalized_values
     ph = normalized.get("ph", 7.4)
     pco2 = normalized.get("pco2", 40)
     

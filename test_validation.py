@@ -386,7 +386,7 @@ class TestDirtyInputNormalization:
         assert result.is_valid
         # Values remain as provided but warning highlights possible swap
         assert result.normalized_values["na"] == 100
-        assert any("kolonlar" in w for w in result.warnings)
+        assert any("kolonlar" in w.lower() or "kolon" in w.lower() for w in result.warnings)
 
     def test_negative_values_rejected(self):
         data = {"ph": -1, "pco2": 40, "na": 140, "cl": 100}
@@ -398,6 +398,105 @@ class TestDirtyInputNormalization:
         result = validate_input_dict(data)
         assert result.is_valid
         assert "albumin_gl" not in result.normalized_values
+
+
+# =============================================================================
+# SPRINT 2: SWAP SUSPICION TESTLERİ
+# =============================================================================
+
+class TestSwapSuspicion:
+    """Sprint 2: Na/Cl swap şüphesi testleri - OTOMATİK DÜZELTME YOK"""
+    
+    def test_swap_suspicion_dataclass_defaults(self):
+        """SwapSuspicion dataclass varsayılan değerler"""
+        from validation import SwapSuspicion
+        s = SwapSuspicion()
+        assert s.is_suspicious == False
+        assert s.confidence == "none"
+        assert s.user_action_required == False
+    
+    def test_normal_values_no_suspicion(self):
+        """Normal değerler için şüphe yok"""
+        from validation import analyze_na_cl_swap_suspicion
+        result = analyze_na_cl_swap_suspicion(140, 102)
+        assert not result.is_suspicious
+        assert result.confidence == "none"
+    
+    def test_high_confidence_reversed_ranges(self):
+        """YÜKSEK GÜVEN: Değerler tam ters aralıklarda"""
+        from validation import analyze_na_cl_swap_suspicion
+        result = analyze_na_cl_swap_suspicion(102, 140)
+        assert result.is_suspicious
+        assert result.confidence == "high"
+        assert result.user_action_required == True
+        assert result.suggested_na == 140
+        assert result.suggested_cl == 102
+    
+    def test_high_confidence_extreme_values(self):
+        """YÜKSEK GÜVEN: Aşırı düşük Na + Aşırı yüksek Cl"""
+        from validation import analyze_na_cl_swap_suspicion
+        result = analyze_na_cl_swap_suspicion(95, 145)
+        assert result.confidence == "high"
+        assert "fizyolojik" in result.reason.lower()
+    
+    def test_medium_confidence_suspicious(self):
+        """ORTA GÜVEN: Şüpheli ama kesin değil"""
+        from validation import analyze_na_cl_swap_suspicion
+        result = analyze_na_cl_swap_suspicion(113, 134)
+        assert result.confidence == "medium"
+        assert result.user_action_required == True
+    
+    def test_low_confidence_unusual(self):
+        """DÜŞÜK GÜVEN: Olağandışı ama mümkün"""
+        from validation import analyze_na_cl_swap_suspicion
+        result = analyze_na_cl_swap_suspicion(118, 122)
+        assert result.confidence == "low"
+        assert result.user_action_required == False  # Aksiyon gerektirmez
+    
+    def test_no_automatic_swap_ever(self):
+        """OTOMATİK SWAP ASLA YAPILMAMALI"""
+        # En bariz swap durumunda bile değerler korunmalı
+        row = {"ph": 7.40, "pco2": 40, "na": 95, "cl": 145}
+        result = validate_csv_row(row, 0)
+        
+        # Değerler DEĞİŞMEMELİ
+        assert result.normalized_values.get("na") == 95, "Na otomatik değiştirildi!"
+        assert result.normalized_values.get("cl") == 145, "Cl otomatik değiştirildi!"
+    
+    def test_transparent_warning_message(self):
+        """Şeffaf uyarı mesajı - YAPILMADI ifadesi olmalı"""
+        row = {"ph": 7.40, "pco2": 40, "na": 100, "cl": 140}
+        result = validate_csv_row(row, 0)
+        
+        # "YAPILMADI" ifadesi olmalı
+        has_yapilmadi = any("YAPILMADI" in w for w in result.warnings)
+        assert has_yapilmadi, "Uyarıda 'YAPILMADI' ifadesi yok - şeffaflık eksik!"
+    
+    def test_kolon_hatasi_warning(self):
+        """KOLON HATASI ŞÜPHESİ uyarısı olmalı"""
+        row = {"ph": 7.40, "pco2": 40, "na": 102, "cl": 140}
+        result = validate_csv_row(row, 0)
+        
+        has_kolon_hatasi = any("KOLON HATASI" in w for w in result.warnings)
+        assert has_kolon_hatasi, "KOLON HATASI uyarısı yok!"
+    
+    def test_original_values_preserved_in_normalized(self):
+        """Normalize edilmiş değerler orijinal değerleri korumalı"""
+        test_cases = [
+            {"na": 100, "cl": 140},  # High confidence swap
+            {"na": 102, "cl": 138},  # High confidence swap
+            {"na": 113, "cl": 134},  # Medium confidence
+            {"na": 118, "cl": 122},  # Low confidence
+        ]
+        
+        for case in test_cases:
+            row = {"ph": 7.40, "pco2": 40, **case}
+            result = validate_csv_row(row, 0)
+            
+            assert result.normalized_values.get("na") == case["na"], \
+                f"Na değişti! {case['na']} -> {result.normalized_values.get('na')}"
+            assert result.normalized_values.get("cl") == case["cl"], \
+                f"Cl değişti! {case['cl']} -> {result.normalized_values.get('cl')}"
 
 
 # =============================================================================
