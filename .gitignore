@@ -1,10 +1,13 @@
 __pycache__/
 *.pyc
 
-# Virtual env
+# Virtual environments
 .venv/
 venv/
 
-# Local tool config
+# Local tool configs
 .claude/
 .env
+
+# Archives
+*.zip
