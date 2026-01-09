@@ -810,15 +810,23 @@ def analyze_mechanisms(
     residual_effect: Optional[float],
     sig: Optional[float],
     pco2: float,
-    compensation_status: str
+    compensation_status: str,
+    ph: float = 7.4,
+    anion_gap_corrected: Optional[float] = None
 ) -> MechanismAnalysis:
     """
     Contribution-based mechanism analysis.
     Determines dominant mechanism based on absolute mEq/L contribution, not presence.
+
+    KRİTİK: SIG SADECE şu koşullarda yorumlanır:
+    - BE ≤ -3 VEYA AG (albümine düzeltilmiş) ↑
+    - Laktat normal veya açıklayıcı değil
+    - Primer bozukluk metabolik asidoz
     """
 
     mechanisms: List[Dict[str, Any]] = []
 
+    # SID etkisi
     if abs(sid_effect) > CLINICAL_SIGNIFICANCE_THRESHOLD:
         direction = "acidosis" if sid_effect < 0 else "alkalosis"
         mechanisms.append({
@@ -829,6 +837,7 @@ def analyze_mechanisms(
             "direction": direction,
         })
 
+    # Laktat etkisi
     if lactate_effect is not None and abs(lactate_effect) > 0.5:
         mechanisms.append({
             "identifier": "lactate",
@@ -838,6 +847,7 @@ def analyze_mechanisms(
             "direction": "acidosis",
         })
 
+    # Albümin etkisi
     if albumin_effect is not None and abs(albumin_effect) > CLINICAL_SIGNIFICANCE_THRESHOLD:
         direction = "alkalosis" if albumin_effect > 0 else "acidosis"
         mechanisms.append({
@@ -848,7 +858,20 @@ def analyze_mechanisms(
             "direction": direction,
         })
 
+    # ÖLÇÜLMEMİŞ ANYON/KATYON - KOŞULLU YORUMLAMA
+    # SIG yorumlaması için kritik kontroller:
+    should_interpret_sig = False
     if residual_effect is not None and abs(residual_effect) > CLINICAL_SIGNIFICANCE_THRESHOLD:
+        # Koşul 1: BE ≤ -3 (metabolik asidoz mevcut)
+        # Koşul 2: Laktat normal veya yüksek değilse
+        # Koşul 3: Primer bozukluk metabolik asidoz (be < -2 ile proxy)
+        is_metabolic_acidosis = be <= -3
+        lactate_not_dominant = lactate_effect is None or abs(lactate_effect) < 2.0
+
+        if is_metabolic_acidosis and lactate_not_dominant:
+            should_interpret_sig = True
+
+    if should_interpret_sig:
         direction = "acidosis" if residual_effect < 0 else "alkalosis"
         mechanisms.append({
             "identifier": "unmeasured",
@@ -867,9 +890,10 @@ def analyze_mechanisms(
         [],
     )
 
+    # Pattern tanımlaması - sadece anlamlı durumlarda
     pattern = ""
     if dominance_result.dominant:
-        if dominance_result.dominant.identifier == "unmeasured":
+        if dominance_result.dominant.identifier == "unmeasured" and should_interpret_sig:
             pattern = (
                 "Patern: ölçülmemiş anyon birikimi ile uyumlu (örn. keton birikimi, toksik metabolitler, organik asitler)."
             )
@@ -881,10 +905,11 @@ def analyze_mechanisms(
     if "masking_present" in dominance_result.pattern_flags:
         pattern = f"{pattern} Karşıt yönlü metabolik etkiler birbirini kısmen maskeleyebilir.".strip()
 
+    # Respiratuvar durum değerlendirmesi
     resp_status = ""
     if pco2 > PCO2_NORMAL_HIGH:
         if "kompanzasyon" in compensation_status.lower() and "uygun" in compensation_status.lower():
-            resp_status = "Solunumsal kompanzasyon (yetersiz veya ek respiratuvar asidoz)"
+            resp_status = "Uygun solunumsal kompanzasyon"
         else:
             resp_status = "Respiratuvar asidoz bileşeni mevcut"
     elif pco2 < PCO2_NORMAL_LOW:
@@ -911,42 +936,82 @@ def generate_headline(
     mechanism_analysis: MechanismAnalysis,
     ph: float,
     pco2: float,
-    be: float
+    be: float,
+    dominant_disorder: str = ""
 ) -> Headline:
     """
     Generate mechanism-based headline (non-diagnostic).
+
+    KRİTİK: Primer respiratuvar bozuklukları düzgün raporla.
     Uses contribution percentages, not presence-based detection.
     """
-    
+
     dominant_str = ""
     significant_list = []
     contributing_list = []
-    
-    # Check if there's any metabolic disorder
-    if abs(be) < CLINICAL_SIGNIFICANCE_THRESHOLD:
+
+    # ÖNCE PRİMER RESPİRATUVAR BOZUKLUKLARı KONTROL ET
+    is_acidemia = ph < PH_NORMAL_LOW
+    is_alkalemia = ph > PH_NORMAL_HIGH
+    is_resp_acidosis = pco2 > PCO2_NORMAL_HIGH
+    is_resp_alkalosis = pco2 < PCO2_NORMAL_LOW
+    is_be_normal = abs(be) <= CLINICAL_SIGNIFICANCE_THRESHOLD
+
+    # Primer respiratuvar bozukluk kontrolü
+    if (is_acidemia and is_resp_acidosis and is_be_normal) or \
+       (is_acidemia and is_resp_acidosis and be < 3):
+        dominant_str = "Primer Respiratuvar Asidoz"
+        # Metabolik mekanizmalar varsa ikincil olarak ekle
+        if mechanism_analysis.dominant_mechanism:
+            significant_list.append(f"Sekonder: {mechanism_analysis.dominant_mechanism.description}")
+        return Headline(
+            dominant_mechanism=dominant_str,
+            significant_mechanisms=significant_list,
+            contributing_mechanisms=contributing_list,
+            respiratory_status="Primer respiratuvar asidoz mevcut",
+            pattern_note=""
+        )
+
+    if (is_alkalemia and is_resp_alkalosis and is_be_normal) or \
+       (is_alkalemia and is_resp_alkalosis and be > -3):
+        dominant_str = "Primer Respiratuvar Alkaloz"
+        if mechanism_analysis.dominant_mechanism:
+            significant_list.append(f"Sekonder: {mechanism_analysis.dominant_mechanism.description}")
+        return Headline(
+            dominant_mechanism=dominant_str,
+            significant_mechanisms=significant_list,
+            contributing_mechanisms=contributing_list,
+            respiratory_status="Primer respiratuvar alkaloz mevcut",
+            pattern_note=""
+        )
+
+    # METABOLİK BOZUKLUKLARı RAPORLA (respiratuvar primer değilse)
+    if abs(be) < CLINICAL_SIGNIFICANCE_THRESHOLD and not (is_resp_acidosis or is_resp_alkalosis):
         dominant_str = "Normal asit-baz dengesi"
     elif mechanism_analysis.dominant_mechanism:
         dm = mechanism_analysis.dominant_mechanism
-        # Format: "Mechanism (XX% katkı, Y.Y mEq/L)"
+        # Format: "Mechanism (XX% katkı)"
         dominant_str = f"{dm.description} ({dm.contribution_percent:.0f}% katkı)"
     else:
-        if be < 0:
+        if be < -CLINICAL_SIGNIFICANCE_THRESHOLD:
             dominant_str = "Metabolik asidoz (mekanizma belirlenemedi)"
-        else:
+        elif be > CLINICAL_SIGNIFICANCE_THRESHOLD:
             dominant_str = "Metabolik alkaloz (mekanizma belirlenemedi)"
-    
+        else:
+            dominant_str = "Normal metabolik durum"
+
     # Significant mechanisms
     for sm in mechanism_analysis.significant_mechanisms:
         significant_list.append(f"{sm.description} ({sm.contribution_percent:.0f}%)")
-    
+
     # Contributing mechanisms
     for cm in mechanism_analysis.contributing_mechanisms:
         if cm.contribution_percent >= 10:  # Only show >10%
             contributing_list.append(f"{cm.name} ({cm.contribution_percent:.0f}%)")
-    
+
     # Pattern note
     pattern_note = mechanism_analysis.pattern_description
-    
+
     return Headline(
         dominant_mechanism=dominant_str,
         significant_mechanisms=significant_list,
@@ -1012,42 +1077,71 @@ def generate_cds_notes(
     sid_simple: float, sid_effect: float,
     sig: Optional[float], albumin_gl: Optional[float],
     lactate: Optional[float], ph: float, be: float,
-    hco3: float, na: float, cl: float
+    hco3: float, na: float, cl: float,
+    pco2: float = 40.0
 ) -> List[CDSNote]:
-    """Klinik karar destek notları oluştur"""
-    
+    """
+    Klinik karar destek notları oluştur
+
+    KRİTİK: SIG SADECE metabolik asidoz bağlamında yorumlanır.
+    """
+
     notes = []
     cl_na_ratio = cl / na if na > 0 else 0
+
+    # Primer bozukluk kontrolü
+    is_acidemia = ph < PH_NORMAL_LOW
+    is_alkalemia = ph > PH_NORMAL_HIGH
+    is_resp_acidosis = pco2 > PCO2_NORMAL_HIGH
+    is_resp_alkalosis = pco2 < PCO2_NORMAL_LOW
+    is_be_normal = abs(be) <= CLINICAL_SIGNIFICANCE_THRESHOLD
+    is_met_acidosis = be <= -3
+
+    # Primer respiratuvar bozukluk varsa, SIG yorumlama!
+    is_primary_respiratory = (is_acidemia and is_resp_acidosis and is_be_normal) or \
+                             (is_alkalemia and is_resp_alkalosis and is_be_normal)
     
-    # A Kategorisi: Fizikokimyasal zorunluluklar
-    
-    # SID düşük
-    if sid_simple < SID_LOW_THRESHOLD:
+    # === A KATEGORİSİ: FİZİKOKİMYASAL ZORUNLULUKLAR ===
+
+    # SID düşük - sadece metabolik bozuklukta önemli
+    if sid_simple < SID_LOW_THRESHOLD and not is_primary_respiratory:
         cds = CDS_NOTES["sid_low"]
         notes.append(CDSNote("A", cds["condition"], cds["note"], [], cds["refs"]))
-    
+
     # SID yüksek
-    if sid_simple > SID_HIGH_THRESHOLD:
+    if sid_simple > SID_HIGH_THRESHOLD and not is_primary_respiratory:
         cds = CDS_NOTES["sid_high"]
         notes.append(CDSNote("A", cds["condition"], cds["note"], [], cds["refs"]))
-    
-    # SIG pozitif
+
+    # SIG pozitif - KOŞULLU YORUMLAMA
+    # SADECE metabolik asidoz bağlamında yorumla
     if sig is not None and sig > SIG_HIGH:
-        cds = CDS_NOTES["sig_positive"]
-        notes.append(CDSNote("A", cds["condition"], cds["note"], [], cds["refs"]))
-    
+        lactate_normal = lactate is None or lactate <= LACTATE_THRESHOLD
+        if is_met_acidosis and lactate_normal and not is_primary_respiratory:
+            cds = CDS_NOTES["sig_positive"]
+            notes.append(CDSNote("A", cds["condition"], cds["note"], [], cds["refs"]))
+        elif not is_met_acidosis and not is_primary_respiratory:
+            # Hafif SIG artışı ama metabolik asidoz yok - nötr bilgi
+            notes.append(CDSNote(
+                "A",
+                "SIG hafif yüksek ama metabolik asidoz yok",
+                "SIG hesaplandı ancak bu klinik bağlamda baskın bir asidoz mekanizması göstermemektedir.",
+                [],
+                []
+            ))
+
     # SIG negatif
     if sig is not None and sig < SIG_LOW:
         cds = CDS_NOTES["sig_negative"]
         notes.append(CDSNote("A", cds["condition"], cds["note"], [], cds["refs"]))
-    
-    # Albümin düşük
-    if albumin_gl is not None and albumin_gl < ALBUMIN_LOW_GL:
+
+    # Albümin düşük - sadece metabolik bozuklukta önemli
+    if albumin_gl is not None and albumin_gl < ALBUMIN_LOW_GL and not is_primary_respiratory:
         cds = CDS_NOTES["albumin_low"]
         notes.append(CDSNote("A", cds["condition"], cds["note"], [], cds["refs"]))
-    
-    # Cl/Na yüksek
-    if cl_na_ratio > CL_NA_RATIO_THRESHOLD:
+
+    # Cl/Na yüksek - sadece metabolik bozuklukta önemli
+    if cl_na_ratio > CL_NA_RATIO_THRESHOLD and not is_primary_respiratory:
         cds = CDS_NOTES["cl_na_high"]
         notes.append(CDSNote("A", cds["condition"], cds["note"], [], cds["refs"]))
     
@@ -1055,37 +1149,43 @@ def generate_cds_notes(
     
     # Normal pH + düşük SID
     if PH_NORMAL_LOW <= ph <= PH_NORMAL_HIGH and sid_effect < -CLINICAL_SIGNIFICANCE_THRESHOLD:
-        cds = CDS_NOTES["normal_ph_low_sid"]
-        notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
-    
+        if not is_primary_respiratory:
+            cds = CDS_NOTES["normal_ph_low_sid"]
+            notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
+
     # Normal BE + düşük SID
     if -2 <= be <= 2 and sid_effect < -CLINICAL_SIGNIFICANCE_THRESHOLD:
-        cds = CDS_NOTES["normal_be_low_sid"]
-        notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
-    
+        if not is_primary_respiratory:
+            cds = CDS_NOTES["normal_be_low_sid"]
+            notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
+
     # Albümin düşük + laktat yüksek
     if albumin_gl is not None and albumin_gl < ALBUMIN_LOW_GL:
         if lactate is not None and lactate > LACTATE_THRESHOLD:
-            cds = CDS_NOTES["albumin_low_lactate_high"]
-            notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
+            if not is_primary_respiratory:
+                cds = CDS_NOTES["albumin_low_lactate_high"]
+                notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
     
     # C Kategorisi: Patern â†’ Mekanizma
     
-    # Hiperkloremik patern
+    # Hiperkloremik patern - sadece metabolik asidozda
     if sid_effect < -CLINICAL_SIGNIFICANCE_THRESHOLD and cl > 105:
-        cds = CDS_NOTES["pattern_hyperchloremic"]
-        notes.append(CDSNote("C", cds["condition"], cds["note"], cds.get("mechanisms", []), cds["refs"]))
-    
-    # Ölçülmemiş anyon paternı
+        if is_met_acidosis and not is_primary_respiratory:
+            cds = CDS_NOTES["pattern_hyperchloremic"]
+            notes.append(CDSNote("C", cds["condition"], cds["note"], cds.get("mechanisms", []), cds["refs"]))
+
+    # Ölçülmemiş anyon paternı - KOŞULLU
     if lactate is not None and lactate <= LACTATE_THRESHOLD and sig is not None and sig > SIG_HIGH:
-        cds = CDS_NOTES["pattern_unmeasured_anion"]
-        notes.append(CDSNote("C", cds["condition"], cds["note"], cds.get("mechanisms", []), cds["refs"]))
+        if is_met_acidosis and not is_primary_respiratory:
+            cds = CDS_NOTES["pattern_unmeasured_anion"]
+            notes.append(CDSNote("C", cds["condition"], cds["note"], cds.get("mechanisms", []), cds["refs"]))
     
     # Maskelenmiş karışık patern
     if albumin_gl is not None and albumin_gl < ALBUMIN_LOW_GL:
         if PH_NORMAL_LOW <= ph <= PH_NORMAL_HIGH and lactate is not None and lactate > LACTATE_THRESHOLD:
-            cds = CDS_NOTES["pattern_masked_mixed"]
-            notes.append(CDSNote("C", cds["condition"], cds["note"], cds.get("mechanisms", []), cds["refs"]))
+            if not is_primary_respiratory:
+                cds = CDS_NOTES["pattern_masked_mixed"]
+                notes.append(CDSNote("C", cds["condition"], cds["note"], cds.get("mechanisms", []), cds["refs"]))
     
     return notes
 
@@ -1097,19 +1197,118 @@ def determine_dominant_disorder(
     albumin_effect: Optional[float], lactate: Optional[float],
     residual_effect: Optional[float], sig: Optional[float]
 ) -> Tuple[str, List[str]]:
-    
+    """
+    ZORUNLU KARAR SIRASI:
+    1. pH → asidemi / alkalemi / normal
+    2. Primer bozukluk tayini:
+       - pH + pCO₂ uyumu → primer respiratuvar
+       - pH + HCO₃⁻/BE uyumu → primer metabolik
+       - Uyum yoksa → mikst bozukluk
+
+    Respiratuvar bozukluklar metaboliklerden daha az önemli DEĞİLDİR.
+    """
+
     components = []
     is_acidemia = ph < PH_NORMAL_LOW
     is_alkalemia = ph > PH_NORMAL_HIGH
+    is_ph_normal = PH_NORMAL_LOW <= ph <= PH_NORMAL_HIGH
+
     is_resp_acidosis = pco2 > PCO2_NORMAL_HIGH
     is_resp_alkalosis = pco2 < PCO2_NORMAL_LOW
+    is_pco2_normal = PCO2_NORMAL_LOW <= pco2 <= PCO2_NORMAL_HIGH
+
+    is_met_acidosis = be < -CLINICAL_SIGNIFICANCE_THRESHOLD
+    is_met_alkalosis = be > CLINICAL_SIGNIFICANCE_THRESHOLD
+    is_be_normal = abs(be) <= CLINICAL_SIGNIFICANCE_THRESHOLD
+
+    # Metabolik bileşenler (detay için)
     has_sid_acidosis = sid_effect < -CLINICAL_SIGNIFICANCE_THRESHOLD
     has_sid_alkalosis = sid_effect > CLINICAL_SIGNIFICANCE_THRESHOLD
     has_alb_alkalosis = albumin_effect is not None and albumin_effect > CLINICAL_SIGNIFICANCE_THRESHOLD
     has_lactic_acidosis = lactate is not None and lactate > LACTATE_THRESHOLD
     has_unmeasured = (residual_effect is not None and residual_effect < -CLINICAL_SIGNIFICANCE_THRESHOLD) or \
                      (sig is not None and sig > SIG_THRESHOLD)
-    
+
+    # === KARAR SIRASI (DEĞİŞTİRİLEMEZ) ===
+
+    # 1. PRİMER RESPİRATUVAR BOZUKLUKLARı ÖNCE KONTROL ET
+
+    # Primer Respiratuvar Asidoz: pH↓ + pCO2↑ + BE normal/hafif↑
+    if is_acidemia and is_resp_acidosis and is_be_normal:
+        components.append("respiratory_acidosis")
+        # Eğer BE de hafif anormal ise sekonder metabolik var
+        if is_met_acidosis:
+            components.append("hyperchloremic_acidosis")  # veya başka metabolik
+        return "respiratory_acidosis", components
+
+    # Primer Respiratuvar Alkaloz: pH↑ + pCO2↓ + BE normal/hafif↓
+    if is_alkalemia and is_resp_alkalosis and is_be_normal:
+        components.append("respiratory_alkalosis")
+        if is_met_alkalosis:
+            components.append("hypochloremic_alkalosis")
+        return "respiratory_alkalosis", components
+
+    # Akut Respiratuvar Alkaloz (BE çok hafif, -2.5 ile +2.5 arası, dışında metabolik başlar)
+    if is_alkalemia and is_resp_alkalosis and -2.5 < be < 2.5:
+        components.append("respiratory_alkalosis")
+        return "respiratory_alkalosis", components
+
+    # Akut Respiratuvar Asidoz (BE çok hafif, -2.5 ile +2.5 arası, dışında metabolik başlar)
+    if is_acidemia and is_resp_acidosis and -2.5 < be < 2.5:
+        components.append("respiratory_acidosis")
+        return "respiratory_acidosis", components
+
+    # 2. PRİMER METABOLİK BOZUKLUKLARı KONTROL ET
+
+    # Primer Metabolik Asidoz: pH↓ + BE↓ (respiratuvar kompanzasyon olabilir)
+    if is_acidemia and is_met_acidosis:
+        if has_sid_acidosis: components.append("hyperchloremic_acidosis")
+        if has_lactic_acidosis: components.append("lactic_acidosis")
+        if has_unmeasured: components.append("hagma")
+        if has_alb_alkalosis: components.append("hypoalbuminemic_alkalosis")  # maskeleme
+
+        # Respiratuvar bileşen var mı?
+        if is_resp_acidosis:
+            components.append("respiratory_acidosis")
+            return "mixed_disorder", components
+        elif is_resp_alkalosis:
+            # Bu uygun kompanzasyon olabilir, mikst değil
+            pass
+
+        if components:
+            return components[0], components  # dominant metabolik mekanizma
+        return "metabolic_acidosis", ["metabolic_acidosis"]
+
+    # Primer Metabolik Alkaloz: pH↑ + BE↑
+    if is_alkalemia and is_met_alkalosis:
+        if has_sid_alkalosis: components.append("hypochloremic_alkalosis")
+        if has_alb_alkalosis: components.append("hypoalbuminemic_alkalosis")
+
+        if is_resp_alkalosis:
+            components.append("respiratory_alkalosis")
+            return "mixed_disorder", components
+
+        if components:
+            return components[0], components
+        return "metabolic_alkalosis", ["metabolic_alkalosis"]
+
+    # 3. MİKST BOZUKLUKLAR
+
+    # pH normal ama hem respiratuvar hem metabolik anormal
+    if is_ph_normal and (is_resp_acidosis or is_resp_alkalosis) and (is_met_acidosis or is_met_alkalosis):
+        if is_resp_acidosis: components.append("respiratory_acidosis")
+        if is_resp_alkalosis: components.append("respiratory_alkalosis")
+        if has_sid_acidosis: components.append("hyperchloremic_acidosis")
+        if has_sid_alkalosis: components.append("hypochloremic_alkalosis")
+        if has_lactic_acidosis: components.append("lactic_acidosis")
+        if has_unmeasured: components.append("hagma")
+        return "mixed_disorder", components
+
+    # 4. NORMAL veya BELİRSİZ
+    if is_ph_normal and is_be_normal and is_pco2_normal:
+        return "normal", []
+
+    # Belirsiz durumlar için fallback
     if is_resp_acidosis: components.append("respiratory_acidosis")
     if is_resp_alkalosis: components.append("respiratory_alkalosis")
     if has_sid_acidosis: components.append("hyperchloremic_acidosis")
@@ -1117,7 +1316,7 @@ def determine_dominant_disorder(
     if has_alb_alkalosis: components.append("hypoalbuminemic_alkalosis")
     if has_lactic_acidosis: components.append("lactic_acidosis")
     if has_unmeasured: components.append("hagma")
-    
+
     if len(components) == 0: return "normal", []
     elif len(components) == 1: return components[0], components
     elif len(components) == 2: return "mixed_disorder", components
@@ -1316,8 +1515,9 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     
     # Mechanism Analysis (contribution-based)
     mechanism_analysis = analyze_mechanisms(
-        be_used, sid_effect, albumin_effect, lactate_effect, 
-        residual_effect, sig, inp.pco2, comp_status)
+        be_used, sid_effect, albumin_effect, lactate_effect,
+        residual_effect, sig, inp.pco2, comp_status,
+        ph=inp.ph, anion_gap_corrected=ag_corrected)
     
     # === LOGGING: Mekanizma analizi sonucu ===
     log_mechanism_result(
@@ -1336,7 +1536,7 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     # CDS Notes
     cds_notes = generate_cds_notes(
         sid_values.sid_simple, sid_effect, sig, inp.albumin_gl, inp.lactate,
-        inp.ph, be_used, hco3_used, inp.na, inp.cl)
+        inp.ph, be_used, hco3_used, inp.na, inp.cl, pco2=inp.pco2)
     
     # Yorumlar
     interpretations = []
