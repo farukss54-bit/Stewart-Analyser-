@@ -593,13 +593,19 @@ def render_landing():
         st.markdown(UI_TEXTS.get("landing", ""))
 
 
-def render_footer(references: Dict[str, str]):
-    """Render footer with references and disclaimer"""
+def render_footer(references: Dict[str, str], acknowledgments: Dict[str, str] = None):
+    """Render footer with references, acknowledgments and disclaimer"""
     st.divider()
     with st.expander("📚 Referanslar"):
         for key, ref in references.items():
             st.caption(f"• {ref}")
-    
+
+    if acknowledgments:
+        st.divider()
+        st.markdown("### 🙏 Teşekkürler")
+        for category, acknowledgment in acknowledgments.items():
+            st.caption(f"• {acknowledgment}")
+
     st.caption("📖 *Bu parametreler fizyolojik mekanizmaları tanımlar; tanı veya tedavi önerisi değildir.*")
-    st.caption(f"🔬 **v3.3** | Single Arrow UI Fix, Severity-Based Coloring")
+    st.caption(f"🔬 **v3.5** | Sprint 4: PDF Vaka Entegrasyonu + Siggaard-Andersen BE")
     st.caption(UI_TEXTS.get("disclaimer", ""))

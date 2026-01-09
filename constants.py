@@ -642,48 +642,87 @@ SAMPLE_CASES = {
     },
     "akoglu_triple": {
         "name": "Triple Bozukluk (Akoğlu Vaka 1)",
-        "description": "pH 7.48 ama 5 ayrı asit-baz bozukluğu - klasik yaklaşım yetersiz kalır",
+        "description": "75 yaş, diüretik kullanan KOAH hastası, kusma şikayeti",
         "values": {
-            "ph": 7.48, "pco2": 60.0, "na": 132.0, "cl": 76.0,
-            "lactate": 1.9, "albumin_gl": 18.0
+            "ph": 7.48, "pco2": 60.2, "na": 132.0, "cl": 76.0,
+            "k": 3.8, "lactate": 1.9, "albumin_gl": 18.0, "be": 7.6
         },
-        "teaching_point": "Stewart'ın gücü: pH alkalotik ama altında 5 ayrı mekanizma! 1) Respiratuvar asidoz (pCO2↑), 2) Metabolik alkaloz (SID↑, Cl↓), 3) Hipoalbüminemi alkalozu, 4) Laktat yüksekliği, 5) Kompanzasyon yetersizliği. Klasik yaklaşım sadece 'metabolik alkaloz + respiratuvar kompanzasyon' der, gerçek kompleksliği kaçırır."
+        "teaching_point": "5 ayrı asit-baz bozukluğu: SID alkalozu (+18), Hipoalbüminemik alkaloz (+6), Gizli HAGMA (SIG -14.5), Kompanzatuar resp asidoz (+5), Primer resp asidoz (+15). Klasik yaklaşım sadece 'metabolik alkaloz + resp asidoz' der.",
+        "classic_interpretation": "Metabolik alkaloz + respiratuvar asidoz (kompanzasyon). HCO3 yüksek, pCO2 yüksek, pH alkalotik.",
+        "stewart_findings": [
+            "SID alkalozu: +18 mEq/L (Cl çok düşük, kusma + diüretik etkisi)",
+            "Hipoalbüminemik alkaloz: +6 mEq/L (Albümin 1.8 g/dL)",
+            "Gizli HAGMA: SIG -14.5 (laktat normal ama başka ölçülmemiş anyonlar var)",
+            "Primer respiratuvar asidoz: pCO2 60.2 (KOAH)",
+            "Kompanzatuar respiratuvar bileşen: +5 mEq/L"
+        ]
     },
     "akoglu_nagma_lactic": {
-        "name": "NAGMA + Laktik Asidoz (Akoğlu Vaka 2)",
-        "description": "pH 7.07 - ciddi hipoalbüminemi gerçek asidozu maskeler",
+        "name": "NAGMA + Çoklu Bozukluk (Akoğlu Vaka 2)",
+        "description": "65 yaş, sepsis, uzun YBÜ yatışı",
         "values": {
             "ph": 7.07, "pco2": 50.0, "na": 135.0, "cl": 113.0,
-            "lactate": 3.3, "albumin_gl": 8.0
+            "k": 5.2, "lactate": 3.3, "albumin_gl": 8.0, "be": -14.0
         },
-        "teaching_point": "Stewart'ın maskeleme tespiti: Ciddi hipoalbüminemi (8 g/L) alkaloz yönünde güçlü etki. Gerçek asidoz çok daha şiddetli! SID düşük (NAGMA) + laktat yüksek + respiratuvar asidoz da var (pCO2 50, yetersiz kompanzasyon). Klasik AG hesabı hipoalbüminemi nedeniyle düşük çıkar, HAGMA'yı kaçırır. Stewart düzeltilmiş SIG ile gerçek ölçülmemiş anyon yükünü gösterir."
+        "teaching_point": "SID asidozu (-16 NAGMA), Laktik asidoz (-3.3), Hipoalbüminemik alkaloz (+8.5), Gizli alkaloz (+3.2), Primer resp asidoz (+20). Klasik AG=8 normal görünür ama Stewart 4 ayrı metabolik bozukluk ortaya çıkarır.",
+        "classic_interpretation": "NAGMA (normal anyon gap metabolik asidoz). AG=8 normal, laktat hafif yüksek. Yetersiz respiratuvar kompanzasyon.",
+        "stewart_findings": [
+            "SID asidozu: -16 mEq/L (NAGMA, hiperkloremik patern)",
+            "Laktik asidoz: -3.3 mEq/L",
+            "Hipoalbüminemik alkaloz: +8.5 mEq/L (Albümin 0.8 g/dL - çok düşük!)",
+            "Gizli metabolik alkaloz: +3.2 mEq/L",
+            "Primer respiratuvar asidoz: pCO2 50 (yetersiz kompanzasyon)"
+        ]
     },
     "akoglu_nagma_hidden_alk": {
         "name": "NAGMA + Gizli Alkaloz (Akoğlu Vaka 3)",
-        "description": "pH 7.30 - hiperkloremik asidoz, ama SID analizi gizli alkalozu ortaya çıkarır",
+        "description": "45 yaş, diyare, dehidratasyon",
         "values": {
             "ph": 7.30, "pco2": 30.0, "na": 140.0, "cl": 115.0,
-            "lactate": 1.3, "albumin_gl": 45.0
+            "k": 3.5, "lactate": 1.3, "albumin_gl": 45.0, "be": -10.0
         },
-        "teaching_point": "Stewart'ın 'gizli bozukluk' tespiti: Klasik yaklaşım sadece NAGMA (hiperkloremik asidoz) görür. Ancak Stewart SID analiziyle gizli bir alkaloz mekanizmasının varlığını ortaya çıkarır - muhtemelen geçirilmiş kusma veya diüretik kullanımı. pH 7.30 olmasının sebebi NAGMA ile gizli alkalozun karşıt etkisi. Tek başına NAGMA olsaydı pH çok daha düşük olurdu."
+        "teaching_point": "SID asidozu (-13 NAGMA), Hafif hiperalbüminemik asidoz (-0.75), Gizli metabolik alkaloz (+5). Klasik yaklaşım sadece 'NAGMA' der, gizli alkalozu kaçırır.",
+        "classic_interpretation": "NAGMA (hiperkloremik metabolik asidoz). Uygun respiratuvar kompanzasyon. Diyareye bağlı bikarbonat kaybı.",
+        "stewart_findings": [
+            "SID asidozu: -13 mEq/L (NAGMA, Cl/Na=0.82 yüksek)",
+            "Hafif hiperalbüminemik asidoz: -0.75 mEq/L (Albümin 4.5 g/dL)",
+            "Gizli metabolik alkaloz: +5 mEq/L (geçirilmiş kusma veya diüretik?)",
+            "Uygun respiratuvar kompanzasyon: pCO2 30 (Winters formülü ile uyumlu)"
+        ]
     },
     "akoglu_hagma_nagma": {
-        "name": "HAGMA + NAGMA Birlikteliği (Akoğlu Vaka 4)",
-        "description": "pH 7.05 - karma asidoz, her iki tip birden",
+        "name": "HAGMA + NAGMA Kombinasyonu (Akoğlu Vaka 4)",
+        "description": "28 yaş, DKA + ishal",
         "values": {
             "ph": 7.05, "pco2": 14.0, "na": 122.0, "cl": 88.0,
-            "lactate": 0.5, "albumin_gl": 55.0
+            "k": 5.8, "lactate": 0.5, "albumin_gl": 55.0, "be": -18.0
         },
-        "teaching_point": "Stewart'ın karma bozukluk ayrıştırması: Klasik AG yüksek ama laktat normal - demek ki başka ölçülmemiş anyonlar var (keton, üremik toksinler vb). Aynı zamanda Cl/Na oranı bozuk değil ama SID analizi ile NAGMA bileşeni de tespit edilir. Stewart her iki mekanizmanın ayrı ayrı katkısını gösterir. Not: Ciddi hiponatremi (122) ve yüksek albümin (55) - konsantrasyon sorunları olabilir."
+        "teaching_point": "SID asidozu (-4 NAGMA), Hiperalbüminemik asidoz (-2.5), Gizli HAGMA (-11). Delta-delta=22 HAGMA+NAGMA'yı doğrular. Stewart mekanizmaları net ayırır.",
+        "classic_interpretation": "HAGMA (yüksek anyon gap metabolik asidoz). Delta-delta >2 → karma HAGMA+NAGMA. Ketoasidoz + ishal kombinasyonu.",
+        "stewart_findings": [
+            "SID asidozu: -4 mEq/L (NAGMA bileşeni, ishal)",
+            "Hiperalbüminemik asidoz: -2.5 mEq/L (Albümin 5.5 g/dL - yüksek)",
+            "Gizli HAGMA: -11 mEq/L (keton anyonları, laktat normal)",
+            "Ciddi hiponatremi: Na 122 (konsantrasyon bozukluğu)",
+            "Uygun respiratuvar kompanzasyon: pCO2 14 (aşırı hiperventilasyon)"
+        ]
     },
     "akoglu_pure_nagma": {
         "name": "Saf NAGMA (Akoğlu Vaka 5)",
-        "description": "pH 7.05 - normal anyon gap asidozu, Stewart'la mekanizma netleşir",
+        "description": "55 yaş, RTA veya diyare",
         "values": {
             "ph": 7.05, "pco2": 22.0, "na": 132.0, "cl": 112.0,
-            "lactate": 0.5, "albumin_gl": 32.0
+            "k": 4.0, "lactate": 0.5, "albumin_gl": 32.0, "be": -18.0
         },
-        "teaching_point": "Stewart'ın NAGMA mekanizma açıklaması: Klasik yaklaşım 'normal AG asidoz, böbrek veya ishal' der, mekanizma belirsiz kalır. Stewart SID düşüklüğünü (hiperkloremi veya hiponatremi) açıkça gösterir. Bu vakada Cl/Na = 112/132 = 0.85 yüksek (normal ~0.73), demek ki görece hiperkloremi var. SIG normal, yani ölçülmemiş anyon yok. Saf güçlü iyon dengesizliği. Hipoalbüminemi (32) kısmen maskeler - düzeltme yapınca asidoz daha belirgin."
+        "teaching_point": "Saf SID asidozu (-18 NAGMA), Hipoalbüminemik alkaloz (+2.5). Tam respiratuar kompanzasyon (Winters=23). Klasik ve Stewart aynı sonuca ulaşır ama Stewart mekanizmayı gösterir.",
+        "classic_interpretation": "Saf NAGMA (normal anyon gap metabolik asidoz). AG normal. RTA veya ishal. Uygun respiratuvar kompanzasyon (Winters formülü).",
+        "stewart_findings": [
+            "Saf SID asidozu: -18 mEq/L (NAGMA, Cl/Na=0.85 yüksek)",
+            "Hipoalbüminemik alkaloz: +2.5 mEq/L (Albümin 3.2 g/dL)",
+            "SIG normal: Ölçülmemiş anyon yok",
+            "Tam respiratuvar kompanzasyon: pCO2 22 (Winters=23 ±2)",
+            "Mekanizma: Saf güçlü iyon dengesizliği (RTA veya GIS bikarbonat kaybı)"
+        ]
     },
 }
 
@@ -760,6 +799,14 @@ REFERENCES = {
     "stewart_1983": "Stewart PA. Modern quantitative acid-base chemistry. Can J Physiol Pharmacol. 1983",
     "morgan_2019": "Morgan TJ. The Stewart approach. Clinica Chimica Acta. 2019",
     "story_2016": "Story DA. Stewart acid-base. Anaesthesia Intensive Care. 2016",
+    "akoglu_2024": "Akoğlu H. Olgularla Kan Gazı Sonuçlarının Değerlendirilmesi. Marmara Üniversitesi Acil Tıp AD. 2024",
+}
+
+# =============================================================================
+# 🙏 TEŞEKKÜRLER / ACKNOWLEDGMENTS
+# =============================================================================
+ACKNOWLEDGMENTS = {
+    "clinical_cases": "Doç. Dr. Haldun Akoğlu - Marmara Üniversitesi Acil Tıp AD (Klinik vakalar ve Stewart metodolojisi eğitim materyalleri için)"
 }
 
 # ============================================================
