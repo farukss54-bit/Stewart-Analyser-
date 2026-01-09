@@ -1,0 +1,13 @@
+# Stewart Asit-Baz Analizi v3.2 - Dependencies
+
+# Core
+streamlit>=1.28.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization
+plotly>=5.18.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
