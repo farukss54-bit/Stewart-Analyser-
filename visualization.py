@@ -208,13 +208,16 @@ def create_contribution_chart(
     fig.add_annotation(x=5, y=-0.5, text="🔵 Alkaloz", showarrow=False, font=dict(size=12))
     
     # Layout
+    max_val = max(abs(v) for v in values) if values else 0
     fig.update_layout(
         title="Mekanizma Katkıları (BE'ye göre)" if show_title else "",
         xaxis_title="mEq/L",
         yaxis_title="",
         height=300 + len(names) * 30,
         template="plotly_white",
-        showlegend=False
+        showlegend=False,
+        margin=dict(l=50, r=100, t=50, b=50),
+        xaxis=dict(range=[-max_val - 3, max_val + 3])
     )
     
     return fig

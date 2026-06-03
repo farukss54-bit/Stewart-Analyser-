@@ -86,6 +86,26 @@ mod = st.sidebar.radio(
     help="Hızlı: Fencl-derived residual\nGelişmiş: SIG = SIDa - SIDe"
 )
 
+# =============================================================================
+# SESSION STATE DEFAULTS
+# =============================================================================
+for prefix in ["quick", "adv"]:
+    st.session_state.setdefault(f"{prefix}_ph", 7.40)
+    st.session_state.setdefault(f"{prefix}_pco2", 40.0)
+    st.session_state.setdefault(f"{prefix}_na", 140.0)
+    st.session_state.setdefault(f"{prefix}_cl", 100.0)
+    st.session_state.setdefault(f"{prefix}_k", 4.0)
+    st.session_state.setdefault(f"{prefix}_lac", 1.0)
+    st.session_state.setdefault(f"{prefix}_ca", CA_NORMAL)
+    st.session_state.setdefault(f"{prefix}_mg", MG_NORMAL)
+    st.session_state.setdefault(f"{prefix}_alb", ALBUMIN_NORMAL_GL)
+    st.session_state.setdefault(f"{prefix}_alb_gdl", ALBUMIN_NORMAL_GDL)
+    st.session_state.setdefault(f"{prefix}_po4", PO4_NORMAL)
+    st.session_state.setdefault(f"{prefix}_alb_unit", "g/L")
+
+st.session_state.setdefault("quick_lac_var", False)
+st.session_state.setdefault("quick_alb_var", False)
+
 st.sidebar.divider()
 
 # === SAMPLE CASES ===
@@ -101,8 +121,40 @@ if selected_case != "-- Seçiniz --":
     st.sidebar.info(f"**{case['name']}**\n\n{case['description']}")
     st.sidebar.caption(f"💡 {case['teaching_point']}")
     if st.sidebar.button("🔄 Değerleri Yükle", use_container_width=True):
-        for key, val in case["values"].items():
-            st.session_state[f"case_{key}"] = val
+        values = case["values"]
+        # Temel parametreler (hem quick hem advanced)
+        for key in ["ph", "pco2", "na", "cl"]:
+            if key in values:
+                val = float(values[key])
+                st.session_state[f"quick_{key}"] = val
+                st.session_state[f"adv_{key}"] = val
+        if "k" in values:
+            val = float(values["k"])
+            st.session_state["quick_k"] = val
+            st.session_state["adv_k"] = val
+        if "lactate" in values:
+            val = float(values["lactate"])
+            st.session_state["quick_lac"] = val
+            st.session_state["adv_lac"] = val
+            st.session_state["quick_lac_var"] = True
+        else:
+            st.session_state["quick_lac_var"] = False
+        if "albumin_gl" in values:
+            alb = float(values["albumin_gl"])
+            st.session_state["quick_alb"] = alb
+            st.session_state["adv_alb"] = alb
+            st.session_state["quick_alb_var"] = True
+            if alb > 10:
+                st.session_state["quick_alb_unit"] = "g/L"
+                st.session_state["adv_alb_unit"] = "g/L"
+            else:
+                st.session_state["quick_alb_unit"] = "g/dL"
+                st.session_state["adv_alb_unit"] = "g/dL"
+        else:
+            st.session_state["quick_alb_var"] = False
+        if "be" in values:
+            st.session_state["quick_be_manual"] = float(values["be"])
+            st.session_state["adv_be_manual"] = float(values["be"])
         log_user_action("load_sample_case", {"case": selected_case})
         st.rerun()
 
@@ -368,31 +420,28 @@ elif mod == "Hızlı (Klinik)":
     
     with col1:
         st.subheader("Kan Gazı (Ölçülen)")
-        ph = st.number_input("pH", PH_MIN, PH_MAX, get_case_value("ph", 7.40), 0.01, key="quick_ph")
-        pco2 = st.number_input("pCO₂ (mmHg)", PCO2_MIN, PCO2_MAX, get_case_value("pco2", 40.0), 0.1, key="quick_pco2")
+        ph = st.number_input("pH", PH_MIN, PH_MAX, step=0.01, key="quick_ph")
+        pco2 = st.number_input("pCO₂ (mmHg)", PCO2_MIN, PCO2_MAX, step=0.1, key="quick_pco2")
         
         # Türetilmiş değerler bölümü
         hco3, be_input, is_bd, should_stop = render_derived_values_section(ph, pco2, "quick")
     
     with col2:
         st.subheader("Elektrolitler")
-        na = st.number_input("Na⁺ (mmol/L)", NA_MIN, NA_MAX, get_case_value("na", 140.0), 0.1, key="quick_na")
-        cl = st.number_input("Cl⁻ (mmol/L)", CL_MIN, CL_MAX, get_case_value("cl", 100.0), 0.1, key="quick_cl")
+        na = st.number_input("Na⁺ (mmol/L)", NA_MIN, NA_MAX, step=0.1, key="quick_na")
+        cl = st.number_input("Cl⁻ (mmol/L)", CL_MIN, CL_MAX, step=0.1, key="quick_cl")
         
-        lac_var = st.checkbox("Laktat var", get_case_value("lactate", None) is not None)
-        lactate = st.number_input("Laktat (mmol/L)", LACTATE_MIN, LACTATE_MAX, 
-                                 get_case_value("lactate", 1.0), 0.1, key="quick_lac") if lac_var else None
+        lac_var = st.checkbox("Laktat var", key="quick_lac_var")
+        lactate = st.number_input("Laktat (mmol/L)", LACTATE_MIN, LACTATE_MAX, step=0.1, key="quick_lac") if lac_var else None
         
-        alb_var = st.checkbox("Albümin var", get_case_value("albumin_gl", None) is not None)
+        alb_var = st.checkbox("Albümin var", key="quick_alb_var")
         if alb_var:
             alb_unit = st.selectbox("Birim", ["g/L", "g/dL"], key="quick_alb_unit")
             if alb_unit == "g/L":
-                alb = st.number_input("Albümin (g/L)", ALBUMIN_MIN_GL, ALBUMIN_MAX_GL, 
-                                     get_case_value("albumin_gl", ALBUMIN_NORMAL_GL), 0.1, key="quick_alb")
+                alb = st.number_input("Albümin (g/L)", ALBUMIN_MIN_GL, ALBUMIN_MAX_GL, step=0.1, key="quick_alb")
                 albumin_gl = alb
             else:
-                alb = st.number_input("Albümin (g/dL)", ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL, 
-                                     ALBUMIN_NORMAL_GDL, 0.1, key="quick_alb_gdl")
+                alb = st.number_input("Albümin (g/dL)", ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL, step=0.1, key="quick_alb_gdl")
                 albumin_gl = alb * 10
         else:
             albumin_gl = None
@@ -476,36 +525,33 @@ else:  # Gelişmiş mod
     
     with col1:
         st.subheader("Kan Gazı (Ölçülen)")
-        ph = st.number_input("pH", PH_MIN, PH_MAX, get_case_value("ph", 7.40), 0.01, key="adv_ph")
-        pco2 = st.number_input("pCO₂", PCO2_MIN, PCO2_MAX, get_case_value("pco2", 40.0), 0.1, key="adv_pco2")
+        ph = st.number_input("pH", PH_MIN, PH_MAX, step=0.01, key="adv_ph")
+        pco2 = st.number_input("pCO₂", PCO2_MIN, PCO2_MAX, step=0.1, key="adv_pco2")
         
         # Türetilmiş değerler bölümü
         hco3, be_input, is_bd, should_stop = render_derived_values_section(ph, pco2, "adv")
     
     with col2:
         st.subheader("Elektrolitler")
-        na = st.number_input("Na⁺", NA_MIN, NA_MAX, get_case_value("na", 140.0), 0.1, key="adv_na")
-        cl = st.number_input("Cl⁻", CL_MIN, CL_MAX, get_case_value("cl", 100.0), 0.1, key="adv_cl")
-        k = st.number_input("K⁺", K_MIN, K_MAX, get_case_value("k", 4.0), 0.1, key="adv_k")
-        lactate = st.number_input("Laktat", LACTATE_MIN, LACTATE_MAX, 
-                                  get_case_value("lactate", 1.0), 0.1, key="adv_lac")
+        na = st.number_input("Na⁺", NA_MIN, NA_MAX, step=0.1, key="adv_na")
+        cl = st.number_input("Cl⁻", CL_MIN, CL_MAX, step=0.1, key="adv_cl")
+        k = st.number_input("K⁺", K_MIN, K_MAX, step=0.1, key="adv_k")
+        lactate = st.number_input("Laktat", LACTATE_MIN, LACTATE_MAX, step=0.1, key="adv_lac")
     
     with col3:
         st.subheader("İleri Parametreler")
-        ca = st.number_input("Ca²⁺ (iyonize)", CA_MIN, CA_MAX, CA_NORMAL, 0.01, key="adv_ca",
+        ca = st.number_input("Ca²⁺ (iyonize)", CA_MIN, CA_MAX, step=0.01, key="adv_ca",
                             help="İyonize kalsiyum (mmol/L)")
-        mg = st.number_input("Mg²⁺", MG_MIN, MG_MAX, MG_NORMAL, 0.01, key="adv_mg")
+        mg = st.number_input("Mg²⁺", MG_MIN, MG_MAX, step=0.01, key="adv_mg")
         
         alb_unit = st.selectbox("Albümin birimi", ["g/L", "g/dL"], key="adv_alb_unit")
         if alb_unit == "g/L":
-            albumin_gl = st.number_input("Albümin", ALBUMIN_MIN_GL, ALBUMIN_MAX_GL,
-                                        get_case_value("albumin_gl", ALBUMIN_NORMAL_GL), 0.1, key="adv_alb")
+            albumin_gl = st.number_input("Albümin", ALBUMIN_MIN_GL, ALBUMIN_MAX_GL, step=0.1, key="adv_alb")
         else:
-            alb_gdl = st.number_input("Albümin", ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL,
-                                     ALBUMIN_NORMAL_GDL, 0.1, key="adv_alb_gdl")
+            alb_gdl = st.number_input("Albümin", ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL, step=0.1, key="adv_alb_gdl")
             albumin_gl = alb_gdl * 10
         
-        po4 = st.number_input("Fosfat", PO4_MIN, PO4_MAX, PO4_NORMAL, 0.1, key="adv_po4",
+        po4 = st.number_input("Fosfat", PO4_MIN, PO4_MAX, step=0.1, key="adv_po4",
                              help="mmol/L")
     
     # === ANALYZE BUTTON ===

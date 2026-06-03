@@ -1,0 +1,79 @@
+================================================================================
+BE FORMUL DOGRULAMA RAPORU
+================================================================================
+
+## 1. Kullanilan Formul
+BE = 0.9287 * (HCO3 - 24.4 + 14.83 * (pH - 7.4))
+Referans: core.py:298-310 (Siggaard-Andersen denklemi)
+
+Katsayilar (constants.py):
+  BE_COEFFICIENT      = 0.9287
+  BE_HCO3_NORMAL      = 24.4
+  BE_PH_COEFFICIENT   = 14.83
+  BE_PH_NORMAL        = 7.4
+  BE_HCO3_COEFFICIENT = 1.1 [DEPRECATED]
+
+## 2. Akoglu Vaka Karsilastirmasi (Cihaz BE vs Hesaplanan BE)
+---------------------------------------------------------------------------------------------------------
+Vaka                          pH    pCO2  HCO3_calc   BE_calc   BE_cihaz    Delta  >2.0?
+---------------------------------------------------------------------------------------------------------
+akoglu_triple               7.48    60.2       43.3      18.7        7.6     11.1   EVET
+akoglu_nagma_lactic         7.07    50.0       14.0     -14.2      -14.0      0.2  hayir
+akoglu_nagma_hidden_alk     7.30    30.0       14.3     -10.8      -10.0      0.8  hayir
+akoglu_hagma_nagma          7.05    14.0        3.7     -24.0      -18.0      6.0   EVET
+akoglu_pure_nagma           7.05    22.0        5.9     -22.0      -18.0      4.0   EVET
+---------------------------------------------------------------------------------------------------------
+
+## 3. Esigi Asan Vakalar (Delta > 2.0 mmol/L)
+  - akoglu_triple:
+      HCO3_hesap = 43.3, BE_hesap = 18.7, BE_cihaz = 7.6
+      Delta = 11.1 mmol/L
+  - akoglu_hagma_nagma:
+      HCO3_hesap = 3.7, BE_hesap = -24.0, BE_cihaz = -18.0
+      Delta = 6.0 mmol/L
+  - akoglu_pure_nagma:
+      HCO3_hesap = 5.9, BE_hesap = -22.0, BE_cihaz = -18.0
+      Delta = 4.0 mmol/L
+
+## 4. Literatur Referans Ucluleri
+-------------------------------------------------------------------------------------
+Kaynak                             pH    HCO3    BE_lit   BE_calc    Delta
+-------------------------------------------------------------------------------------
+Normal arter (HH)                7.40    24.0       0.0      -0.4      0.4
+Asidemi ornegi (SA)              7.20    18.0     -10.0      -8.7      1.3
+Alkalemi ornegi (SA)             7.50    30.0       6.0       6.6      0.6
+Siddetli asidemi                 7.00    12.0     -20.0     -17.0      3.0
+Siddetli alkalemi                7.60    36.0      10.0      13.5      3.5
+-------------------------------------------------------------------------------------
+
+## 5. Standart Formul Karsilastirmasi
+Mevcut formul (core.py:300):
+  BE = 0.9287 * [HCO3 - 24.4 + 14.83 * (pH - 7.4)]
+
+Standart Siggaard-Andersen (dogrudan yaklasik, literatur):
+  BE = 0.9287 * [HCO3 - 24.4 + 14.83 * (pH - 7.4)]
+  -> Mevcut formul ile BIREBIR ayni katsayilari kullaniyor.
+
+Van Slyke (basitlestirilmis, constants.py:297 DEPRECATED):
+  BE ~ 1.1 * (HCO3 - 24) + 32 * (pH - 7.40)
+  -> Kodda kullanilmiyor.
+
+## 6. Nokta Kontrolu: pH=7.40, HCO3=24.0
+  Hesaplanan BE = -0.4 mmol/L
+  Beklenen: ~ 0 mmol/L (normal)
+  Sonuc: UYGUN
+
+## 7. Degerlendirme
+Formul matematiksel olarak standart Siggaard-Andersen denklemiyle tutarli.
+Ancak 3/5 Akoğlu vakasinda cihaz BE ile hesaplanan BE arasinda >2.0 fark var.
+Bu durumlar su nedenlerle aciklanabilir:
+  a) Cihaz BE formulu (Van Slyke/Siggaard-Andersen tam) ile kodun kullandigi
+     dogrudan yaklasik formul arasindaki fark.
+  b) Cihaz degerleri manuel girilmis olabilir ve yuvarlama/olcum hatasi
+     icerebilir.
+  c) HCO3 hesaplamasi (Henderson-Hasselbalch) ile cihazin kullandigi
+     farkli HCO3 degeri olabilir.
+
+KARAR: Kullanici
+
+================================================================================

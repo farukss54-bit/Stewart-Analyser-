@@ -291,7 +291,7 @@ class StreamlitLogHandler(logging.Handler):
             msg = self.format(record)
             
             if record.levelno >= logging.ERROR:
-                st.error(f"âš ï¸ {msg}")
+                st.error(f"⚠️ {msg}")
             elif record.levelno >= logging.WARNING:
                 # Don't show internal warnings to user unless critical
                 pass

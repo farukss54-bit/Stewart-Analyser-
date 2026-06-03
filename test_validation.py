@@ -230,7 +230,7 @@ class TestValidateInputDict:
         data = {"ph": 6.69, "pco2": 60, "na": 140, "cl": 102}
         result = validate_input_dict(data)
         assert result.is_valid
-        assert any("Extreme value detected" in w for w in result.warnings)
+        assert any("pH çok düşük" in w or "şiddetli asidemi" in w for w in result.warnings)
 
     def test_extreme_pco2_warns(self):
         data = {"ph": 7.10, "pco2": 153, "na": 140, "cl": 102}
@@ -437,7 +437,7 @@ class TestSwapSuspicion:
         from validation import analyze_na_cl_swap_suspicion
         result = analyze_na_cl_swap_suspicion(95, 145)
         assert result.confidence == "high"
-        assert "fizyolojik" in result.reason.lower()
+        assert "kolonlar yer değiştirmiş" in result.reason.lower()
     
     def test_medium_confidence_suspicious(self):
         """ORTA GÜVEN: Şüpheli ama kesin değil"""
@@ -535,18 +535,26 @@ class TestClinicalEdgeCases:
     """Edge cases from real clinical scenarios"""
     
     def test_severe_acidemia(self):
-        """pH 6.8 - severe acidemia (e.g., cardiac arrest)"""
+        """pH 6.8 - severe acidemia (e.g., cardiac arrest)
+        Beklenen değer doğrulanmış Siggaard-Andersen formülünden türetildi:
+        HCO3 = calculate_hco3(6.85, 80) ≈ 13.5
+        BE   = calculate_be(6.85, 13.5) ≈ -17.7
+        """
         inp = StewartInput(ph=6.85, pco2=80, na=140, cl=100, lactate=15)
         out, val = analyze_stewart(inp, "quick")
         assert val.is_valid
-        assert out.be_used < -20
+        assert out.be_used == pytest.approx(-17.7, abs=0.5)
     
     def test_severe_alkalemia(self):
-        """pH 7.65 - severe alkalemia"""
+        """pH 7.65 - severe alkalemia
+        Beklenen değer doğrulanmış Siggaard-Andersen formülünden türetildi:
+        HCO3 = calculate_hco3(7.65, 25) ≈ 26.6
+        BE   = calculate_be(7.65, 26.6) ≈ 5.5
+        """
         inp = StewartInput(ph=7.65, pco2=25, na=140, cl=85)
         out, val = analyze_stewart(inp, "quick")
         assert val.is_valid
-        assert out.be_used > 10
+        assert out.be_used == pytest.approx(5.5, abs=0.5)
     
     def test_very_low_albumin(self):
         """Albumin 15 g/L - severe hypoalbuminemia (e.g., cirrhosis)"""

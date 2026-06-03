@@ -423,7 +423,7 @@ def calculate_respiratory_effect(pco2: float) -> float:
     """pCO2'nin yaklaşık BE etkisi"""
     # pCO2 yüksekse asidoz yönünde, düşükse alkaloz yönünde
     delta_pco2 = pco2 - PCO2_NORMAL
-    # Her 10 mmHg değişim için yaklaşık Â±1-2 mEq/L etki
+    # Her 10 mmHg değişim için yaklaşık ±1-2 mEq/L etki
     return round(-0.1 * delta_pco2, 1)
 
 
@@ -507,7 +507,7 @@ def assess_compensation(ph: float, pco2: float, hco3: float, be: float) -> Tuple
         expected_pco2 = calculate_expected_pco2_metabolic_acidosis(hco3)
         diff = pco2 - expected_pco2
         if abs(diff) <= WINTERS_TOLERANCE:
-            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} Â± 2", round(diff, 1)
+            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} ± 2", round(diff, 1)
         elif diff < -WINTERS_TOLERANCE:
             return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO2 beklenenden {abs(diff):.0f} düşük", round(diff, 1)
         else:
@@ -517,7 +517,7 @@ def assess_compensation(ph: float, pco2: float, hco3: float, be: float) -> Tuple
         expected_pco2 = calculate_expected_pco2_metabolic_alkalosis(hco3)
         diff = pco2 - expected_pco2
         if abs(diff) <= ALKALOSIS_TOLERANCE:
-            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} Â± 2", round(diff, 1)
+            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} ± 2", round(diff, 1)
         elif diff < -ALKALOSIS_TOLERANCE:
             return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO2 beklenenden düşük", round(diff, 1)
         else:
@@ -1166,7 +1166,7 @@ def generate_cds_notes(
                 cds = CDS_NOTES["albumin_low_lactate_high"]
                 notes.append(CDSNote("B", cds["condition"], cds["note"], [], cds["refs"]))
     
-    # C Kategorisi: Patern â†’ Mekanizma
+    # C Kategorisi: Patern → Mekanizma
     
     # Hiperkloremik patern - sadece metabolik asidozda
     if sid_effect < -CLINICAL_SIGNIFICANCE_THRESHOLD and cl > 105:

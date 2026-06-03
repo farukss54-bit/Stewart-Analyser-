@@ -256,8 +256,8 @@ def render_basic_values(ph: float, pco2: float, hco3_used: float, be_used: float
     
     with c4:
         ind = get_value_indicator(be_used, "be")
-        src = " (hes.)" if be_source == "calculated" else ""
-        st.metric("BE", f"{be_used:+.1f}{src}")
+        src_help = "Hesaplanan değer" if be_source == "calculated" else "Cihaz değeri"
+        st.metric("BE", f"{be_used:+.1f}", help=src_help)
         arrow_text = f"{ind['arrow']} " if ind['arrow'] else ""
         st.markdown(
             f"<div style='text-align:center; padding:5px; border-radius:5px; "

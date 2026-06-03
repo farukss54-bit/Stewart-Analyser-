@@ -11,3 +11,9 @@ venv/
 
 # Archives
 *.zip
+
+# Temporary / backup files
+backup_*/
+mojibake_*.txt
+__pycache__/
+*.pyc

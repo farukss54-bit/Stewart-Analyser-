@@ -294,7 +294,7 @@ BE_PH_COEFFICIENT = 14.83      # pH katkı katsayısı
 BE_PH_NORMAL = 7.4             # Referans pH değeri
 
 # Geriye uyumluluk için eski sabitler (kullanılmıyor)
-BE_HCO3_COEFFICIENT = 1.1      # [DEPRECATED] Van Slyke katsayısı
+BE_HCO3_COEFFICIENT = 1.1      # [DEPRECATED — kullanılmıyor] Eski Van Slyke katsayısı; yalnızca tarihsel referans
 
 # --- Figge-Fencl Albümin/Fosfat Katsayıları ---
 # Referans: [FIGGE-1991]
@@ -467,7 +467,7 @@ FLAGS = {
 }
 
 # ============================================================
-# ðŸ§  KLİNİK KARAR DESTEK (CDS) NOT SETİ
+# 🧠 KLİNİK KARAR DESTEK (CDS) NOT SETİ
 # Literatür dayanaklı, deterministik, eylemsiz ifadeler
 # ============================================================
 
@@ -526,21 +526,21 @@ CDS_NOTES = {
         "refs": ["Szrama & Smuszkiewicz, 2016", "Fencl & Leith, 1993"]
     },
     
-    # === C KATEGORİSİ: PATERN â†’ OLASI MEKANİZMA KÜMELERİ ===
+    # === C KATEGORİSİ: PATERN → OLASI MEKANİZMA KÜMELERİ ===
     "pattern_hyperchloremic": {
-        "condition": "SIDâ†“ + Cl-â†‘",
+        "condition": "SID↓ + Cl-↑",
         "note": "Bu patern hiperkloremik/dilüsyonel asidoz mekanizmalarıyla uyumlu olabilir.",
         "mechanisms": ["İzotonik salin infüzyonu", "Renal tübüler asidoz", "Diyare kaynaklı bikarbonat kaybı"],
         "refs": ["Kilic et al., 2020"]
     },
     "pattern_unmeasured_anion": {
-        "condition": "Normal laktat + SIGâ†‘",
+        "condition": "Normal laktat + SIG↑",
         "note": "Bu patern ölçülmemiş anyon birikimi mekanizmalarıyla uyumlu olabilir.",
         "mechanisms": ["Ketoasidoz", "Üremik asidoz", "Toksin (metanol, etilen glikol)", "Sülfat birikimi"],
         "refs": ["Franconieri et al., 2025"]
     },
     "pattern_masked_mixed": {
-        "condition": "Albüminâ†“ + pH normal + Laktatâ†‘",
+        "condition": "Albümin↓ + pH normal + Laktat↑",
         "note": "Bu patern maskelenmiş karışık bozukluk mekanizmalarıyla uyumlu olabilir.",
         "mechanisms": ["Sepsis + hipoalbüminemi", "Karaciğer yetmezliği", "Malnutrisyon + enfeksiyon"],
         "refs": ["Szrama & Smuszkiewicz, 2016"]
@@ -555,12 +555,12 @@ CDS_NOTES = {
 
 # === KLASİK YAKLAŞIM KARŞILAŞTIRMA MESAJLARI ===
 CLASSIC_COMPARISON = {
-    "hco3_normal_sid_low": "HCO3- normal görünmesine rağmen SID düşük â†’ klasik analizde metabolik asidoz gözden kaçabilirdi.",
-    "normal_be_low_sid": "BE/HCO3 normal görünse de SID düşük â†’ klasik yaklaşım güçlü iyon asidozunu maskelerdi.",
-    "albumin_masking": "Düşük albümin mevcut asidozu maskelemiş olabilir â†’ klasik AG düzeltmesi gerekli.",
-    "sid_primary": "SID değişikliği primer mekanizma olarak öne çıkıyor â†’ klasik yaklaşımda bu ayrım yapılamaz.",
-    "ag_vs_sig": "Anyon gap normal ama SIG yüksek olabilir â†’ ölçülmemiş anyonlar AG'de görünmeyebilir.",
-    "mixed_hidden": "Karşıt etkiler birbirini dengelemiş â†’ klasik tek parametre değerlendirmesi yetersiz kalabilir.",
+    "hco3_normal_sid_low": "HCO3- normal görünmesine rağmen SID düşük → klasik analizde metabolik asidoz gözden kaçabilirdi.",
+    "normal_be_low_sid": "BE/HCO3 normal görünse de SID düşük → klasik yaklaşım güçlü iyon asidozunu maskelerdi.",
+    "albumin_masking": "Düşük albümin mevcut asidozu maskelemiş olabilir → klasik AG düzeltmesi gerekli.",
+    "sid_primary": "SID değişikliği primer mekanizma olarak öne çıkıyor → klasik yaklaşımda bu ayrım yapılamaz.",
+    "ag_vs_sig": "Anyon gap normal ama SIG yüksek olabilir → ölçülmemiş anyonlar AG'de görünmeyebilir.",
+    "mixed_hidden": "Karşıt etkiler birbirini dengelemiş → klasik tek parametre değerlendirmesi yetersiz kalabilir.",
 }
 
 # ============================================================
@@ -810,64 +810,64 @@ ACKNOWLEDGMENTS = {
 }
 
 # ============================================================
-# ðŸ“– PARAMETRE TANIMLARI (Tooltip / Help için)
+# 📚 PARAMETRE TANIMLARI (Tooltip / Help için)
 # ============================================================
 
 PARAM_DEFINITIONS = {
     # === SID Tanımları ===
     "sid_simple": {
-        "short": "Na âˆ’ Cl farkı. Klor yükünü değerlendirmek için pratik gösterge.",
-        "long": """**SID_simple (Na âˆ’ Cl)**
+        "short": "Na − Cl farkı. Klor yükünü değerlendirmek için pratik gösterge.",
+        "long": """**SID_simple (Na − Cl)**
 
 Sodyum ile klor arasındaki farktır. Klor yükünü değerlendirmek için pratik bir göstergedir.
 
-**Normal:** â‰ˆ 36â€“40 mmol/L
+**Normal:** ≈ 36–40 mmol/L
 
 **Düşükse:**
-â€¢ Klor göreceli olarak yüksek
-â€¢ Hiperkloremik metabolik asidoz eğilimi
+• Klor göreceli olarak yüksek
+• Hiperkloremik metabolik asidoz eğilimi
 
 **Yüksekse:**
-â€¢ Klor göreceli olarak düşük
-â€¢ Metabolik alkaloz eğilimi (örn. kusma, diüretik)""",
-        "normal": "â‰ˆ 38 mmol/L"
+• Klor göreceli olarak düşük
+• Metabolik alkaloz eğilimi (örn. kusma, diüretik)""",
+        "normal": "≈ 38 mmol/L"
     },
     
     "sid_basic": {
-        "short": "Na âˆ’ Cl âˆ’ Laktat. Laktatın asidoz yükünü SID üzerinden yansıtır.",
-        "long": """**SID_basic (Na âˆ’ Cl âˆ’ Lactate)**
+        "short": "Na − Cl − Laktat. Laktatın asidoz yükünü SID üzerinden yansıtır.",
+        "long": """**SID_basic (Na − Cl − Lactate)**
 
-Naâ€“Cl farkına laktatın eklenmiş halidir. Laktatın asidoz yükünü SID üzerinden yansıtır.
+Na–Cl farkına laktatın eklenmiş halidir. Laktatın asidoz yükünü SID üzerinden yansıtır.
 
-**Normal:** â‰ˆ 36â€“38 mmol/L
+**Normal:** ≈ 36–38 mmol/L
 
 **Düşükse:**
-â€¢ Laktat artışı ve/veya klor fazlalığı
-â€¢ Laktik Â± hiperkloremik metabolik asidoz
+• Laktat artışı ve/veya klor fazlalığı
+• Laktik ± hiperkloremik metabolik asidoz
 
 **Yüksekse:**
-â€¢ Metabolik alkaloz yönlü durumlar""",
-        "normal": "â‰ˆ 37 mmol/L"
+• Metabolik alkaloz yönlü durumlar""",
+        "normal": "≈ 37 mmol/L"
     },
     
     "sid_full": {
         "short": "Tüm güçlü iyonlarla hesaplanan apparent SID. Stewart'ın ana değişkeni.",
-        "long": """**SID_full / SIDapparent (Na+K+Ca+Mg âˆ’ Cl âˆ’ Lactate)**
+        "long": """**SID_full / SIDapparent (Na+K+Ca+Mg − Cl − Lactate)**
 
 Tüm ölçülen güçlü iyonlar kullanılarak hesaplanan teorik apparent SID. Stewart yaklaşımının ana değişkenlerinden biridir.
 
-**Normal:** â‰ˆ 40â€“44 mmol/L
+**Normal:** ≈ 40–44 mmol/L
 
 **Düşükse:**
-â€¢ Güçlü anyon fazlalığı veya katyon azlığı
-â€¢ Primer metabolik asidoz
+• Güçlü anyon fazlalığı veya katyon azlığı
+• Primer metabolik asidoz
 
 **Yüksekse:**
-â€¢ Güçlü katyon fazlalığı veya anyon azlığı
-â€¢ Primer metabolik alkaloz
+• Güçlü katyon fazlalığı veya anyon azlığı
+• Primer metabolik alkaloz
 
 âš ï¸ Ca2+/Mg2+ eksikse yaklaşık (approximate) kabul edilir.""",
-        "normal": "â‰ˆ 40-44 mmol/L"
+        "normal": "≈ 40-44 mmol/L"
     },
     
     "sid_effective": {
@@ -877,7 +877,7 @@ Tüm ölçülen güçlü iyonlar kullanılarak hesaplanan teorik apparent SID. S
 Bikarbonat ve zayıf asitlerin (albümin, fosfat) etkisini içeren "etkin" SID değeridir.
 
 SIG hesaplamasında kullanılır:
-**SIG = SIDapparent âˆ’ SIDeffective**
+**SIG = SIDapparent − SIDeffective**
 
 Doğrudan referans aralığı yoktur; SIDapparent ile karşılaştırılarak yorumlanır.""",
         "normal": "SIDa ile karşılaştırılır"
@@ -890,17 +890,17 @@ Doğrudan referans aralığı yoktur; SIDapparent ile karşılaştırılarak yor
 
 Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
 
-**Normal:** â‰ˆ 2.5â€“3.0 mmol/L (albümin ~40 g/L varsayımıyla)
+**Normal:** ≈ 2.5–3.0 mmol/L (albümin ~40 g/L varsayımıyla)
 
 **Düşükse:**
-â€¢ Albümin düşüklüğü
-â€¢ pH alkaloz yönüne itilir
-â€¢ Metabolik asidoz maskelenebilir
+• Albümin düşüklüğü
+• pH alkaloz yönüne itilir
+• Metabolik asidoz maskelenebilir
 
 **Yüksekse:**
-â€¢ Albümin/fosfat artışı
-â€¢ Metabolik asidoz eğilimi""",
-        "normal": "â‰ˆ 2.5-3.0 mmol/L"
+• Albümin/fosfat artışı
+• Metabolik asidoz eğilimi""",
+        "normal": "≈ 2.5-3.0 mmol/L"
     },
     
     "sig": {
@@ -909,20 +909,20 @@ Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
 
 Ölçülmemiş anyonların (ketonlar, toksinler, sülfatlar vb.) varlığını gösterir.
 
-**Formül:** SIG = SIDapparent âˆ’ SIDeffective
+**Formül:** SIG = SIDapparent − SIDeffective
 
-**Normal:** â‰ˆ âˆ’2 ile +2 mmol/L
+**Normal:** ≈ −2 ile +2 mmol/L
 
 **Yüksekse (> +2):**
-â€¢ Ölçülmemiş anyon artışı
-â€¢ Klasik AG normal olsa bile gizli asidoz olabilir
+• Ölçülmemiş anyon artışı
+• Klasik AG normal olsa bile gizli asidoz olabilir
 
-**Düşükse (< âˆ’2):**
-â€¢ Ölçülmemiş katyonlar veya ölçüm artefaktı
-â€¢ Klinik olarak nadir
+**Düşükse (< −2):**
+• Ölçülmemiş katyonlar veya ölçüm artefaktı
+• Klinik olarak nadir
 
 âš ï¸ Eksik elektrolitlerde yaklaşık kabul edilir.""",
-        "normal": "âˆ’2 ile +2 mmol/L"
+        "normal": "−2 ile +2 mmol/L"
     },
     
     "cl_na_ratio": {
@@ -931,35 +931,35 @@ Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
 
 Klor yükünü sodyuma göre değerlendiren pratik bir orandır.
 
-**Normal:** â‰ˆ 0.75 â€“ 0.80
+**Normal:** ≈ 0.75 – 0.80
 
 **Yüksekse:**
-â€¢ Göreceli klor fazlalığı
-â€¢ Hiperkloremik metabolik asidoz lehine
+• Göreceli klor fazlalığı
+• Hiperkloremik metabolik asidoz lehine
 
 **Düşükse:**
-â€¢ Klor kaybı
-â€¢ Metabolik alkaloz lehine""",
+• Klor kaybı
+• Metabolik alkaloz lehine""",
         "normal": "0.75-0.80"
     },
     
     # === Anyon Gap ===
     "anion_gap": {
-        "short": "Klasik yaklaşımla ölçülen anyon-katyon farkı. AG = Na âˆ’ (Cl + HCO3)",
+        "short": "Klasik yaklaşımla ölçülen anyon-katyon farkı. AG = Na − (Cl + HCO3)",
         "long": """**Anyon Gap (AG)**
 
-Klasik yaklaşımla ölçülen anyonâ€“katyon farkı.
+Klasik yaklaşımla ölçülen anyon–katyon farkı.
 
-**Formül:** AG = Na âˆ’ (Cl + HCO3)
+**Formül:** AG = Na − (Cl + HCO3)
 
-**Normal:** â‰ˆ 8â€“12 mmol/L
+**Normal:** ≈ 8–12 mmol/L
 
 **Yüksekse:**
-â€¢ Laktat, keton, toksin gibi asit yükleri
-â€¢ Yüksek AG metabolik asidoz (HAGMA)
+• Laktat, keton, toksin gibi asit yükleri
+• Yüksek AG metabolik asidoz (HAGMA)
 
 **Normal/Düşükse:**
-â€¢ Asidoz yok veya hiperkloremik asidoz (NAGMA) olabilir""",
+• Asidoz yok veya hiperkloremik asidoz (NAGMA) olabilir""",
         "normal": "8-12 mmol/L"
     },
     
@@ -969,16 +969,16 @@ Klasik yaklaşımla ölçülen anyonâ€“katyon farkı.
 
 Albümin düzeyi dikkate alınarak hesaplanan AG.
 
-**Formül:** AG_düz = AG + 2.5 Ã— (4.2 âˆ’ Albümin_g/dL)
+**Formül:** AG_düz = AG + 2.5 × (4.2 − Albümin_g/dL)
 
-**Normal:** â‰ˆ 12â€“16 mmol/L
+**Normal:** ≈ 12–16 mmol/L
 
 **Yüksekse:**
-â€¢ Albümin düşüklüğüne rağmen gerçek AG artışı
-â€¢ Gizli yüksek AG asidozu
+• Albümin düşüklüğüne rağmen gerçek AG artışı
+• Gizli yüksek AG asidozu
 
 **Normal görünüyorsa:**
-â€¢ Albümin düşüklüğü klasik AG'yi maskelemiş olabilir""",
+• Albümin düşüklüğü klasik AG'yi maskelemiş olabilir""",
         "normal": "12-16 mmol/L"
     },
     
@@ -989,11 +989,11 @@ Albümin düzeyi dikkate alınarak hesaplanan AG.
 
 SID'in Base Excess'e katkısıdır.
 
-**Formül:** SID_effect = SID_simple âˆ’ 38
+**Formül:** SID_effect = SID_simple − 38
 
 **Negatif değer:** Asidoz yönünde etki (hiperkloremik)
 **Pozitif değer:** Alkaloz yönünde etki (hipokloremik)""",
-        "normal": "0 Â± 2 mEq/L"
+        "normal": "0 ± 2 mEq/L"
     },
     
     "albumin_effect": {
@@ -1002,23 +1002,23 @@ SID'in Base Excess'e katkısıdır.
 
 Albüminin Base Excess'e katkısıdır.
 
-**Formül:** Alb_effect = 2.5 Ã— (4.2 âˆ’ Albümin_g/dL)
+**Formül:** Alb_effect = 2.5 × (4.2 − Albümin_g/dL)
 
 **Pozitif değer (düşük albümin):** Alkaloz yönünde etki, asidozu maskeleyebilir
 **Negatif değer (yüksek albümin):** Asidoz yönünde etki""",
-        "normal": "0 Â± 2 mEq/L"
+        "normal": "0 ± 2 mEq/L"
     },
     
     "lactate_effect": {
-        "short": "Laktatın BE'ye katkısı. Her mmol/L laktat â‰ˆ 1 mEq/L asidoz.",
+        "short": "Laktatın BE'ye katkısı. Her mmol/L laktat ≈ 1 mEq/L asidoz.",
         "long": """**Laktat Etkisi**
 
 Laktatın Base Excess'e katkısıdır.
 
-**Formül:** Lac_effect = âˆ’Laktat
+**Formül:** Lac_effect = −Laktat
 
-Her 1 mmol/L laktat artışı â‰ˆ 1 mEq/L asidoz etkisi yapar.""",
-        "normal": "âˆ’1 ile 0 mEq/L"
+Her 1 mmol/L laktat artışı ≈ 1 mEq/L asidoz etkisi yapar.""",
+        "normal": "−1 ile 0 mEq/L"
     },
     
     "residual_effect": {
@@ -1027,13 +1027,13 @@ Her 1 mmol/L laktat artışı â‰ˆ 1 mEq/L asidoz etkisi yapar.""",
 
 BE'den bilinen bileşenlerin çıkarılmasıyla elde edilen açıklanamayan kısımdır.
 
-**Formül:** Residual = BE âˆ’ SID_effect âˆ’ Alb_effect âˆ’ Lac_effect
+**Formül:** Residual = BE − SID_effect − Alb_effect − Lac_effect
 
 **Negatif değer:** Ölçülmemiş anyonlar (keton, toksin vb.) olabilir
 **Pozitif değer:** Ölçülmemiş katyonlar (nadir)
 
 âš ï¸ Bu tam SIG değildir, Fencl-derived yaklaşık değerdir.""",
-        "normal": "0 Â± 2 mEq/L"
+        "normal": "0 ± 2 mEq/L"
     },
     
     # === Temel Kan Gazı ===
@@ -1043,7 +1043,7 @@ BE'den bilinen bileşenlerin çıkarılmasıyla elde edilen açıklanamayan kıs
 
 Kanın asitlik derecesini gösteren logaritmik ölçek.
 
-**Normal:** 7.35 â€“ 7.45
+**Normal:** 7.35 – 7.45
 
 **< 7.35:** Asidemi
 **> 7.45:** Alkalemi""",
@@ -1056,7 +1056,7 @@ Kanın asitlik derecesini gösteren logaritmik ölçek.
 
 Karbondioksit parsiyel basıncı. Asit-baz dengesinin solunumsal bileşenini yansıtır.
 
-**Normal:** 35â€“45 mmHg
+**Normal:** 35–45 mmHg
 
 **Yüksekse:** Respiratuvar asidoz (hipoventilasyon)
 **Düşükse:** Respiratuvar alkaloz (hiperventilasyon)""",
@@ -1069,7 +1069,7 @@ Karbondioksit parsiyel basıncı. Asit-baz dengesinin solunumsal bileşenini yan
 
 Bikarbonat konsantrasyonu. Asit-baz dengesinin metabolik bileşenini yansıtır.
 
-**Normal:** 22â€“26 mEq/L
+**Normal:** 22–26 mEq/L
 
 **Düşükse:** Metabolik asidoz
 **Yüksekse:** Metabolik alkaloz""",
@@ -1082,11 +1082,11 @@ Bikarbonat konsantrasyonu. Asit-baz dengesinin metabolik bileşenini yansıtır.
 
 Metabolik asit-baz bozukluğunun miktarını gösteren değer.
 
-**Normal:** âˆ’2 ile +2 mEq/L
+**Normal:** −2 ile +2 mEq/L
 
 **Negatif:** Metabolik asidoz (baz eksikliği)
 **Pozitif:** Metabolik alkaloz (baz fazlalığı)""",
-        "normal": "âˆ’2 ile +2 mEq/L"
+        "normal": "−2 ile +2 mEq/L"
     },
 }
 
