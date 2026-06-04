@@ -1,71 +1,71 @@
-# 🩸 Stewart Asit-Baz Analizi
+# 🩸 Stewart Acid-Base Analysis
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://stewart-analyzer.streamlit.app)
 [![Tests](https://img.shields.io/badge/tests-156%20passed-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
 
-**Stewart-Fencl fizikokimyasal yaklaşımı** ile kan gazı değerlendirmesi yapan, eğitim odaklı web uygulaması.
+An **education-focused web application** for blood gas evaluation using the **Stewart-Fencl physicochemical approach**.
 
-> ⚕️ **Bu araç fizyolojik mekanizmaları tanımlar; tanı veya tedavi önerisi değildir.** Eğitim amaçlıdır. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.
-
----
-
-## 🎯 Proje Nedir?
-
-Klasik asit-baz analizinin (Henderson-Hasselbalch, anyon gap) ötesinde, **güçlü iyon farkı (SID)** ve **zayıf asitler (Atot)** kavramlarına dayalı fizikokimyasal bir yaklaşım sunar.
-
-### Kimler İçin?
-- 🏥 **Acil tıp / yoğun bakım hekimleri** — karmaşık asit-baz bozukluklarını hızlıca analiz etme
-- 📚 **Tıp öğrencileri ve asistanlar** — hazır vakalar ve literatür referanslarıyla öğrenme
-- 🔬 **Araştırmacılar** — batch CSV analizi ve literatür tabanlı eşik değerler
-
-### Neden Stewart?
-- Klasik yaklaşımın göremediği **maskelenmiş asidozları** (örn. hipoalbüminemi + asidoz) ortaya çıkarır
-- **Karışık (mikst) bozuklukları** ayırt eder
-- Her bileşenin **mEq/L katkısını** kantifiye eder
-- **Ölçülmemiş anyon (SIG)** etkisini hesaplar
+> ⚕️ **This tool describes physiological mechanisms; it is not a diagnostic or therapeutic recommendation.** It is intended for educational purposes. All clinical decisions require expert physician evaluation.
 
 ---
 
-## 🚀 Özellikler
+## 🎯 What is this project?
 
-### Analiz Modları
-| Mod | Açıklama |
-|-----|----------|
-| **Hızlı** | Minimum parametreler (pH, pCO₂, Na, Cl). BE tabanlı bileşen ayrıştırması. |
-| **Gelişmiş** | Tam Stewart analizi: SIDa, SIDe, SIG, Atot. Tam mekanizma analizi. |
+Beyond classical acid-base analysis (Henderson-Hasselbalch, anion gap), this tool provides a **physicochemical approach** based on **Strong Ion Difference (SID)** and **weak acids (Atot)** concepts.
 
-### Girdi Yöntemleri
-- ✏️ **Manuel giriş** — Hızlı veya gelişmiş form
-- 📂 **Batch CSV** — Toplu analiz, satır satır validasyon
-- 📚 **Hazır Vakalar** — Eğitim amaçlı vakalar (Akoğlu vakaları dahil)
+### Who is it for?
+- 🏥 **Emergency / ICU physicians** — rapid analysis of complex acid-base disorders
+- 📚 **Medical students and residents** — learning through ready-made cases with literature references
+- 🔬 **Researchers** — batch CSV analysis and literature-based threshold values
 
-### Çıktılar
-- 📋 **Headline** — Tek cümlelik klinik özet
-- 📊 **Temel Değerler** — pH, pCO₂, HCO₃, BE (emoji + ok + renk kodlaması)
-- 📈 **SID Tablosu** — 3 katmanlı SID (simple / basic / full)
-- 🧮 **Katkı Ayrıştırma** — Her mekanizmanın BE'ye mEq/L ve % katkısı
-- 📉 **Grafikler** — Gamblegram, katkı bar grafiği, SID waterfall, pH gauge
-- 💡 **CDS Notları** — Kategorili (A/B/C) klinik karar destek ipuçları
-- ⚖️ **Klasik Karşılaştırma** — Stewart vs. klasik yaklaşım farkları
+### Why Stewart?
+- Reveals **masked acidoses** that classical approaches miss (e.g., hypoalbuminemia + acidosis)
+- Distinguishes **mixed disorders**
+- Quantifies each component's contribution in **mEq/L**
+- Calculates the **Strong Ion Gap (SIG)** effect
 
 ---
 
-## 🛠️ Kurulum
+## 🚀 Features
 
-### Yerel Geliştirme
+### Analysis Modes
+| Mode | Description |
+|------|-------------|
+| **Quick** | Minimum parameters (pH, pCO₂, Na, Cl). BE-based component breakdown. |
+| **Advanced** | Full Stewart analysis: SIDa, SIDe, SIG, Atot. Complete mechanism analysis. |
+
+### Input Methods
+- ✏️ **Manual entry** — Quick or advanced form
+- 📂 **Batch CSV** — Bulk analysis with row-by-row validation
+- 📚 **Sample Cases** — Educational cases (including Akoğlu cases)
+
+### Outputs
+- 📋 **Headline** — One-sentence clinical summary
+- 📊 **Basic Values** — pH, pCO₂, HCO₃, BE (emoji + arrow + color coding)
+- 📈 **SID Table** — 3-tier SID (simple / basic / full)
+- 🧮 **Contribution Breakdown** — Each mechanism's mEq/L and % contribution to BE
+- 📉 **Visualizations** — Gamblegram, contribution bar chart, SID waterfall, pH gauge
+- 💡 **CDS Notes** — Categorized (A/B/C) clinical decision support tips
+- ⚖️ **Classic Comparison** — Differences between Stewart and classical approaches
+
+---
+
+## 🛠️ Installation
+
+### Local Development
 ```bash
-# Repoyu klonla
+# Clone the repo
 git clone https://github.com/farukss54-bit/Stewart-Analyser-.git
 cd Stewart-Analyser-
 
-# Bağımlılıkları kur
+# Install dependencies
 pip install -r requirements.txt
 
-# Uygulamayı başlat
+# Run the app
 streamlit run app.py
 ```
-Uygulama varsayılan olarak `http://localhost:8501` adresinde açılır.
+The app opens at `http://localhost:8501` by default.
 
 ### Docker
 ```bash
@@ -74,17 +74,17 @@ docker run -p 8501:8501 stewart-analyzer
 ```
 
 ### VS Code / GitHub Codespaces
-`.devcontainer/devcontainer.json` mevcuttur. Açıldığında bağımlılıklar otomatik yüklenir.
+`.devcontainer/devcontainer.json` is included. Dependencies auto-install on open.
 
 ---
 
-## 🧪 Test
+## 🧪 Testing
 
 ```bash
-# Tüm testler
+# All tests
 pytest -v
 
-# Belirli test dosyaları
+# Specific test files
 pytest test_core.py -v
 pytest test_validation.py -v
 pytest test_regression.py -v
@@ -95,61 +95,61 @@ pytest --cov=. --cov-report=html
 
 ---
 
-## 📁 Dosya Yapısı
+## 📁 File Structure
 
 ```
 .
 ├── app.py              # Streamlit UI orchestrator
-├── core.py             # Hesaplama motoru (~1700 satır)
-├── constants.py        # Klinik sabitler, eşikler, hazır vakalar (~1100 satır)
-├── ui_components.py    # UI render fonksiyonları
-├── visualization.py    # Plotly grafikleri
-├── validation.py       # 3-katmanlı validasyon, Na/Cl swap tespiti
-├── logger.py           # Yapılandırılmış loglama (PHI içermez)
-├── test_core.py        # Birim testleri
-├── test_validation.py  # Edge case testleri
-├── test_regression.py  # Regresyon testleri
+├── core.py             # Analysis engine (~1,700 lines)
+├── constants.py        # Clinical constants, thresholds, sample cases (~1,100 lines)
+├── ui_components.py    # UI render functions
+├── visualization.py    # Plotly charts
+├── validation.py       # 3-tier validation, Na/Cl swap detection
+├── logger.py           # Structured logging (no PHI)
+├── test_core.py        # Unit tests
+├── test_validation.py  # Edge case tests
+├── test_regression.py  # Regression tests
 ├── test_regression_fixed.py
-├── test_simple.py      # Smoke testleri
-├── test_sprint4.py     # Sprint 4 testleri
-├── requirements.txt    # Bağımlılıklar
-├── Dockerfile          # Üretim konteyneri
+├── test_simple.py      # Smoke tests
+├── test_sprint4.py     # Sprint 4 tests
+├── requirements.txt    # Dependencies
+├── Dockerfile          # Production container
 ├── docs/
-│   ├── AGENTS.md       # Ajan rehberi (AI geliştiriciler için)
-│   └── BE_FORMUL_RAPORU.txt  # BE formül doğrulama raporu
-└── README.md           # Bu dosya
+│   ├── AGENTS.md       # Agent guide (for AI developers)
+│   └── BE_FORMUL_RAPORU.txt  # BE formula verification report
+└── README_EN.md        # This file
 ```
 
 ---
 
-## 📖 Kullanım
+## 📖 Usage
 
-### Hızlı Mod
-1. Sidebar'dan "Hızlı (Klinik)" seç
-2. pH, pCO₂, Na, Cl gir
-3. İsteğe bağlı: K, laktat, albümin
-4. "Analiz Et" butonuna tıkla
+### Quick Mode
+1. Select "Quick (Clinical)" from sidebar
+2. Enter pH, pCO₂, Na, Cl
+3. Optional: K, lactate, albumin
+4. Click "Analyze"
 
-### Gelişmiş Mod
-1. Sidebar'dan "Gelişmiş" seç
-2. Tüm parametreleri gir (Ca, Mg, fosfat dahil)
-3. SIG hesaplaması ve tam mekanizma analizi gör
+### Advanced Mode
+1. Select "Advanced" from sidebar
+2. Enter all parameters (including Ca, Mg, phosphate)
+3. View SIG calculation and full mechanism analysis
 
-### Hazır Vakalar
-1. Sidebar'dan "📚 Hazır Vakalar" bölümünden vaka seç
-2. "🔄 Değerleri Yükle" butonuna tıkla
-3. Eğitim notunu ve klasik karşılaştırmayı incele
+### Sample Cases
+1. Select a case from "📚 Sample Cases" in sidebar
+2. Click "🔄 Load Values" button
+3. Review educational notes and classic comparison
 
-### Batch Analiz
-1. CSV dosyası yükle (her satır bir hasta)
-2. Otomatik validasyon ve analiz
-3. Sonuçları indir
+### Batch Analysis
+1. Upload a CSV file (one row per patient)
+2. Automatic validation and analysis
+3. Download results
 
 ---
 
-## 🔬 Literatür Referansları
+## 🔬 Literature References
 
-Proje aşağıdaki literatüre dayanmaktadır:
+This project is based on the following literature:
 
 - **Stewart PA.** Modern quantitative acid-base chemistry. *Can J Physiol Pharmacol.* 1983
 - **Figge J, Mydosh T, Fencl V.** Serum proteins and acid-base equilibria. *J Lab Clin Med.* 1991
@@ -159,31 +159,31 @@ Proje aşağıdaki literatüre dayanmaktadır:
 - **Berend K, et al.** Physiological approach to assessment of acid-base disturbances. *NEJM.* 2014
 - **Story DA.** Stewart acid-base: A simplified bedside approach. *Anesth Analg.* 2016
 
-**Klinik vaka katkıları:** Doç. Dr. Haldun Akoğlu — Marmara Üniversitesi Acil Tıp AD.
+**Clinical case contributions:** Assoc. Prof. Haldun Akoğlu — Marmara University Emergency Medicine Dept.
 
 ---
 
-## 🤝 Katkıda Bulunma
+## 🤝 Contributing
 
-1. Repoyu fork'la
-2. Feature branch oluştur: `git checkout -b feature/yeni-ozellik`
-3. Testleri çalıştır: `pytest -v` (156 test yeşil olmalı)
-4. Pull request gönder
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/new-feature`
+3. Run tests: `pytest -v` (all 156 tests must pass)
+4. Submit a pull request
 
-AGENTS.md dosyasını okuyarak proje kurallarını, mimarisini ve sık karşılaşılan tuzakları öğrenebilirsiniz.
-
----
-
-## ⚕️ Yasal Uyarı
-
-Bu uygulama **eğitim amaçlıdır** ve fizyolojik mekanizmaları tanımlar. Tanı koymaz, tedavi önerisi vermez. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.
+Read the AGENTS.md file to learn about project rules, architecture, and common pitfalls.
 
 ---
 
-## 📜 Lisans
+## ⚕️ Legal Disclaimer
+
+This application is **for educational purposes only** and describes physiological mechanisms. It does not diagnose or recommend treatment. All clinical decisions require expert physician evaluation.
+
+---
+
+## 📜 License
 
 MIT License
 
 ---
 
-*🇬🇧 [English version → README_EN.md](README_EN.md)*
+*🇹🇷 [Türkçe versiyon → README.md](README.md)*
