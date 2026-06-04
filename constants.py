@@ -494,7 +494,7 @@ CDS_NOTES = {
         "refs": ["Fencl & Leith, 1993"]
     },
     "sig_normal": {
-        "condition": "|SIG| â‰¤ 2 mmol/L",
+        "condition": "|SIG| ≤ 2 mmol/L",
         "note": "SIG normal aralıkta; klinik olarak anlamlı ölçülmemiş iyon birikimi saptanmadı.",
         "refs": []
     },
@@ -564,7 +564,7 @@ CLASSIC_COMPARISON = {
 }
 
 # ============================================================
-# ðŸ“š HAZIR VAKALAR (Case-Based Learning)
+# 📚 HAZIR VAKALAR (Case-Based Learning)
 # ============================================================
 
 SAMPLE_CASES = {
@@ -739,7 +739,7 @@ geliştirilmiş bir eğitim ve klinik destek aracıdır.
 - **Maskelenmiş bozuklukları** (örn. hipoalbüminemi + asidoz) ortaya çıkarır  
 - Her bileşenin **ayrı ayrı katkısını** gösterir
 """,
-    "disclaimer": "âš•ï¸ Bu araç klinik karar destek sistemi değildir. Eğitim amaçlıdır. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.",
+    "disclaimer": "⚕️ Bu araç klinik karar destek sistemi değildir. Eğitim amaçlıdır. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.",
     "disclaimer_short": "Eğitim amaçlıdır. Klinik karar için uzman değerlendirmesi gerekir.",
 }
 
@@ -866,7 +866,7 @@ Tüm ölçülen güçlü iyonlar kullanılarak hesaplanan teorik apparent SID. S
 • Güçlü katyon fazlalığı veya anyon azlığı
 • Primer metabolik alkaloz
 
-âš ï¸ Ca2+/Mg2+ eksikse yaklaşık (approximate) kabul edilir.""",
+⚠️ Ca2+/Mg2+ eksikse yaklaşık (approximate) kabul edilir.""",
         "normal": "≈ 40-44 mmol/L"
     },
     
@@ -921,7 +921,7 @@ Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
 • Ölçülmemiş katyonlar veya ölçüm artefaktı
 • Klinik olarak nadir
 
-âš ï¸ Eksik elektrolitlerde yaklaşık kabul edilir.""",
+⚠️ Eksik elektrolitlerde yaklaşık kabul edilir.""",
         "normal": "−2 ile +2 mmol/L"
     },
     
@@ -1032,7 +1032,7 @@ BE'den bilinen bileşenlerin çıkarılmasıyla elde edilen açıklanamayan kıs
 **Negatif değer:** Ölçülmemiş anyonlar (keton, toksin vb.) olabilir
 **Pozitif değer:** Ölçülmemiş katyonlar (nadir)
 
-âš ï¸ Bu tam SIG değildir, Fencl-derived yaklaşık değerdir.""",
+⚠️ Bu tam SIG değildir, Fencl-derived yaklaşık değerdir.""",
         "normal": "0 ± 2 mEq/L"
     },
     
