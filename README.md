@@ -1,144 +1,189 @@
 # 🩸 Stewart Asit-Baz Analizi
 
-Fizikokimyasal yaklaşımla kan gazı değerlendirmesi için Streamlit uygulaması.
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://stewart-analyzer.streamlit.app)
+[![Tests](https://img.shields.io/badge/tests-156%20passed-brightgreen)]()
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
 
-## v3.2 - Architecture Refactor & Visualization
+**Stewart-Fencl fizikokimyasal yaklaşımı** ile kan gazı değerlendirmesi yapan, eğitim odaklı web uygulaması.
 
-### 🏗️ Mimari Değişiklikler
+> ⚕️ **Bu araç fizyolojik mekanizmaları tanımlar; tanı veya tedavi önerisi değildir.** Eğitim amaçlıdır. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.
 
-**1. Modüler Yapı**
-```
-stewart_analyzer/
-├── app.py              # Ana orchestrator (minimal)
-├── core.py             # Hesaplama motoru
-├── constants.py        # Sabitler ve konfigürasyon
-├── ui_components.py    # UI bileşenleri (yeni)
-├── visualization.py    # Plotly grafikleri (yeni)
-├── validation.py       # Input validation (yeni)
-├── logger.py           # Logging module (yeni)
-├── test_core.py        # Core testleri
-├── test_validation.py  # Edge case testleri (yeni)
-├── Dockerfile          # Container (yeni)
-└── requirements.txt
-```
+---
 
-**2. Centralized Validation (`validation.py`)**
-- `sanitize_numeric()`: Dirty input temizleme (virgül decimal, whitespace, NaN)
-- `validate_input_dict()`: Dictionary validation
-- `validate_csv_row()`: CSV satır validation (swapped columns detection)
-- `detect_albumin_unit()`: Otomatik birim algılama (g/dL vs g/L)
+## 🎯 Proje Nedir?
 
-**3. Logging (`logger.py`)**
-- `log_user_action()`: INFO - kullanıcı aksiyonları
-- `log_calculation_warning()`: WARNING - yaklaşık hesaplamalar
-- `log_analysis_error()`: ERROR - başarısız analizler (sanitized)
+Klasik asit-baz analizinin (Henderson-Hasselbalch, anyon gap) ötesinde, **güçlü iyon farkı (SID)** ve **zayıf asitler (Atot)** kavramlarına dayalı fizikokimyasal bir yaklaşım sunar.
 
-### 📊 Görselleştirme (Yeni!)
+### Kimler İçin?
+- 🏥 **Acil tıp / yoğun bakım hekimleri** — karmaşık asit-baz bozukluklarını hızlıca analiz etme
+- 📚 **Tıp öğrencileri ve asistanlar** — hazır vakalar ve literatür referanslarıyla öğrenme
+- 🔬 **Araştırmacılar** — batch CSV analizi ve literatür tabanlı eşik değerler
 
-**Gamblegram**
-- Plazma elektrolit dengesi görselleştirmesi
-- Katyonlar (Na⁺, K⁺, Ca²⁺, Mg²⁺) vs Anyonlar (Cl⁻, HCO₃⁻, Laktat, A⁻, SIG)
-- Plotly interactive chart
+### Neden Stewart?
+- Klasik yaklaşımın göremediği **maskelenmiş asidozları** (örn. hipoalbüminemi + asidoz) ortaya çıkarır
+- **Karışık (mikst) bozuklukları** ayırt eder
+- Her bileşenin **mEq/L katkısını** kantifiye eder
+- **Ölçülmemiş anyon (SIG)** etkisini hesaplar
 
-**Contribution Bar Chart**
-- Mekanizma katkılarının yatay bar grafiği
-- Asidoz (kırmızı) vs Alkaloz (mavi)
+---
 
-**SID Waterfall**
-- SID hesaplama adımları waterfall chart
-- SID_simple → SID_basic → SID_full
+## 🚀 Özellikler
 
-### 🔬 v3.1 Özellikleri (Korundu)
+### Analiz Modları
+| Mod | Açıklama |
+|-----|----------|
+| **Hızlı** | Minimum parametreler (pH, pCO₂, Na, Cl). BE tabanlı bileşen ayrıştırması. |
+| **Gelişmiş** | Tam Stewart analizi: SIDa, SIDe, SIG, Atot. Tam mekanizma analizi. |
 
-**Contribution-Based Primary Disorder Detection**
-- Dominant mekanizma mutlak mEq/L katkısına göre belirlenir
-- Sadece varlığa değil, katkı oranına bakılır
+### Girdi Yöntemleri
+- ✏️ **Manuel giriş** — Hızlı veya gelişmiş form
+- 📂 **Batch CSV** — Toplu analiz, satır satır validasyon
+- 📚 **Hazır Vakalar** — Eğitim amaçlı vakalar (Akoğlu vakaları dahil)
 
-**Lactate Contribution Classification**
-- <25% katkı → "contributing"
-- 25-50% katkı → "significant"
-- >50% katkı → "dominant"
+### Çıktılar
+- 📋 **Headline** — Tek cümlelik klinik özet
+- 📊 **Temel Değerler** — pH, pCO₂, HCO₃, BE (emoji + ok + renk kodlaması)
+- 📈 **SID Tablosu** — 3 katmanlı SID (simple / basic / full)
+- 🧮 **Katkı Ayrıştırma** — Her mekanizmanın BE'ye mEq/L ve % katkısı
+- 📉 **Grafikler** — Gamblegram, katkı bar grafiği, SID waterfall, pH gauge
+- 💡 **CDS Notları** — Kategorili (A/B/C) klinik karar destek ipuçları
+- ⚖️ **Klasik Karşılaştırma** — Stewart vs. klasik yaklaşım farkları
 
-**Non-Diagnostic, Mechanism-Based Language**
-- ❌ "Ketoasidoz" → ✅ "Ölçülmemiş anyon aracılı metabolik asidoz"
-- ❌ "Laktik asidoz" → ✅ "Laktat aracılı metabolik asidoz"
+---
 
-**SID Table Interpretation Column**
-- Low SID → "Güçlü iyon aracılı metabolik asidoz yönünde"
-- High SID → "Güçlü iyon aracılı metabolik alkaloz yönünde"
+## 🛠️ Kurulum
 
-## Kurulum
-
+### Yerel Geliştirme
 ```bash
+# Repoyu klonla
+git clone https://github.com/farukss54-bit/Stewart-Analyser-.git
+cd Stewart-Analyser-
+
+# Bağımlılıkları kur
 pip install -r requirements.txt
+
+# Uygulamayı başlat
 streamlit run app.py
 ```
+Uygulama varsayılan olarak `http://localhost:8501` adresinde açılır.
 
 ### Docker
-
 ```bash
 docker build -t stewart-analyzer .
 docker run -p 8501:8501 stewart-analyzer
 ```
 
-## Test
+### VS Code / GitHub Codespaces
+`.devcontainer/devcontainer.json` mevcuttur. Açıldığında bağımlılıklar otomatik yüklenir.
+
+---
+
+## 🧪 Test
 
 ```bash
 # Tüm testler
 pytest -v
 
-# Sadece validation testleri
+# Belirli test dosyaları
+pytest test_core.py -v
 pytest test_validation.py -v
+pytest test_regression.py -v
 
-# Coverage ile
+# Coverage
 pytest --cov=. --cov-report=html
 ```
 
-## Kullanım
+---
 
-### Hızlı Mod
-- Minimum parametrelerle analiz
-- BE tabanlı bileşen ayrıştırması
+## 📁 Dosya Yapısı
 
-### Gelişmiş Mod
-- SIG hesabı (SIDa - SIDe)
-- Atot hesabı
-- Tam mekanizma analizi
-
-### Batch Modu
-- CSV upload
-- Toplu analiz
-- Sonuç export
-
-## Dosya Yapısı
-
-| Dosya | Açıklama |
-|-------|----------|
-| `app.py` | Streamlit UI orchestrator |
-| `core.py` | Hesaplama motoru, dataclass'lar |
-| `constants.py` | Sabitler, eşikler, mesajlar |
-| `ui_components.py` | UI render fonksiyonları |
-| `visualization.py` | Plotly grafikleri |
-| `validation.py` | Input validation |
-| `logger.py` | Logging utilities |
-
-## Katkıda Bulunma
-
-1. Fork the repository
-2. Create a feature branch
-3. Run tests: `pytest -v`
-4. Submit a pull request
-
-## Lisans
-
-MIT License
-
-## Referanslar
-
-- Stewart PA. Modern quantitative acid-base chemistry. Can J Physiol Pharmacol. 1983
-- Fencl V, Leith DE. Stewart's quantitative acid-base chemistry. Respir Physiol. 1993
-- Morgan TJ. The Stewart approach. Clinica Chimica Acta. 2019
+```
+.
+├── app.py              # Streamlit UI orchestrator
+├── core.py             # Hesaplama motoru (~1700 satır)
+├── constants.py        # Klinik sabitler, eşikler, hazır vakalar (~1100 satır)
+├── ui_components.py    # UI render fonksiyonları
+├── visualization.py    # Plotly grafikleri
+├── validation.py       # 3-katmanlı validasyon, Na/Cl swap tespiti
+├── logger.py           # Yapılandırılmış loglama (PHI içermez)
+├── test_core.py        # Birim testleri
+├── test_validation.py  # Edge case testleri
+├── test_regression.py  # Regresyon testleri
+├── test_regression_fixed.py
+├── test_simple.py      # Smoke testleri
+├── test_sprint4.py     # Sprint 4 testleri
+├── requirements.txt    # Bağımlılıklar
+├── Dockerfile          # Üretim konteyneri
+├── docs/
+│   ├── AGENTS.md       # Ajan rehberi (AI geliştiriciler için)
+│   └── BE_FORMUL_RAPORU.txt  # BE formül doğrulama raporu
+└── README.md           # Bu dosya
+```
 
 ---
 
-*Bu araç fizyolojik mekanizmaları tanımlar; tanı veya tedavi önerisi değildir.*
+## 📖 Kullanım
+
+### Hızlı Mod
+1. Sidebar'dan "Hızlı (Klinik)" seç
+2. pH, pCO₂, Na, Cl gir
+3. İsteğe bağlı: K, laktat, albümin
+4. "Analiz Et" butonuna tıkla
+
+### Gelişmiş Mod
+1. Sidebar'dan "Gelişmiş" seç
+2. Tüm parametreleri gir (Ca, Mg, fosfat dahil)
+3. SIG hesaplaması ve tam mekanizma analizi gör
+
+### Hazır Vakalar
+1. Sidebar'dan "📚 Hazır Vakalar" bölümünden vaka seç
+2. "🔄 Değerleri Yükle" butonuna tıkla
+3. Eğitim notunu ve klasik karşılaştırmayı incele
+
+### Batch Analiz
+1. CSV dosyası yükle (her satır bir hasta)
+2. Otomatik validasyon ve analiz
+3. Sonuçları indir
+
+---
+
+## 🔬 Literatür Referansları
+
+Proje aşağıdaki literatüre dayanmaktadır:
+
+- **Stewart PA.** Modern quantitative acid-base chemistry. *Can J Physiol Pharmacol.* 1983
+- **Figge J, Mydosh T, Fencl V.** Serum proteins and acid-base equilibria. *J Lab Clin Med.* 1991
+- **Fencl V, Jabor A, Kazda A, Figge J.** Diagnosis of metabolic acid-base disturbances. *Am J Respir Crit Care.* 2000
+- **Morgan TJ.** The Stewart approach. *Crit Care Clin.* 2009
+- **Kellum JA.** Disorders of acid-base balance. *Crit Care Med.* 2009
+- **Berend K, et al.** Physiological approach to assessment of acid-base disturbances. *NEJM.* 2014
+- **Story DA.** Stewart acid-base: A simplified bedside approach. *Anesth Analg.* 2016
+
+**Klinik vaka katkıları:** Doç. Dr. Haldun Akoğlu — Marmara Üniversitesi Acil Tıp AD.
+
+---
+
+## 🤝 Katkıda Bulunma
+
+1. Repoyu fork'la
+2. Feature branch oluştur: `git checkout -b feature/yeni-ozellik`
+3. Testleri çalıştır: `pytest -v` (156 test yeşil olmalı)
+4. Pull request gönder
+
+AGENTS.md dosyasını okuyarak proje kurallarını, mimarisini ve sık karşılaşılan tuzakları öğrenebilirsiniz.
+
+---
+
+## ⚕️ Yasal Uyarı
+
+Bu uygulama **eğitim amaçlıdır** ve fizyolojik mekanizmaları tanımlar. Tanı koymaz, tedavi önerisi vermez. Tüm klinik kararlar uzman hekim değerlendirmesi gerektirir.
+
+---
+
+## 📜 Lisans
+
+MIT License
+
+---
+
+*🇬🇧 [English version → README_EN.md](README_EN.md)*
