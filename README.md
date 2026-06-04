@@ -1,6 +1,6 @@
 # 🩸 Stewart Acid-Base Analysis
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://stewart-analyzer.streamlit.app)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://n7fyxlln7scrqcnsbssn9w.streamlit.app/)
 [![Tests](https://img.shields.io/badge/tests-156%20passed-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
 
