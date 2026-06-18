@@ -26,7 +26,6 @@ from constants import (
     BE_COEFFICIENT, BE_HCO3_NORMAL, BE_PH_COEFFICIENT, BE_PH_NORMAL,
     ALBUMIN_PH_COEFFICIENT, ALBUMIN_CONSTANT,
     PO4_PH_COEFFICIENT, PO4_CONSTANT,
-    ATOT_ALBUMIN_COEFFICIENT, ATOT_PO4_COEFFICIENT,
     WINTERS_HCO3_COEFFICIENT, WINTERS_CONSTANT, WINTERS_TOLERANCE,
     ALKALOSIS_PCO2_COEFFICIENT, ALKALOSIS_PCO2_CONSTANT, ALKALOSIS_TOLERANCE,
     RESP_ACIDOSIS_ACUTE_COEFFICIENT, RESP_ACIDOSIS_CHRONIC_COEFFICIENT,
@@ -200,9 +199,6 @@ class StewartOutput:
     sig: Optional[float] = None
     sig_reliability: str = "unknown"
     sig_interpretation: str = ""  # Kategorik yorum
-    
-    # Atot
-    atot: Optional[float] = None
     
     # Cl/Na oranı
     cl_na_ratio: float = 0.0
@@ -1323,15 +1319,6 @@ def determine_dominant_disorder(
     return "triple_disorder", components
 
 
-# === ATOT ===
-
-def calculate_atot(albumin_gl: Optional[float], po4: Optional[float]) -> Optional[float]:
-    if albumin_gl is None: return None
-    atot = ATOT_ALBUMIN_COEFFICIENT * albumin_gl
-    if po4 is not None: atot += ATOT_PO4_COEFFICIENT * po4
-    return round(atot, 1)
-
-
 # === LOGGING HELPERS ===
 
 def _check_and_log_extreme_values(inp: StewartInput) -> None:
@@ -1473,7 +1460,7 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     cl_na_ratio = round(inp.cl / inp.na, 3) if inp.na > 0 else 0
     
     # Advanced mod
-    sid_effective, sig, sig_reliability, sig_interpretation, atot = None, None, "unknown", "", None
+    sid_effective, sig, sig_reliability, sig_interpretation = None, None, "unknown", ""
     sig_warnings = []
     
     if mode == "advanced":
@@ -1494,7 +1481,6 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
             if sig_reliability == "approximate": flags.append("SIG_APPROXIMATE")
             elif sig_reliability == "underestimated": flags.append("SIG_UNDERESTIMATED")
             elif sig_reliability == "unreliable": flags.append("SIG_UNRELIABLE")
-        atot = calculate_atot(inp.albumin_gl, inp.po4)
     
     # Kompanzasyon
     expected_pco2, expected_hco3, comp_status, comp_details, obs_exp_diff = assess_compensation(
@@ -1598,7 +1584,7 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
         be_calculated=be_calculated, be_used=be_used, be_source=be_source,
         sid_values=sid_values, sid_effective=sid_effective, sig=sig,
         sig_reliability=sig_reliability, sig_interpretation=sig_interpretation,
-        atot=atot, cl_na_ratio=cl_na_ratio,
+        cl_na_ratio=cl_na_ratio,
         sid_effect=sid_effect, albumin_effect=albumin_effect,
         lactate_effect=lactate_effect, residual_effect=residual_effect,
         respiratory_effect=respiratory_effect,

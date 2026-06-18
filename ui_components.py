@@ -398,9 +398,6 @@ def render_stewart_params(out, interpret_sig_func):
             st.metric("SIDeffective", f"{out.sid_effective:.1f}")
     
     with c2:
-        if out.atot:
-            st.metric("Atot", f"{out.atot:.1f}")
-        
         if out.cl_na_ratio > 0.75:
             clna_icon = "🔴⬆"
             clna_text = "Yüksek (asidoz eğilimi)"
@@ -427,8 +424,6 @@ def render_stewart_params(out, interpret_sig_func):
         col_def1, col_def2 = st.columns(2)
         with col_def1:
             st.markdown(PARAM_DEFINITIONS["sid_effective"]["long"])
-            st.markdown("---")
-            st.markdown(PARAM_DEFINITIONS["atot"]["long"])
         with col_def2:
             st.markdown(PARAM_DEFINITIONS["sig"]["long"])
             st.markdown("---")

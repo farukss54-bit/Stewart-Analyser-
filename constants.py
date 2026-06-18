@@ -307,11 +307,6 @@ ALBUMIN_CONSTANT = 0.631        # [FIGGE-1991]
 PO4_PH_COEFFICIENT = 0.309      # [FIGGE-1991]
 PO4_CONSTANT = 0.469            # [FIGGE-1991]
 
-# --- Atot Basitleştirilmiş Katsayılar ---
-# Atot ≈ 0.123 × Albumin + 0.309 × PO4 (pH 7.4'te)
-ATOT_ALBUMIN_COEFFICIENT = 0.123
-ATOT_PO4_COEFFICIENT = 0.309
-
 # === VALIDASYON MESAJLARI ===
 VALIDATION_MESSAGES = {
     "ph_out_of_range": "pH değeri fizyolojik sınırlar dışında (6.80-7.80)",
@@ -886,25 +881,6 @@ Doğrudan referans aralığı yoktur; SIDapparent ile karşılaştırılarak yor
     },
     
     # === Stewart Parametreleri ===
-    "atot": {
-        "short": "Zayıf asitlerin (albümin, fosfat) toplam etkisi.",
-        "long": """**Atot (Total Weak Acids)**
-
-Zayıf asitlerin (özellikle albümin ve fosfat) toplam etkisini temsil eder.
-
-**Normal:** ≈ 2.5–3.0 mmol/L (albümin ~40 g/L varsayımıyla)
-
-**Düşükse:**
-• Albümin düşüklüğü
-• pH alkaloz yönüne itilir
-• Metabolik asidoz maskelenebilir
-
-**Yüksekse:**
-• Albümin/fosfat artışı
-• Metabolik asidoz eğilimi""",
-        "normal": "≈ 2.5-3.0 mmol/L"
-    },
-    
     "sig": {
         "short": "Ölçülmemiş anyonların (keton, toksin, sülfat vb.) varlığını gösterir.",
         "long": """**SIG (Strong Ion Gap)**
