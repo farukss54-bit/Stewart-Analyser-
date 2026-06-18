@@ -52,6 +52,19 @@ class TestSIDCalculations:
         assert status == "complete"
         assert len(missing) == 0
 
+    def test_sid_full_divalent_charge(self):
+        # Ca ve Mg ×2 (mEq/L) ile hesaplanmalı
+        # (140+4+1.25*2+0.85*2) - (100+1) = (140+4+2.5+1.7) - 101 = 47.2
+        sid, status, missing = calculate_sid_full(140, 100, 4, 1.25, 0.85, 1)
+        assert status == "complete"
+        assert sid == 47.2
+
+    def test_sid_full_ca_mg_doubled_vs_none(self):
+        # Ca/Mg eklenince fark tam olarak 2*(ca+mg) olmalı
+        sid_with, _, _ = calculate_sid_full(140, 100, 4, 1.0, 0.5, 1)
+        sid_without, _, _ = calculate_sid_full(140, 100, 4, None, None, 1)
+        assert round(sid_with - sid_without, 1) == 3.0   # 2*(1.0+0.5)
+
 
 class TestSIGInterpretation:
     def test_sig_positive(self):

@@ -370,7 +370,7 @@ def render_sid_table(out, interpret_sid_direction_func):
          "Normal": f"~{SID_NORMAL_BASIC}", 
          "Yorum": sid_basic_interp,
          "Durum": "✓" if sid.sid_basic else f"✗ {sid.sid_basic_status}"},
-        {"Katman": "SID_full (SIDa)", "Formül": "(Na+K+Ca+Mg) - (Cl+Lac)",
+        {"Katman": "SID_full (SIDa)", "Formül": "(Na+K+Ca×2+Mg×2) - (Cl+Lac)",
          "Değer": f"{sid.sid_full:.1f}" if sid.sid_full else "—",
          "Normal": f"~{SID_NORMAL_FULL}",
          "Yorum": sid_full_interp,

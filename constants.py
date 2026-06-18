@@ -186,7 +186,9 @@ BE_MISMATCH_THRESHOLD = 2.0  # Manuel-hesaplanan fark toleransı
 
 SID_NORMAL_SIMPLE = 38.0   # [FENCL-2000] Na-Cl için normal değer
 SID_NORMAL_BASIC = 37.0    # Laktat dahil normal değer
-SID_NORMAL_FULL = 40.0     # [STEWART-1983] Tam SIDa için normal
+SID_NORMAL_FULL = 42.0     # [STEWART-1983], [FENCL-2000]
+# SIDa = (Na + K + Ca×2 + Mg×2) − (Cl + Lactate)
+# Literatür normal aralık: 40-42 mEq/L (LITFL, Critical Care)
 SID_LOW_THRESHOLD = 38.0   # Bu altı = metabolik asidoz yönünde
 SID_HIGH_THRESHOLD = 44.0  # Bu üstü = metabolik alkaloz yönünde
 SID_NORMAL_RANGE = 2.0     # Normal kabul edilen varyasyon

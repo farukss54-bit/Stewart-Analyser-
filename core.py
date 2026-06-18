@@ -338,9 +338,9 @@ def calculate_sid_full(na: float, cl: float, k: Optional[float], ca: Optional[fl
     cations = na
     if k is not None: cations += k
     else: missing.append("K+")
-    if ca is not None: cations += ca
+    if ca is not None: cations += ca * 2   # divalan: mmol/L → mEq/L
     else: missing.append("Ca2+")
-    if mg is not None: cations += mg
+    if mg is not None: cations += mg * 2   # divalan: mmol/L → mEq/L
     else: missing.append("Mg2+")
     
     anions = cl
