@@ -184,8 +184,8 @@ BE_MISMATCH_THRESHOLD = 2.0  # Manuel-hesaplanan fark toleransı
 # SID_basic   = Na - Cl - Lactate (laktat etkisi dahil)
 # SID_full    = (Na + K + Ca×2 + Mg×2) - (Cl + Lactate) (tam hesaplama)
 
-SID_NORMAL_SIMPLE = 38.0   # [FENCL-2000] Na-Cl için normal değer
-SID_NORMAL_BASIC = 37.0    # Laktat dahil normal değer
+SID_NORMAL_SIMPLE = 38.0   # Na - Cl; normal Cl≈102 varsayımı. Literatür 35-40 arası; yaygın kullanım 38.
+SID_NORMAL_BASIC = 37.0    # Türetilmiş: SID_simple(38) − normal laktat(~1). Birincil literatür alıntısı değil.
 SID_NORMAL_FULL = 42.0     # [STEWART-1983], [FENCL-2000]
 # SIDa = (Na + K + Ca×2 + Mg×2) − (Cl + Lactate)
 # Literatür normal aralık: 40-42 mEq/L (LITFL, Critical Care)
@@ -229,8 +229,16 @@ CL_NA_RATIO_THRESHOLD = 0.75  # Bu üstü hiperkloremik patern
 # Normal: 8-12 mEq/L (albüminsiz)
 # Düzeltilmiş AG = AG + 2.5 × (4.2 - Albümin_g/dL)
 
-AG_NORMAL = 12.0           # [BEREND-2014] Normal üst sınır
+AG_NORMAL = 12.0           # [LEGACY] UI'da kullanılmıyor; yeni eşikler AG_NORMAL_HIGH/AG_HIGH_THRESHOLD
 AG_THRESHOLD = 2.0         # Klinik anlamlılık toleransı
+
+# Citable AG eşikleri (Audit düzeltmesi)
+# Modern ISE üst normal sınırı ~11; HAGMA tarama eşiği ≥15
+AG_NORMAL_HIGH = 11.0      # Modern ISE üst normal sınır (aralık 3-11/5-12)
+                           # Ref: Sadjadi 2013 (PMID 23776389)
+AG_HIGH_THRESHOLD = 15.0   # HAGMA tarama eşiği (yüksek duyarlılık)
+                           # Ref: Singapore Med J 2026 (PMID 38478728)
+# 11 < AG < 15 = klinik sınır/gri bölge; albümin düzeltmesi + bağlam gerekir
 
 # =============================================================================
 # ⚖️ KLİNİK ANLAMLILIK EŞİĞİ
@@ -254,12 +262,13 @@ WINTERS_CONSTANT = 8
 WINTERS_TOLERANCE = 2
 
 # --- Metabolik Alkaloz için Kompanzasyon ---
-# Beklenen pCO2 = 0.7 × HCO3 + 21 (±2)
-# Not: Metabolik alkalozda kompanzasyon daha az öngörülebilir
+# Beklenen pCO2 = 0.7 × HCO3 + 20 (±5)
+# Ref: NIH PMC 2022; LITFL 2025 ("0.7×HCO3 + 20 ± 5")
+# Not: Metabolik alkalozda kompanzasyon daha az öngörülebilir; tolerans geniştir
 
 ALKALOSIS_PCO2_COEFFICIENT = 0.7
-ALKALOSIS_PCO2_CONSTANT = 21
-ALKALOSIS_TOLERANCE = 2
+ALKALOSIS_PCO2_CONSTANT = 20
+ALKALOSIS_TOLERANCE = 5
 
 # --- Respiratuvar Asidoz Kompanzasyonu ---
 # Akut: HCO3 = 24 + 0.1 × (pCO2 - 40)  → Her 10↑ pCO2 = 1↑ HCO3

@@ -12,6 +12,7 @@ from constants import (
     SID_NORMAL_SIMPLE, SID_NORMAL_BASIC, SID_NORMAL_FULL,
     PARAM_DEFINITIONS, UI_TEXTS, SAMPLE_CASES
 )
+from core import classify_anion_gap
 
 
 # =============================================================================
@@ -430,29 +431,33 @@ def render_stewart_params(out, interpret_sig_func):
             st.markdown(PARAM_DEFINITIONS["cl_na_ratio"]["long"])
 
 
+def _get_anion_gap_status(value: float) -> Tuple[str, str]:
+    """Three-tier AG classification using citable thresholds.
+
+    Returns (icon, text).
+    """
+    level = classify_anion_gap(value)
+    if level == "normal":
+        return "🟢", "Normal"
+    elif level == "borderline":
+        return "🟡", "Sınırda — albümin düzeltmesi ve klinik bağlam önerilir"
+    else:
+        return "🔴⬆", "Yüksek (HAGMA olası)"
+
+
 def render_anion_gap(out):
     """Render Anion Gap section"""
     st.subheader("🔍 Anyon Gap")
     c1, c2 = st.columns(2)
     
     with c1:
-        if out.anion_gap > 12:
-            ag_icon = "🔴⬆"
-            ag_text = "Yüksek (HAGMA?)"
-        else:
-            ag_icon = "🟢"
-            ag_text = "Normal"
+        ag_icon, ag_text = _get_anion_gap_status(out.anion_gap)
         st.metric("AG", f"{out.anion_gap:.1f}")
         st.caption(f"{ag_icon} {ag_text}")
     
     with c2:
         if out.anion_gap_corrected:
-            if out.anion_gap_corrected > 16:
-                agc_icon = "🔴⬆"
-                agc_text = "Yüksek"
-            else:
-                agc_icon = "🟢"
-                agc_text = "Normal"
+            agc_icon, agc_text = _get_anion_gap_status(out.anion_gap_corrected)
             st.metric("AG (düzeltilmiş)", f"{out.anion_gap_corrected:.1f}")
             st.caption(f"{agc_icon} {agc_text}")
     
@@ -462,6 +467,8 @@ def render_anion_gap(out):
             st.markdown(PARAM_DEFINITIONS["anion_gap"]["long"])
         with col_ag2:
             st.markdown(PARAM_DEFINITIONS["anion_gap_corrected"]["long"])
+    
+    st.caption("Hipoalbüminemide düzeltilmiş AG daha güvenilirdir.")
 
 
 def render_compensation(out):

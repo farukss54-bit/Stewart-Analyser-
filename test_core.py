@@ -13,6 +13,7 @@ from core import (
     calculate_hco3, calculate_be,
     calculate_sid_simple, calculate_sid_basic, calculate_sid_full,
     calculate_sig, interpret_sig_categorical,
+    calculate_anion_gap, calculate_corrected_anion_gap, classify_anion_gap,
     generate_contribution_breakdown, generate_headline,
     generate_classic_comparison, generate_cds_notes,
     determine_dominant_disorder, validate_input,
@@ -78,6 +79,17 @@ class TestSIGInterpretation:
     def test_sig_normal(self):
         interp = interpret_sig_categorical(0.5)
         assert "normal" in interp.lower()
+
+
+class TestAnionGapClassification:
+    def test_classify_anion_gap_tiers(self):
+        assert classify_anion_gap(8.0) == "normal"
+        assert classify_anion_gap(11.0) == "normal"      # ≤11 sınırı
+        assert classify_anion_gap(11.1) == "borderline"
+        assert classify_anion_gap(12.1) == "borderline"  # eski şikayet değeri
+        assert classify_anion_gap(14.9) == "borderline"
+        assert classify_anion_gap(15.0) == "high"        # ≥15 sınırı
+        assert classify_anion_gap(20.0) == "high"
 
 
 class TestContributionBreakdown:

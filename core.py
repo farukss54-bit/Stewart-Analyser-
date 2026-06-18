@@ -21,6 +21,7 @@ from constants import (
     SID_LOW_THRESHOLD, SID_HIGH_THRESHOLD, SID_THRESHOLD,
     SIG_NORMAL, SIG_THRESHOLD, SIG_HIGH, SIG_LOW,
     CL_NA_RATIO_THRESHOLD,
+    AG_NORMAL_HIGH, AG_HIGH_THRESHOLD,
     CLINICAL_SIGNIFICANCE_THRESHOLD,
     HH_CONSTANT, HH_SOLUBILITY,
     BE_COEFFICIENT, BE_HCO3_NORMAL, BE_PH_COEFFICIENT, BE_PH_NORMAL,
@@ -467,6 +468,20 @@ def calculate_anion_gap(na: float, cl: float, hco3: float) -> float:
 
 def calculate_corrected_anion_gap(ag: float, albumin_gdl: float) -> float:
     return round(ag + 2.5 * (4.2 - albumin_gdl), 1)
+
+
+def classify_anion_gap(value: float) -> str:
+    """AG üç kademeli sınıflama (citable eşikler).
+
+    ≤AG_NORMAL_HIGH: normal | <AG_HIGH_THRESHOLD: borderline | ≥: high
+    Ref: Sadjadi 2013 (PMID 23776389); Singapore Med J 2026 (PMID 38478728)
+    """
+    if value <= AG_NORMAL_HIGH:
+        return "normal"
+    elif value < AG_HIGH_THRESHOLD:
+        return "borderline"
+    else:
+        return "high"
 
 
 # === KOMPANZASYON ===
