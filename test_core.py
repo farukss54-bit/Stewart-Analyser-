@@ -282,6 +282,21 @@ class TestClassicComparison:
         )
         assert len(comparison.missed_by_classic) > 0
 
+    def test_ag_vs_sig_uses_classification_threshold(self):
+        # AG açıkça normal (<15) + SIG yüksek → fark çıkmalı
+        comp = generate_classic_comparison(
+            hco3=20, be=-6, sid_effect=-1, albumin_gl=40,
+            albumin_effect=0, anion_gap=10, anion_gap_corrected=10, sig=5
+        )
+        assert any("AG normal" in m for m in comp.missed_by_classic)
+
+        # AG zaten "yüksek" sınıfında (≥15) → fark ÇIKMAMALI
+        comp2 = generate_classic_comparison(
+            hco3=20, be=-6, sid_effect=-1, albumin_gl=40,
+            albumin_effect=0, anion_gap=15.5, anion_gap_corrected=15.5, sig=5
+        )
+        assert not any("AG normal" in m for m in comp2.missed_by_classic)
+
 
 class TestCDSNotes:
     def test_sid_low_note(self):

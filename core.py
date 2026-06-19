@@ -1065,7 +1065,7 @@ def generate_classic_comparison(
     
     # AG vs SIG farkı
     if anion_gap_corrected is not None and sig is not None:
-        if anion_gap <= 16 and sig > SIG_HIGH:
+        if classify_anion_gap(anion_gap) != "high" and sig > SIG_HIGH:
             differences.append(CLASSIC_COMPARISON["ag_vs_sig"])
             missed.append("AG normal ama SIG yüksek")
     
