@@ -12,7 +12,6 @@ Tüm çıktılar non-diagnostiktir: "... ile uyumlu olabilir", "... düşünüle
 from typing import Any, Dict, List, Optional
 
 from constants import (
-    AG_NORMAL,
     LACTATE_THRESHOLD,
 )
 
@@ -121,8 +120,7 @@ DIFFERENTIAL_KNOWLEDGE = {
         "trigger": {
             "match": "any",
             "conditions": [
-                {"param": "dominant_disorder", "op": "eq", "value": "metabolic_alkalosis"},
-                {"param": "disorder_components", "op": "contains", "value": "metabolic_alkalosis"},
+                {"param": "disorder_components", "op": "contains", "value": "hypochloremic_alkalosis"},
             ],
         },
         "paradigm": "stewart",
@@ -147,10 +145,9 @@ DIFFERENTIAL_KNOWLEDGE = {
     },
     "nagma_pattern": {
         "trigger": {
-            "match": "all",
+            "match": "any",
             "conditions": [
-                {"param": "dominant_disorder", "op": "eq", "value": "metabolic_acidosis"},
-                {"param": "anion_gap", "op": "lte", "value": AG_NORMAL},
+                {"param": "disorder_components", "op": "contains", "value": "hyperchloremic_acidosis"},
             ],
         },
         "paradigm": "classical",
@@ -204,10 +201,9 @@ DIFFERENTIAL_KNOWLEDGE = {
     },
     "hagma_cat_mud_piles": {
         "trigger": {
-            "match": "all",
+            "match": "any",
             "conditions": [
-                {"param": "dominant_disorder", "op": "eq", "value": "metabolic_acidosis"},
-                {"param": "anion_gap", "op": "gt", "value": AG_NORMAL},
+                {"param": "disorder_components", "op": "contains", "value": "hagma"},
             ],
         },
         "paradigm": "classical",
@@ -231,10 +227,9 @@ DIFFERENTIAL_KNOWLEDGE = {
     },
     "osmol_gap_toxic_alcohol": {
         "trigger": {
-            "match": "all",
+            "match": "any",
             "conditions": [
-                {"param": "dominant_disorder", "op": "eq", "value": "metabolic_acidosis"},
-                {"param": "anion_gap", "op": "gt", "value": AG_NORMAL},
+                {"param": "disorder_components", "op": "contains", "value": "hagma"},
             ],
         },
         "paradigm": "classical",
