@@ -38,7 +38,7 @@ class TestPrimerRespiratuvarBozukluklar:
         assert "respiratory_alkalosis" in out.dominant_disorder
         assert "respiratory_alkalosis" in out.disorder_components
         assert not _has_sig_warning(out.cds_notes)
-        assert "Primer Respiratuvar" in out.headline.dominant_mechanism
+        assert "primer respiratuvar" in out.headline.dominant_mechanism.lower()
 
     def test_akut_respiratuvar_asidoz(self):
         out, val = analyze_stewart(

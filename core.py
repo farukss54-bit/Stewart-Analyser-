@@ -813,6 +813,31 @@ def determine_metabolic_dominance(contributions: Dict[str, Any], flags: List[str
     )
 
 
+# Solunumsal durum eşlemesi — tek doğruluk kaynağı: assess_compensation
+_RESP_STATUS_MAP = {
+    "Uygun respiratuvar kompanzasyon": "Uygun solunumsal kompanzasyon",
+    "Ek respiratuvar asidoz": "Eklenmiş respiratuvar asidoz bileşeni",
+    "Ek respiratuvar alkaloz": "Eklenmiş respiratuvar alkaloz bileşeni",
+    "Akut respiratuvar asidoz": "Primer respiratuvar asidoz mevcut",
+    "Kronik respiratuvar asidoz": "Primer respiratuvar asidoz mevcut",
+    "Subakut respiratuvar asidoz": "Primer respiratuvar asidoz mevcut",
+    "Akut respiratuvar alkaloz": "Primer respiratuvar alkaloz mevcut",
+    "Kronik respiratuvar alkaloz": "Primer respiratuvar alkaloz mevcut",
+    "Subakut respiratuvar alkaloz": "Primer respiratuvar alkaloz mevcut",
+    "Belirgin primer bozukluk yok": "Solunumsal bileşen normal",
+}
+
+# Primer respiratuvar bozukluk manşet başlıkları
+_PRIMARY_RESP_HEADLINE = {
+    "Akut respiratuvar asidoz": "Primer respiratuvar asidoz (akut)",
+    "Subakut respiratuvar asidoz": "Primer respiratuvar asidoz (subakut)",
+    "Kronik respiratuvar asidoz": "Primer respiratuvar asidoz (kronik)",
+    "Akut respiratuvar alkaloz": "Primer respiratuvar alkaloz (akut)",
+    "Subakut respiratuvar alkaloz": "Primer respiratuvar alkaloz (subakut)",
+    "Kronik respiratuvar alkaloz": "Primer respiratuvar alkaloz (kronik)",
+}
+
+
 def analyze_mechanisms(
     be: float,
     sid_effect: float,
@@ -916,20 +941,8 @@ def analyze_mechanisms(
     if "masking_present" in dominance_result.pattern_flags:
         pattern = f"{pattern} Karşıt yönlü metabolik etkiler birbirini kısmen maskeleyebilir.".strip()
 
-    # Respiratuvar durum değerlendirmesi
-    resp_status = ""
-    if pco2 > PCO2_NORMAL_HIGH:
-        if "kompanzasyon" in compensation_status.lower() and "uygun" in compensation_status.lower():
-            resp_status = "Uygun solunumsal kompanzasyon"
-        else:
-            resp_status = "Respiratuvar asidoz bileşeni mevcut"
-    elif pco2 < PCO2_NORMAL_LOW:
-        if "kompanzasyon" in compensation_status.lower() and "uygun" in compensation_status.lower():
-            resp_status = "Uygun solunumsal kompanzasyon"
-        else:
-            resp_status = "Respiratuvar alkaloz bileşeni mevcut"
-    else:
-        resp_status = "Solunumsal bileşen normal"
+    # Solunumsal durum — tek doğruluk kaynağı: assess_compensation çıktısı
+    resp_status = _RESP_STATUS_MAP.get(compensation_status, "Solunumsal bileşen normal")
 
     return MechanismAnalysis(
         total_metabolic_effect=be,
@@ -948,7 +961,8 @@ def generate_headline(
     ph: float,
     pco2: float,
     be: float,
-    dominant_disorder: str = ""
+    dominant_disorder: str = "",
+    compensation_status: str = "",
 ) -> Headline:
     """
     Generate mechanism-based headline (non-diagnostic).
@@ -968,32 +982,19 @@ def generate_headline(
     is_resp_alkalosis = pco2 < PCO2_NORMAL_LOW
     is_be_normal = abs(be) <= CLINICAL_SIGNIFICANCE_THRESHOLD
 
-    # Primer respiratuvar bozukluk kontrolü
-    if (is_acidemia and is_resp_acidosis and is_be_normal) or \
-       (is_acidemia and is_resp_acidosis and be < 3):
-        dominant_str = "Primer Respiratuvar Asidoz"
-        # Metabolik mekanizmalar varsa ikincil olarak ekle
+    # Primer respiratuvar bozukluk kontrolü — tek kaynak: comp_status
+    if compensation_status in _PRIMARY_RESP_HEADLINE:
+        significant_list = []
         if mechanism_analysis.dominant_mechanism:
-            significant_list.append(f"Sekonder: {mechanism_analysis.dominant_mechanism.description}")
+            significant_list.append(
+                f"Sekonder/kompansatuar: {mechanism_analysis.dominant_mechanism.description}"
+            )
         return Headline(
-            dominant_mechanism=dominant_str,
+            dominant_mechanism=_PRIMARY_RESP_HEADLINE[compensation_status],
             significant_mechanisms=significant_list,
-            contributing_mechanisms=contributing_list,
-            respiratory_status="Primer respiratuvar asidoz mevcut",
-            pattern_note=""
-        )
-
-    if (is_alkalemia and is_resp_alkalosis and is_be_normal) or \
-       (is_alkalemia and is_resp_alkalosis and be > -3):
-        dominant_str = "Primer Respiratuvar Alkaloz"
-        if mechanism_analysis.dominant_mechanism:
-            significant_list.append(f"Sekonder: {mechanism_analysis.dominant_mechanism.description}")
-        return Headline(
-            dominant_mechanism=dominant_str,
-            significant_mechanisms=significant_list,
-            contributing_mechanisms=contributing_list,
-            respiratory_status="Primer respiratuvar alkaloz mevcut",
-            pattern_note=""
+            contributing_mechanisms=[],
+            respiratory_status=mechanism_analysis.respiratory_status,
+            pattern_note="",
         )
 
     # METABOLİK BOZUKLUKLARı RAPORLA (respiratuvar primer değilse)
@@ -1528,7 +1529,10 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     )
     
     # Headline (refactored - mechanism-based)
-    headline = generate_headline(mechanism_analysis, inp.ph, inp.pco2, be_used)
+    headline = generate_headline(
+        mechanism_analysis, inp.ph, inp.pco2, be_used,
+        compensation_status=comp_status
+    )
     
     # Classic Comparison
     classic_comparison = generate_classic_comparison(
