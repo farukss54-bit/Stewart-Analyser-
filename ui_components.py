@@ -12,7 +12,7 @@ from constants import (
     SID_NORMAL_SIMPLE, SID_NORMAL_BASIC, SID_NORMAL_FULL,
     PARAM_DEFINITIONS, UI_TEXTS, SAMPLE_CASES
 )
-from core import classify_anion_gap
+from core import classify_anion_gap, CompensationStatus
 
 
 # =============================================================================
@@ -476,7 +476,7 @@ def render_compensation(out):
     st.subheader("🫁 Kompanzasyon")
     if out.compensation_details:
         st.markdown(f"**{out.compensation_details}**")
-    if "Uygun" in out.compensation_status:
+    if out.compensation_code == CompensationStatus.APPROPRIATE:
         st.success(f"✅ {out.compensation_status}")
     elif out.compensation_status:
         st.warning(f"⚠️ {out.compensation_status}")

@@ -183,6 +183,35 @@ class CDSNote:
     references: List[str] = field(default_factory=list)
 
 
+class CompensationStatus(str, Enum):
+    APPROPRIATE = "appropriate"
+    ADDED_RESP_ALKALOSIS = "added_resp_alkalosis"
+    ADDED_RESP_ACIDOSIS = "added_resp_acidosis"
+    PRIMARY_RESP_ACIDOSIS_ACUTE = "primary_resp_acidosis_acute"
+    PRIMARY_RESP_ACIDOSIS_SUBACUTE = "primary_resp_acidosis_subacute"
+    PRIMARY_RESP_ACIDOSIS_CHRONIC = "primary_resp_acidosis_chronic"
+    PRIMARY_RESP_ALKALOSIS_ACUTE = "primary_resp_alkalosis_acute"
+    PRIMARY_RESP_ALKALOSIS_SUBACUTE = "primary_resp_alkalosis_subacute"
+    PRIMARY_RESP_ALKALOSIS_CHRONIC = "primary_resp_alkalosis_chronic"
+    NONE = "none"
+
+
+# Koddan Türkçe statü metni — assess_compensation'ın eskiden döndürdüğü
+# string'lerin BİREBİR aynısı:
+COMPENSATION_STATUS_TEXT_TR = {
+    CompensationStatus.APPROPRIATE: "Uygun respiratuvar kompanzasyon",
+    CompensationStatus.ADDED_RESP_ALKALOSIS: "Ek respiratuvar alkaloz",
+    CompensationStatus.ADDED_RESP_ACIDOSIS: "Ek respiratuvar asidoz",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_ACUTE: "Akut respiratuvar asidoz",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_SUBACUTE: "Subakut respiratuvar asidoz",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_CHRONIC: "Kronik respiratuvar asidoz",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_ACUTE: "Akut respiratuvar alkaloz",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_SUBACUTE: "Subakut respiratuvar alkaloz",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_CHRONIC: "Kronik respiratuvar alkaloz",
+    CompensationStatus.NONE: "Belirgin primer bozukluk yok",
+}
+
+
 @dataclass
 class StewartOutput:
     """Stewart analizi çıktıları"""
@@ -219,6 +248,7 @@ class StewartOutput:
     expected_pco2: Optional[float] = None
     expected_hco3: Optional[float] = None
     compensation_status: str = ""
+    compensation_code: Optional[CompensationStatus] = None
     compensation_details: str = ""
     observed_expected_diff: Optional[float] = None
     
@@ -506,7 +536,7 @@ def calculate_expected_hco3_respiratory_alkalosis(pco2: float, is_chronic: bool 
     return round(HCO3_NORMAL - coef * delta_pco2, 1)
 
 
-def assess_compensation(ph: float, pco2: float, hco3: float, be: float) -> Tuple[Optional[float], Optional[float], str, str, Optional[float]]:
+def assess_compensation(ph: float, pco2: float, hco3: float, be: float) -> Tuple[Optional[float], Optional[float], CompensationStatus, str, Optional[float]]:
     is_acidemia = ph < PH_NORMAL_LOW
     is_alkalemia = ph > PH_NORMAL_HIGH
     is_pco2_high = pco2 > PCO2_NORMAL_HIGH
@@ -518,41 +548,41 @@ def assess_compensation(ph: float, pco2: float, hco3: float, be: float) -> Tuple
         expected_pco2 = calculate_expected_pco2_metabolic_acidosis(hco3)
         diff = pco2 - expected_pco2
         if abs(diff) <= WINTERS_TOLERANCE:
-            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} ± 2", round(diff, 1)
+            return expected_pco2, None, CompensationStatus.APPROPRIATE, f"Beklenen pCO2: {expected_pco2:.0f} ± 2", round(diff, 1)
         elif diff < -WINTERS_TOLERANCE:
-            return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO2 beklenenden {abs(diff):.0f} düşük", round(diff, 1)
+            return expected_pco2, None, CompensationStatus.ADDED_RESP_ALKALOSIS, f"pCO2 beklenenden {abs(diff):.0f} düşük", round(diff, 1)
         else:
-            return expected_pco2, None, "Ek respiratuvar asidoz", f"pCO2 beklenenden {diff:.0f} yüksek", round(diff, 1)
+            return expected_pco2, None, CompensationStatus.ADDED_RESP_ACIDOSIS, f"pCO2 beklenenden {diff:.0f} yüksek", round(diff, 1)
     
     if is_met_alkalosis and (is_alkalemia or ph >= PH_NORMAL_LOW):
         expected_pco2 = calculate_expected_pco2_metabolic_alkalosis(hco3)
         diff = pco2 - expected_pco2
         if abs(diff) <= ALKALOSIS_TOLERANCE:
-            return expected_pco2, None, "Uygun respiratuvar kompanzasyon", f"Beklenen pCO2: {expected_pco2:.0f} ± 2", round(diff, 1)
+            return expected_pco2, None, CompensationStatus.APPROPRIATE, f"Beklenen pCO2: {expected_pco2:.0f} ± 2", round(diff, 1)
         elif diff < -ALKALOSIS_TOLERANCE:
-            return expected_pco2, None, "Ek respiratuvar alkaloz", f"pCO2 beklenenden düşük", round(diff, 1)
+            return expected_pco2, None, CompensationStatus.ADDED_RESP_ALKALOSIS, f"pCO2 beklenenden düşük", round(diff, 1)
         else:
-            return expected_pco2, None, "Ek respiratuvar asidoz", f"pCO2 beklenenden yüksek", round(diff, 1)
+            return expected_pco2, None, CompensationStatus.ADDED_RESP_ACIDOSIS, f"pCO2 beklenenden yüksek", round(diff, 1)
     
     if is_pco2_high and is_acidemia:
         exp_acute = calculate_expected_hco3_respiratory_acidosis(pco2, False)
         exp_chronic = calculate_expected_hco3_respiratory_acidosis(pco2, True)
         if hco3 <= exp_acute + COMPENSATION_TOLERANCE:
-            return None, exp_acute, "Akut respiratuvar asidoz", f"Beklenen HCO3- (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
+            return None, exp_acute, CompensationStatus.PRIMARY_RESP_ACIDOSIS_ACUTE, f"Beklenen HCO3- (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
         elif hco3 >= exp_chronic - COMPENSATION_TOLERANCE:
-            return None, exp_chronic, "Kronik respiratuvar asidoz", f"Beklenen HCO3- (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
-        return None, exp_acute, "Subakut respiratuvar asidoz", f"HCO3- akut ve kronik arasında", None
+            return None, exp_chronic, CompensationStatus.PRIMARY_RESP_ACIDOSIS_CHRONIC, f"Beklenen HCO3- (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
+        return None, exp_acute, CompensationStatus.PRIMARY_RESP_ACIDOSIS_SUBACUTE, f"HCO3- akut ve kronik arasında", None
     
     if is_pco2_low and is_alkalemia:
         exp_acute = calculate_expected_hco3_respiratory_alkalosis(pco2, False)
         exp_chronic = calculate_expected_hco3_respiratory_alkalosis(pco2, True)
         if hco3 >= exp_acute - COMPENSATION_TOLERANCE:
-            return None, exp_acute, "Akut respiratuvar alkaloz", f"Beklenen HCO3- (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
+            return None, exp_acute, CompensationStatus.PRIMARY_RESP_ALKALOSIS_ACUTE, f"Beklenen HCO3- (akut): {exp_acute:.1f}", round(hco3 - exp_acute, 1)
         elif hco3 <= exp_chronic + COMPENSATION_TOLERANCE:
-            return None, exp_chronic, "Kronik respiratuvar alkaloz", f"Beklenen HCO3- (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
-        return None, exp_acute, "Subakut respiratuvar alkaloz", f"HCO3- akut ve kronik arasında", None
+            return None, exp_chronic, CompensationStatus.PRIMARY_RESP_ALKALOSIS_CHRONIC, f"Beklenen HCO3- (kronik): {exp_chronic:.1f}", round(hco3 - exp_chronic, 1)
+        return None, exp_acute, CompensationStatus.PRIMARY_RESP_ALKALOSIS_SUBACUTE, f"HCO3- akut ve kronik arasında", None
     
-    return None, None, "Belirgin primer bozukluk yok", "", None
+    return None, None, CompensationStatus.NONE, "", None
 
 
 # === YORUMLAMA ===
@@ -815,26 +845,26 @@ def determine_metabolic_dominance(contributions: Dict[str, Any], flags: List[str
 
 # Solunumsal durum eşlemesi — tek doğruluk kaynağı: assess_compensation
 _RESP_STATUS_MAP = {
-    "Uygun respiratuvar kompanzasyon": "Uygun solunumsal kompanzasyon",
-    "Ek respiratuvar asidoz": "Eklenmiş respiratuvar asidoz bileşeni",
-    "Ek respiratuvar alkaloz": "Eklenmiş respiratuvar alkaloz bileşeni",
-    "Akut respiratuvar asidoz": "Primer respiratuvar asidoz mevcut",
-    "Kronik respiratuvar asidoz": "Primer respiratuvar asidoz mevcut",
-    "Subakut respiratuvar asidoz": "Primer respiratuvar asidoz mevcut",
-    "Akut respiratuvar alkaloz": "Primer respiratuvar alkaloz mevcut",
-    "Kronik respiratuvar alkaloz": "Primer respiratuvar alkaloz mevcut",
-    "Subakut respiratuvar alkaloz": "Primer respiratuvar alkaloz mevcut",
-    "Belirgin primer bozukluk yok": "Solunumsal bileşen normal",
+    CompensationStatus.APPROPRIATE: "Uygun solunumsal kompanzasyon",
+    CompensationStatus.ADDED_RESP_ACIDOSIS: "Eklenmiş respiratuvar asidoz bileşeni",
+    CompensationStatus.ADDED_RESP_ALKALOSIS: "Eklenmiş respiratuvar alkaloz bileşeni",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_ACUTE: "Primer respiratuvar asidoz mevcut",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_SUBACUTE: "Primer respiratuvar asidoz mevcut",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_CHRONIC: "Primer respiratuvar asidoz mevcut",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_ACUTE: "Primer respiratuvar alkaloz mevcut",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_SUBACUTE: "Primer respiratuvar alkaloz mevcut",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_CHRONIC: "Primer respiratuvar alkaloz mevcut",
+    CompensationStatus.NONE: "Solunumsal bileşen normal",
 }
 
 # Primer respiratuvar bozukluk manşet başlıkları
 _PRIMARY_RESP_HEADLINE = {
-    "Akut respiratuvar asidoz": "Primer respiratuvar asidoz (akut)",
-    "Subakut respiratuvar asidoz": "Primer respiratuvar asidoz (subakut)",
-    "Kronik respiratuvar asidoz": "Primer respiratuvar asidoz (kronik)",
-    "Akut respiratuvar alkaloz": "Primer respiratuvar alkaloz (akut)",
-    "Subakut respiratuvar alkaloz": "Primer respiratuvar alkaloz (subakut)",
-    "Kronik respiratuvar alkaloz": "Primer respiratuvar alkaloz (kronik)",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_ACUTE: "Primer respiratuvar asidoz (akut)",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_SUBACUTE: "Primer respiratuvar asidoz (subakut)",
+    CompensationStatus.PRIMARY_RESP_ACIDOSIS_CHRONIC: "Primer respiratuvar asidoz (kronik)",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_ACUTE: "Primer respiratuvar alkaloz (akut)",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_SUBACUTE: "Primer respiratuvar alkaloz (subakut)",
+    CompensationStatus.PRIMARY_RESP_ALKALOSIS_CHRONIC: "Primer respiratuvar alkaloz (kronik)",
 }
 
 
@@ -846,7 +876,7 @@ def analyze_mechanisms(
     residual_effect: Optional[float],
     sig: Optional[float],
     pco2: float,
-    compensation_status: str,
+    compensation_status: CompensationStatus,
     ph: float = 7.4,
     anion_gap_corrected: Optional[float] = None
 ) -> MechanismAnalysis:
@@ -962,7 +992,7 @@ def generate_headline(
     pco2: float,
     be: float,
     dominant_disorder: str = "",
-    compensation_status: str = "",
+    compensation_status: CompensationStatus = CompensationStatus.NONE,
 ) -> Headline:
     """
     Generate mechanism-based headline (non-diagnostic).
@@ -1499,8 +1529,9 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
             elif sig_reliability == "unreliable": flags.append("SIG_UNRELIABLE")
     
     # Kompanzasyon
-    expected_pco2, expected_hco3, comp_status, comp_details, obs_exp_diff = assess_compensation(
+    expected_pco2, expected_hco3, comp_code, comp_details, obs_exp_diff = assess_compensation(
         inp.ph, inp.pco2, hco3_used, be_used)
+    comp_status_text = COMPENSATION_STATUS_TEXT_TR[comp_code]
     
     # === LOGGING: Kompanzasyon değerlendirmesi ===
     primary_type = "metabolic_acidosis" if be_used < -2 else ("metabolic_alkalosis" if be_used > 2 else "normal")
@@ -1508,7 +1539,7 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
         primary_type,
         expected_pco2 or expected_hco3,
         inp.pco2 if expected_pco2 else hco3_used,
-        comp_status
+        comp_status_text
     )
     
     # Contribution Breakdown
@@ -1518,7 +1549,7 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     # Mechanism Analysis (contribution-based)
     mechanism_analysis = analyze_mechanisms(
         be_used, sid_effect, albumin_effect, lactate_effect,
-        residual_effect, sig, inp.pco2, comp_status,
+        residual_effect, sig, inp.pco2, comp_code,
         ph=inp.ph, anion_gap_corrected=ag_corrected)
     
     # === LOGGING: Mekanizma analizi sonucu ===
@@ -1531,7 +1562,7 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     # Headline (refactored - mechanism-based)
     headline = generate_headline(
         mechanism_analysis, inp.ph, inp.pco2, be_used,
-        compensation_status=comp_status
+        compensation_status=comp_code
     )
     
     # Classic Comparison
@@ -1609,7 +1640,8 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
         respiratory_effect=respiratory_effect,
         anion_gap=ag, anion_gap_corrected=ag_corrected,
         expected_pco2=expected_pco2, expected_hco3=expected_hco3,
-        compensation_status=comp_status, compensation_details=comp_details,
+        compensation_status=comp_status_text, compensation_code=comp_code,
+        compensation_details=comp_details,
         observed_expected_diff=obs_exp_diff,
         contribution=contribution, mechanism_analysis=mechanism_analysis, headline=headline,
         classic_comparison=classic_comparison, cds_notes=cds_notes,

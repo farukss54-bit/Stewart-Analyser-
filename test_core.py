@@ -18,7 +18,7 @@ from core import (
     generate_classic_comparison, generate_cds_notes,
     determine_dominant_disorder, validate_input,
     analyze_mechanisms, classify_contribution_level, interpret_sid_direction,
-    determine_metabolic_dominance,
+    determine_metabolic_dominance, CompensationStatus,
 )
 from constants import (
     SID_NORMAL_SIMPLE, SIG_THRESHOLD, CLINICAL_SIGNIFICANCE_THRESHOLD,
@@ -125,7 +125,7 @@ class TestHeadlineGeneration:
         
         mechanism = analyze_mechanisms(
             be=-10, sid_effect=-8, albumin_effect=2, lactate_effect=-2,
-            residual_effect=-2, sig=None, pco2=30, compensation_status="Uygun kompanzasyon"
+            residual_effect=-2, sig=None, pco2=30, compensation_status=CompensationStatus.NONE
         )
         
         headline = generate_headline(mechanism, 7.28, 30, -10)
@@ -175,7 +175,7 @@ class TestMechanismAnalysis:
         """Test that mechanism analysis uses non-diagnostic language"""
         mechanism = analyze_mechanisms(
             be=-10, sid_effect=-5, albumin_effect=0, lactate_effect=-3,
-            residual_effect=-2, sig=3, pco2=30, compensation_status=""
+            residual_effect=-2, sig=3, pco2=30, compensation_status=CompensationStatus.NONE
         )
         
         # Should NOT contain diagnostic terms like "ketoasidoz"
@@ -189,7 +189,7 @@ class TestMechanismAnalysis:
         """Lactate dominance should be percentage-based, not presence-based"""
         mechanism = analyze_mechanisms(
             be=-12, sid_effect=-3, albumin_effect=0, lactate_effect=-7,
-            residual_effect=-1, sig=6, pco2=30, compensation_status=""
+            residual_effect=-1, sig=6, pco2=30, compensation_status=CompensationStatus.NONE
         )
 
         assert mechanism.dominant_mechanism is not None
@@ -200,7 +200,7 @@ class TestMechanismAnalysis:
         """Small lactate effect should not become dominant just by presence"""
         mechanism = analyze_mechanisms(
             be=-12, sid_effect=-8, albumin_effect=0, lactate_effect=-2,
-            residual_effect=-1, sig=4, pco2=28, compensation_status=""
+            residual_effect=-1, sig=4, pco2=28, compensation_status=CompensationStatus.NONE
         )
 
         assert mechanism.dominant_mechanism is not None
@@ -211,7 +211,7 @@ class TestMechanismAnalysis:
     def test_single_source_unmeasured_anion_dominance(self):
         mechanism = analyze_mechanisms(
             be=-14, sid_effect=-2, albumin_effect=0, lactate_effect=-1,
-            residual_effect=-9, sig=8, pco2=32, compensation_status=""
+            residual_effect=-9, sig=8, pco2=32, compensation_status=CompensationStatus.NONE
         )
 
         assert mechanism.dominant_mechanism is not None
@@ -221,7 +221,7 @@ class TestMechanismAnalysis:
     def test_true_lactic_acidosis_dominant(self):
         mechanism = analyze_mechanisms(
             be=-18, sid_effect=-3, albumin_effect=0, lactate_effect=-12,
-            residual_effect=-2, sig=10, pco2=28, compensation_status=""
+            residual_effect=-2, sig=10, pco2=28, compensation_status=CompensationStatus.NONE
         )
 
         assert mechanism.dominant_mechanism is not None
@@ -230,7 +230,7 @@ class TestMechanismAnalysis:
     def test_hyperchloremic_dominance(self):
         mechanism = analyze_mechanisms(
             be=-10, sid_effect=-8, albumin_effect=0, lactate_effect=-1,
-            residual_effect=-1, sig=2, pco2=40, compensation_status=""
+            residual_effect=-1, sig=2, pco2=40, compensation_status=CompensationStatus.NONE
         )
 
         assert mechanism.dominant_mechanism is not None

@@ -36,8 +36,8 @@
 # Yaşamla bağdaşan sınırlar: ~6.8 - ~7.8
 # pH < 6.8 veya > 7.8: Ciddi enzim disfonksiyonu, kardiyak arrest riski
 
-PH_MIN = 6.50              # Hard limit - bu altı fizyolojik olarak imkansız
-PH_MAX = 7.90              # Hard limit - bu üstü fizyolojik olarak imkansız
+PH_MIN = 6.50              # Hard limit - bunun altı fizyolojik olarak imkansız
+PH_MAX = 7.90              # Hard limit - bunun üstü fizyolojik olarak imkansız
 PH_NORMAL_LOW = 7.35       # [BEREND-2014] Normal aralık alt sınırı
 PH_NORMAL_HIGH = 7.45      # [BEREND-2014] Normal aralık üst sınırı
 
@@ -232,7 +232,7 @@ CL_NA_RATIO_THRESHOLD = 0.75  # Bu üstü hiperkloremik patern
 AG_NORMAL = 12.0           # [LEGACY] UI'da kullanılmıyor; yeni eşikler AG_NORMAL_HIGH/AG_HIGH_THRESHOLD
 AG_THRESHOLD = 2.0         # Klinik anlamlılık toleransı
 
-# Citable AG eşikleri (Audit düzeltmesi)
+# Citable AG eşikleri
 # Modern ISE üst normal sınırı ~11; HAGMA tarama eşiği ≥15
 AG_NORMAL_HIGH = 11.0      # Modern ISE üst normal sınır (aralık 3-11/5-12)
                            # Ref: Sadjadi 2013 (PMID 23776389)

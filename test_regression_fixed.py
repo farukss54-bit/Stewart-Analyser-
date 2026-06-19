@@ -113,7 +113,7 @@ class TestRespiratoryVerdictCompensation:
             mg=0.30,
             po4=0.30,
         )
-        assert out.compensation_status in _PRIMARY_RESP_HEADLINE
+        assert out.compensation_code in _PRIMARY_RESP_HEADLINE
         assert out.headline.respiratory_status == "Primer respiratuvar asidoz mevcut"
         assert "respiratuvar asidoz" in out.headline.dominant_mechanism.lower()
         assert "metabolik alkaloz" not in out.headline.dominant_mechanism.lower()
@@ -139,12 +139,12 @@ class TestRespiratoryVerdictCompensation:
             inp = StewartInput(**case["values"])
             out, _ = analyze_stewart(inp, "quick")
             assert out.mechanism_analysis is not None, f"{key}: mechanism_analysis None"
-            expected = _RESP_STATUS_MAP[out.compensation_status]
+            expected = _RESP_STATUS_MAP[out.compensation_code]
             assert out.mechanism_analysis.respiratory_status == expected, (
                 f"{key}: resp_status={out.mechanism_analysis.respiratory_status!r} "
-                f"expected {expected!r} for comp_status={out.compensation_status!r}"
+                f"expected {expected!r} for compensation_code={out.compensation_code!r}"
             )
-            if out.compensation_status in _PRIMARY_RESP_HEADLINE:
+            if out.compensation_code in _PRIMARY_RESP_HEADLINE:
                 assert out.headline.dominant_mechanism.lower().startswith(
                     "primer respiratuvar"
                 ), (
