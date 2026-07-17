@@ -7,7 +7,7 @@
 ## 1. Proje Özeti
 
 **Ad:** Stewart Asit-Baz Analizi  
-**Versiyon:** v3.5.0 (`__init__.py`'de 3.4.0 olarak görünebilir, CHANGELOG.md 3.5.0'ı işaret eder)  
+**Versiyon:** v3.5.0 (`__init__.py`'de 3.4.0 olarak görünebilir)  
 **Tür:** Streamlit tabanlı web uygulaması  
 **Amaç:** Kan gazı sonuçlarını Stewart-Fencl fizikokimyasal yaklaşımı ile analiz eden eğitim ve klinik karar destek aracı.  
 **Dil:** Türkçe (kod yorumları, docstring'ler, UI metinleri, dokümantasyon tamamen Türkçedir).  
@@ -52,8 +52,7 @@ Tüm kaynak dosyalar proje kökündedir (flat yapı). Alt dizin yoktur.
 ├── test_sprint4.py     # Sprint 4'e özel testler
 ├── requirements.txt    # Bağımlılıklar
 ├── Dockerfile          # Üretim konteyneri
-├── .devcontainer/devcontainer.json  # VS Code / Codespaces yapılandırması
-└── CHANGELOG.md        # Versiyon geçmişi
+└── .devcontainer/devcontainer.json  # VS Code / Codespaces yapılandırması
 ```
 
 ### Modül Sorumlulukları
