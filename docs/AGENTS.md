@@ -255,7 +255,48 @@ Yeni UI bölümleri eklerken bu sorumluluk reddi metinlerini korumak veya benzer
 
 ---
 
-## 11. İletişim ve Referanslar
+## 11. Mojibake ve Encoding Temizliği (En İyi Pratik)
+
+Projede Türkçe karakterler (ç, ğ, ı, ö, ş, ü), bilimsel semboller (±, →, ↑, ↓, •, ≈, ≤) ve emoji (⚠️, ⚕️, 📚, 🧠) yoğun şekilde kullanılır. Windows/macOS/Linux arası dosya aktarımları veya farklı editörlerde bu karakterler **mojibake** (UTF-8 baytlarının Latin-1/CP1252 olarak yanlış okunması) haline gelebilir.
+
+### Tespit
+```bash
+grep -rn "â€¢\|Â±\|â†\|â‰\|Ã—\|â^\|âš\|ðŸ\|â€" *.py
+```
+
+### Düzeltme — `ftfy` (Önerilen Yöntem)
+El-yapımı string replace haritaları yerine **`ftfy.fix_encoding()`** kullanın. Bu yöntem:
+- Sadece kodlama bozulmasını onarır, tırnak/boşluk/indent gibi yapısal değişiklik yapmaz.
+- `≤`, `⚕️`, varyasyon seçicili `⚠️` gibi edge-case sembolleri de kapsar.
+- Kaynak kodda güvenlidir (parse etmez, sadece encoding düzeltir).
+
+```python
+import ftfy
+from pathlib import Path
+
+for fn in ["constants.py", "core.py", "logger.py", "ui_components.py", "app.py", "visualization.py"]:
+    p = Path(fn)
+    text = p.read_text(encoding="utf-8")
+    fixed = ftfy.fix_encoding(text)
+    if fixed != text:
+        p.write_text(fixed, encoding="utf-8", newline="\n")
+        print(f"FIXED: {fn}")
+```
+
+**Not:** `ftfy` tek seferlik geliştirme aracıdır; `requirements.txt`'e eklenmemelidir.
+
+### Düzeltme — Manuel (Yedek Yöntem)
+Eğer `ftfy` kullanılamıyorsa, `fix_tr_text.py` gibi bir script ile karakter haritası (`MOJIBAKE_MAP`) oluşturulabilir. Ancak bu yöntem:
+- Yeni/beklenmedik mojibake varyasyonlarını kaçırabilir.
+- Çift karakterli mojibake'leri (örn. `Â±`, `âš ï¸`) yakalamak için hem byte hem de string literal girişleri gerektirir.
+
+### Doğrulama
+Düzeltme sonrası mutlaka şunları teyit edin:
+1. `grep -rn "â€¢\|Â±\|â†\|â‰\|Ã—\|â^\|âš\|ðŸ\|â€" *.py` → **0 sonuç**.
+2. `git diff -w core.py validation.py` → **0 satır** (hesaplama mantığı değişmemeli).
+3. `pytest -v` → **Tüm testler yeşil**.
+
+## 12. İletişim ve Referanslar
 
 Projedeki literatür referansları `constants.py`'nin başında ve `REFERENCES` sözlüğünde dokümante edilmiştir. Ana kaynaklar:
 
