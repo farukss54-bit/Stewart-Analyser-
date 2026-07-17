@@ -17,3 +17,7 @@ backup_*/
 mojibake_*.txt
 __pycache__/
 *.pyc
+
+# Test / log artifacts
+.pytest_cache/
+*.log
