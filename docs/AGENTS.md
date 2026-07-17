@@ -44,12 +44,11 @@ Tüm kaynak dosyalar proje kökündedir (flat yapı). Alt dizin yoktur.
 ├── visualization.py    # Görselleştirme — Plotly grafikleri (Gamblegram, SID waterfall, katkı grafiği, pH gauge)
 ├── validation.py       # Validasyon — Girdi temizleme, 3-katmanlı validasyon, CSV satır validasyonu, Na/Cl swap tespiti
 ├── logger.py           # Loglama — Yapılandırılmış log fonksiyonları, klinik bağlam desteği
-├── test_core.py        # Birim testleri — Temel hesaplama, SID, SIG, katkı analizi, headline
-├── test_validation.py  # Edge case testleri — Kirli girdi, CSV işleme, birim algılama
-├── test_regression.py  # Regresyon testleri — Kritik düzeltmelerin doğrulanması
-├── test_regression_fixed.py  # Düzeltilmiş regresyon testleri
-├── test_simple.py      # Smoke testleri
-├── test_sprint4.py     # Sprint 4'e özel testler
+├── tests/
+│   ├── test_core.py        # Birim testleri — Temel hesaplama, SID, SIG, katkı analizi, headline
+│   ├── test_validation.py  # Edge case testleri — Kirli girdi, CSV işleme, birim algılama
+│   ├── test_regression.py  # Regresyon testleri — Kritik düzeltmelerin doğrulanması
+│   └── test_sample_cases.py  # Sprint 4'e özel testler
 ├── requirements.txt    # Bağımlılıklar
 ├── Dockerfile          # Üretim konteyneri
 └── .devcontainer/devcontainer.json  # VS Code / Codespaces yapılandırması
@@ -98,12 +97,10 @@ pytest -v
 
 ### Belirli Test Dosyaları
 ```bash
-pytest test_core.py -v              # Hesaplama motoru birim testleri
-pytest test_validation.py -v        # Edge case ve kirli girdi testleri
-pytest test_regression.py -v        # Kritik düzeltme regresyon testleri
-pytest test_regression_fixed.py -v  # Düzeltilmiş regresyon testleri
-pytest test_simple.py -v            # Smoke testleri
-pytest test_sprint4.py -v           # Sprint 4 testleri
+pytest tests/test_core.py -v           # Hesaplama motoru birim testleri
+pytest tests/test_validation.py -v     # Edge case ve kirli girdi testleri
+pytest tests/test_regression.py -v     # Kritik düzeltme regresyon testleri
+pytest tests/test_sample_cases.py -v   # Sprint 4 testleri
 ```
 
 ### Coverage
@@ -112,9 +109,9 @@ pytest --cov=. --cov-report=html
 ```
 
 ### Test Dosyalarının Amaçları
-- **`test_core.py`**: `calculate_hco3()`, `calculate_be()`, SID hesaplamaları, SIG yorumlama, katkı ayrıştırma (`generate_contribution_breakdown`), headline oluşturma, mekanizma analizi.
-- **`test_validation.py`**: `sanitize_numeric()`'ın virgül ondalık, boşluk, NaN, boş string gibi kirli girdilerle başa çıkması; `validate_input_dict()`; `validate_csv_row()`; `detect_albumin_unit()`; batch validasyon.
-- **`test_regression.py` / `test_regression_fixed.py`**: Primer respiratuvar bozukluk tanıma, SIG yanlış flaglenme, çelişkili çıktı, kronik respiratuvar bozukluklar, mikst bozukluklar gibi kritik fonksiyonelliğin regresyonunu önler.
+- **`tests/test_core.py`**: `calculate_hco3()`, `calculate_be()`, SID hesaplamaları, SIG yorumlama, katkı ayrıştırma (`generate_contribution_breakdown`), headline oluşturma, mekanizma analizi.
+- **`tests/test_validation.py`**: `sanitize_numeric()`'ın virgül ondalık, boşluk, NaN, boş string gibi kirli girdilerle başa çıkması; `validate_input_dict()`; `validate_csv_row()`; `detect_albumin_unit()`; batch validasyon.
+- **`tests/test_regression.py`**: Primer respiratuvar bozukluk tanıma, SIG yanlış flaglenme, çelişkili çıktı, kronik respiratuvar bozukluklar, mikst bozukluklar gibi kritik fonksiyonelliğin regresyonunu önler.
 
 ---
 
@@ -231,15 +228,15 @@ Yeni UI bölümleri eklerken bu sorumluluk reddi metinlerini korumak veya benzer
 
 | Değişiklik Amacı | Okunması Gereken Dosyalar |
 |------------------|---------------------------|
-| Yeni hesaplama / analiz mantığı | `core.py`, `constants.py` (sabitler), `test_core.py` |
+| Yeni hesaplama / analiz mantığı | `core.py`, `constants.py` (sabitler), `tests/test_core.py` |
 | Yeni UI bileşeni / sayfa düzeni | `app.py`, `ui_components.py`, `constants.py` (UI_TEXTS) |
 | Yeni grafik / görselleştirme | `visualization.py`, `ui_components.py` (render fonksiyonları) |
-| Yeni validasyon kuralı | `validation.py`, `constants.py` (VALIDATION_MESSAGES, limitler), `test_validation.py` |
+| Yeni validasyon kuralı | `validation.py`, `constants.py` (VALIDATION_MESSAGES, limitler), `tests/test_validation.py` |
 | Yeni eşik değer / klinik sabit | `constants.py` (tek kaynak), ardından etkilenen `core.py`, `validation.py` |
 | Yeni log mesajı / log seviyesi | `logger.py`, `core.py` (log çağrıları) |
 | Yeni hazır vaka | `constants.py` (SAMPLE_CASES), `app.py` (sidebar otomatik çeker) |
 | Yeni CDS notu | `constants.py` (CDS_NOTES), `core.py` (generate_cds_notes) |
-| Regresyon testi yazma | `test_regression_fixed.py`, `test_core.py` (örnekler) |
+| Regresyon testi yazma | `tests/test_regression.py`, `tests/test_core.py` (örnekler) |
 | Performans optimizasyonu | `core.py` (analyze_stewart ana fonksiyonu), `app.py` (Streamlit cache/SessionState) |
 
 ---

@@ -85,9 +85,9 @@ docker run -p 8501:8501 stewart-analyzer
 pytest -v
 
 # Belirli test dosyaları
-pytest test_core.py -v
-pytest test_validation.py -v
-pytest test_regression.py -v
+pytest tests/test_core.py -v
+pytest tests/test_validation.py -v
+pytest tests/test_regression.py -v
 
 # Coverage
 pytest --cov=. --cov-report=html
@@ -106,12 +106,11 @@ pytest --cov=. --cov-report=html
 ├── visualization.py    # Plotly grafikleri
 ├── validation.py       # 3-katmanlı validasyon, Na/Cl swap tespiti
 ├── logger.py           # Yapılandırılmış loglama (PHI içermez)
-├── test_core.py        # Birim testleri
-├── test_validation.py  # Edge case testleri
-├── test_regression.py  # Regresyon testleri
-├── test_regression_fixed.py
-├── test_simple.py      # Smoke testleri
-├── test_sprint4.py     # Sprint 4 testleri
+├── tests/
+│   ├── test_core.py        # Birim testleri
+│   ├── test_validation.py  # Edge case testleri
+│   ├── test_regression.py  # Regresyon testleri
+│   └── test_sample_cases.py  # Sprint 4 testleri
 ├── requirements.txt    # Bağımlılıklar
 ├── Dockerfile          # Üretim konteyneri
 ├── docs/
