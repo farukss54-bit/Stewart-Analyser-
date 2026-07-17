@@ -8,9 +8,6 @@ Test vakalari master prompt'taki kritik sorunlari kontrol eder:
 5. Mikst bozukluklar dogru tanimlanmiyor mu?
 """
 
-import sys
-sys.path.insert(0, '.')
-
 import pytest
 from core import (
     StewartInput,

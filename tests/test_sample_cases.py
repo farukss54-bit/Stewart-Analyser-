@@ -1,7 +1,4 @@
-# test_sprint4.py - Sprint 4 Testleri
-import sys
-sys.path.insert(0, '.')
-
+# test_sample_cases.py - Örnek vaka seti bütünlük testleri
 import pytest
 from constants import SAMPLE_CASES, REFERENCES, ACKNOWLEDGMENTS
 from core import StewartInput, analyze_stewart

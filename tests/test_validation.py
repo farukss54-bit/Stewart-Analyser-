@@ -4,10 +4,6 @@
 # pytest test_validation.py -v
 
 import pytest
-import sys
-import os
-
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from validation import (
     sanitize_numeric, validate_input_dict, validate_csv_row,
