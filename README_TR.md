@@ -88,6 +88,8 @@ pytest -v
 pytest tests/test_core.py -v
 pytest tests/test_validation.py -v
 pytest tests/test_regression.py -v
+pytest tests/test_cds_differential.py -v
+pytest tests/test_ui_imports.py -v
 
 # Coverage
 pytest --cov=. --cov-report=html
@@ -107,10 +109,12 @@ pytest --cov=. --cov-report=html
 ├── validation.py       # 3-katmanlı validasyon, Na/Cl swap tespiti
 ├── logger.py           # Yapılandırılmış loglama (PHI içermez)
 ├── tests/
-│   ├── test_core.py        # Birim testleri
-│   ├── test_validation.py  # Edge case testleri
-│   ├── test_regression.py  # Regresyon testleri
-│   └── test_sample_cases.py  # Sprint 4 testleri
+│   ├── test_cds_differential.py  # CDS diferansiyel modül testleri
+│   ├── test_core.py              # Birim testleri
+│   ├── test_regression.py        # Regresyon testleri
+│   ├── test_sample_cases.py      # Örnek vaka bütünlük testleri
+│   ├── test_ui_imports.py        # UI import duman testleri
+│   └── test_validation.py        # Edge case testleri
 ├── requirements.txt    # Bağımlılıklar
 ├── Dockerfile          # Üretim konteyneri
 ├── docs/

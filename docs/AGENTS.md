@@ -45,10 +45,12 @@ Tüm kaynak dosyalar proje kökündedir (flat yapı). Alt dizin yoktur.
 ├── validation.py       # Validasyon — Girdi temizleme, 3-katmanlı validasyon, CSV satır validasyonu, Na/Cl swap tespiti
 ├── logger.py           # Loglama — Yapılandırılmış log fonksiyonları, klinik bağlam desteği
 ├── tests/
-│   ├── test_core.py        # Birim testleri — Temel hesaplama, SID, SIG, katkı analizi, headline
-│   ├── test_validation.py  # Edge case testleri — Kirli girdi, CSV işleme, birim algılama
-│   ├── test_regression.py  # Regresyon testleri — Kritik düzeltmelerin doğrulanması
-│   └── test_sample_cases.py  # Sprint 4'e özel testler
+│   ├── test_cds_differential.py  # CDS diferansiyel modül testleri
+│   ├── test_core.py              # Birim testleri — Temel hesaplama, SID, SIG, katkı analizi, headline
+│   ├── test_regression.py        # Regresyon testleri — Kritik düzeltmelerin doğrulanması
+│   ├── test_sample_cases.py      # Örnek vaka bütünlük testleri
+│   ├── test_ui_imports.py        # UI import duman testleri
+│   └── test_validation.py        # Edge case testleri — Kirli girdi, CSV işleme, birim algılama
 ├── requirements.txt    # Bağımlılıklar
 ├── Dockerfile          # Üretim konteyneri
 └── .devcontainer/devcontainer.json  # VS Code / Codespaces yapılandırması
@@ -101,6 +103,8 @@ pytest tests/test_core.py -v           # Hesaplama motoru birim testleri
 pytest tests/test_validation.py -v     # Edge case ve kirli girdi testleri
 pytest tests/test_regression.py -v     # Kritik düzeltme regresyon testleri
 pytest tests/test_sample_cases.py -v   # Sprint 4 testleri
+pytest tests/test_cds_differential.py -v   # CDS diferansiyel modül testleri
+pytest tests/test_ui_imports.py -v         # UI import duman testleri
 ```
 
 ### Coverage

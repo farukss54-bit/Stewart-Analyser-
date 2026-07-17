@@ -88,6 +88,8 @@ pytest -v
 pytest tests/test_core.py -v
 pytest tests/test_validation.py -v
 pytest tests/test_regression.py -v
+pytest tests/test_cds_differential.py -v
+pytest tests/test_ui_imports.py -v
 
 # Coverage
 pytest --cov=. --cov-report=html
@@ -107,10 +109,12 @@ pytest --cov=. --cov-report=html
 ├── validation.py       # 3-tier validation, Na/Cl swap detection
 ├── logger.py           # Structured logging (no PHI)
 ├── tests/
-│   ├── test_core.py        # Unit tests
-│   ├── test_validation.py  # Edge case tests
-│   ├── test_regression.py  # Regression tests
-│   └── test_sample_cases.py  # Sprint 4 tests
+│   ├── test_cds_differential.py  # CDS differential module tests
+│   ├── test_core.py              # Unit tests
+│   ├── test_regression.py        # Regression tests
+│   ├── test_sample_cases.py      # Sample case integrity tests
+│   ├── test_ui_imports.py        # UI import smoke tests
+│   └── test_validation.py        # Edge case tests
 ├── requirements.txt    # Dependencies
 ├── Dockerfile          # Production container
 ├── docs/
