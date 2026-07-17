@@ -1,0 +1,23 @@
+# Varsayılan: metin dosyalarını repoda LF olarak sakla
+* text=auto eol=lf
+
+# Metin olduğu kesin olanlar
+*.py    text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+*.json  text eol=lf
+*.ini   text eol=lf
+Dockerfile text eol=lf
+LICENSE text eol=lf
+.gitignore text eol=lf
+
+# BINARY — git bunlara ASLA dokunmasın
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.xlsx  binary
+*.docx  binary
+*.zip   binary
