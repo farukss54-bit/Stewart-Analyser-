@@ -1,7 +1,7 @@
 # 🩸 Stewart Acid-Base Analysis
 
 [![Streamlit](https://img.shields.io/badge/Streamlit-Live%20Demo-FF4B4B?logo=streamlit&logoColor=white)](https://n7fyxlln7scrqcnsbssn9w.streamlit.app/)
-[![Tests](https://img.shields.io/badge/tests-156%20passed-brightgreen)]()
+[![Tests](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml/badge.svg)](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
 
 An **education-focused web application** for blood gas evaluation using the **Stewart-Fencl physicochemical approach**.

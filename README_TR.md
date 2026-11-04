@@ -1,7 +1,7 @@
 # 🩸 Stewart Asit-Baz Analizi
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://stewart-analyzer.streamlit.app)
-[![Tests](https://img.shields.io/badge/tests-156%20passed-brightgreen)]()
+[![Tests](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml/badge.svg)](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml)
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
 
 **Stewart-Fencl fizikokimyasal yaklaşımı** ile kan gazı değerlendirmesi yapan, eğitim odaklı web uygulaması.
