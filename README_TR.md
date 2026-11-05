@@ -38,7 +38,7 @@ Klasik asit-baz analizinin (Henderson-Hasselbalch, anyon gap) ötesinde, **güç
 ### Girdi Yöntemleri
 - ✏️ **Manuel giriş** — Hızlı veya gelişmiş form
 - 📂 **Batch CSV** — Toplu analiz, satır satır validasyon
-- 📚 **Hazır Vakalar** — Eğitim amaçlı vakalar (Akoğlu vakaları dahil)
+- 📚 **Hazır Vakalar** — Eğitim amaçlı vakalar
 
 ### Çıktılar
 - 📋 **Headline** — Tek cümlelik klinik özet
@@ -161,8 +161,6 @@ Proje aşağıdaki literatüre dayanmaktadır:
 - **Kellum JA.** Disorders of acid-base balance. *Crit Care Med.* 2009
 - **Berend K, et al.** Physiological approach to assessment of acid-base disturbances. *NEJM.* 2014
 - **Story DA.** Stewart acid-base: A simplified bedside approach. *Anesth Analg.* 2016
-
-**Klinik vaka katkıları:** Doç. Dr. Haldun Akoğlu — Marmara Üniversitesi Acil Tıp AD.
 
 ---
 

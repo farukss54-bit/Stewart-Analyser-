@@ -199,7 +199,6 @@ Aksi halde SIG yüksek olsa bile "ölçülmemiş anyon" olarak raporlanmaz. Bu, 
 ### Hazır Vakalar (Sample Cases)
 `constants.py`'deki `SAMPLE_CASES` sözlüğü eğitim amaçlı vakalar içerir. Her vaka:
 - `name`, `description`, `values`, `teaching_point` alanlarına sahiptir.
-- İleri düzey vakalarda (`akoglu_*` prefixli vakalar) `classic_interpretation` ve `stewart_findings` alanları da vardır.
 - Yeni bir hazır vaka eklerken `app.py`'deki sidebar seçim listesine otomatik olarak eklenir (key üzerinden).
 
 ---
@@ -307,5 +306,3 @@ Projedeki literatür referansları `constants.py`'nin başında ve `REFERENCES` 
 - Kellum JA. Disorders of acid-base balance. Crit Care Med. 2009
 - Berend K, et al. Physiological approach to assessment of acid-base disturbances. NEJM. 2014
 - Story DA. Stewart acid-base: A simplified bedside approach. Anesth Analg. 2016
-
-Klinik vaka katkıları: Doç. Dr. Haldun Akoğlu — Marmara Üniversitesi Acil Tıp AD.

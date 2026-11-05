@@ -30,7 +30,7 @@ from constants import (
     PO4_MIN, PO4_MAX, PO4_NORMAL,
     BE_MIN, BE_MAX,
     PH_NORMAL_LOW, PH_NORMAL_HIGH,
-    UI_TEXTS, SAMPLE_CASES, REFERENCES, ACKNOWLEDGMENTS
+    UI_TEXTS, SAMPLE_CASES, REFERENCES
 )
 
 # === UI COMPONENTS ===
@@ -638,4 +638,4 @@ else:  # Gelişmiş mod
 # FOOTER
 # =============================================================================
 
-render_footer(REFERENCES, ACKNOWLEDGMENTS)
+render_footer(REFERENCES)

@@ -38,7 +38,7 @@ Beyond classical acid-base analysis (Henderson-Hasselbalch, anion gap), this too
 ### Input Methods
 - ✏️ **Manual entry** — Quick or advanced form
 - 📂 **Batch CSV** — Bulk analysis with row-by-row validation
-- 📚 **Sample Cases** — Educational cases (including Akoğlu cases)
+- 📚 **Sample Cases** — Educational cases
 
 ### Outputs
 - 📋 **Headline** — One-sentence clinical summary
@@ -161,8 +161,6 @@ This project is based on the following literature:
 - **Kellum JA.** Disorders of acid-base balance. *Crit Care Med.* 2009
 - **Berend K, et al.** Physiological approach to assessment of acid-base disturbances. *NEJM.* 2014
 - **Story DA.** Stewart acid-base: A simplified bedside approach. *Anesth Analg.* 2016
-
-**Clinical case contributions:** Assoc. Prof. Haldun Akoğlu — Marmara University Emergency Medicine Dept.
 
 ---
 
