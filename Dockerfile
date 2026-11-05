@@ -2,7 +2,7 @@
 # Stewart Asit-Baz Analizi
 # Simple production-ready container
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 

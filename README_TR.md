@@ -167,7 +167,7 @@ Proje aşağıdaki literatüre dayanmaktadır:
 
 1. Repoyu fork'la
 2. Feature branch oluştur: `git checkout -b feature/yeni-ozellik`
-3. Testleri çalıştır: `pytest -v` (156 test yeşil olmalı)
+3. Testleri çalıştır: `pytest -v` (tüm testler yeşil olmalı)
 4. Pull request gönder
 
 AGENTS.md dosyasını okuyarak proje kurallarını, mimarisini ve sık karşılaşılan tuzakları öğrenebilirsiniz.

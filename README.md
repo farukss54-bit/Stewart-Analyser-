@@ -167,7 +167,7 @@ This project is based on the following literature:
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/new-feature`
-3. Run tests: `pytest -v` (all 156 tests must pass)
+3. Run tests: `pytest -v` (all tests must pass)
 4. Submit a pull request
 
 Read the AGENTS.md file to learn about project rules, architecture, and common pitfalls.
