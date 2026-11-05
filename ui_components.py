@@ -1,5 +1,5 @@
 # ui_components.py
-# Stewart Asit-Baz Analizi - UI Components v3.3
+# Stewart Asit-Baz Analizi - UI Components
 # FIXED: Double arrow bug, green color issue
 # Single arrow + severity-based color coding
 
@@ -16,7 +16,7 @@ from core import classify_anion_gap, CompensationStatus
 
 
 # =============================================================================
-# COLOR CODING & INDICATORS - REDESIGNED v3.3
+# COLOR CODING & INDICATORS - REDESIGNED
 # =============================================================================
 
 def get_emoji(level: str) -> str:
@@ -603,5 +603,5 @@ def render_footer(references: Dict[str, str]):
             st.caption(f"• {ref}")
 
     st.caption("📖 *Bu parametreler fizyolojik mekanizmaları tanımlar; tanı veya tedavi önerisi değildir.*")
-    st.caption(f"🔬 **v3.5** | Sprint 4: PDF Vaka Entegrasyonu + Siggaard-Andersen BE")
+    st.caption("🔬 **v3.5.0**")
     st.caption(UI_TEXTS.get("disclaimer", ""))

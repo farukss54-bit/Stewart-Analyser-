@@ -1,6 +1,6 @@
 # constants.py
 # Stewart Asit-Baz Analizi - Sabitler, CDS Notları ve Hazır Vakalar
-# v3.5 - Literatür Referanslı Threshold Dokümantasyonu
+# Literatür Referanslı Threshold Dokümantasyonu
 
 # =============================================================================
 # 📚 LİTERATÜR REFERANSLARI

@@ -1,4 +1,4 @@
-# Stewart Asit-Baz Analizi v3.2 - Dependencies
+# Stewart Asit-Baz Analizi - Dependencies
 
 # Core
 streamlit>=1.28.0

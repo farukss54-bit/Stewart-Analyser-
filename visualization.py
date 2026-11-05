@@ -1,5 +1,5 @@
 # visualization.py
-# Stewart Asit-Baz Analizi - Visualization Module v3.2
+# Stewart Asit-Baz Analizi - Visualization Module
 # Gamblegram-style charts and contribution visualizations
 
 import streamlit as st

@@ -1,6 +1,6 @@
 # core.py
 # Stewart Asit-Baz Analizi - Hesaplama Motoru
-# v3.0 - CDS Entegrasyonu, Contribution Breakdown, Headline Generation
+# CDS Entegrasyonu, Contribution Breakdown, Headline Generation
 
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Any

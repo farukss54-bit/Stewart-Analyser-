@@ -1,5 +1,5 @@
 # test_validation.py
-# Stewart Asit-Baz Analizi - Validation Edge Case Tests v3.2
+# Stewart Asit-Baz Analizi - Validation Edge Case Tests
 # Focus on dirty real-world input, not impossible physiology
 # pytest test_validation.py -v
 

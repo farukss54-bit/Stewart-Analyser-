@@ -1,6 +1,6 @@
 # app.py
 # Stewart Asit-Baz Analizi - Streamlit UI Orchestrator
-# v3.4 - Derived Value Management & Sign Error Detection
+# Derived Value Management & Sign Error Detection
 # UI components are imported from ui_components.py
 
 import streamlit as st

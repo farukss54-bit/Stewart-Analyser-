@@ -1,5 +1,5 @@
 # test_core.py
-# Stewart Asit-Baz Analizi - Unit Tests v3.0
+# Stewart Asit-Baz Analizi - Unit Tests
 # pytest test_core.py -v
 
 import pytest

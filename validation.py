@@ -1,5 +1,5 @@
 # validation.py
-# Stewart Asit-Baz Analizi - Input Validation Module v3.2
+# Stewart Asit-Baz Analizi - Input Validation Module
 # Centralized validation, unit normalization, and input sanitization
 
 from dataclasses import dataclass, field

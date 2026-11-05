@@ -1,5 +1,5 @@
 # logger.py
-# Stewart Asit-Baz Analizi - Logging Module v3.2
+# Stewart Asit-Baz Analizi - Logging Module
 # Centralized logging configuration
 
 import logging

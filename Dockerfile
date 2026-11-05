@@ -1,5 +1,5 @@
 # Dockerfile
-# Stewart Asit-Baz Analizi v3.2
+# Stewart Asit-Baz Analizi
 # Simple production-ready container
 
 FROM python:3.11-slim
