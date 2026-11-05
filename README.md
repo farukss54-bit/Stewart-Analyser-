@@ -112,7 +112,6 @@ pytest --cov=. --cov-report=html
 │   ├── test_cds_differential.py  # CDS differential module tests
 │   ├── test_core.py              # Unit tests
 │   ├── test_regression.py        # Regression tests
-│   ├── test_sample_cases.py      # Sample case integrity tests
 │   ├── test_ui_imports.py        # UI import smoke tests
 │   └── test_validation.py        # Edge case tests
 ├── requirements.txt    # Dependencies

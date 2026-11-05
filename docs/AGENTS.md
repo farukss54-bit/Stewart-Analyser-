@@ -48,7 +48,6 @@ Tüm kaynak dosyalar proje kökündedir (flat yapı). Alt dizin yoktur.
 │   ├── test_cds_differential.py  # CDS diferansiyel modül testleri
 │   ├── test_core.py              # Birim testleri — Temel hesaplama, SID, SIG, katkı analizi, headline
 │   ├── test_regression.py        # Regresyon testleri — Kritik düzeltmelerin doğrulanması
-│   ├── test_sample_cases.py      # Örnek vaka bütünlük testleri
 │   ├── test_ui_imports.py        # UI import duman testleri
 │   └── test_validation.py        # Edge case testleri — Kirli girdi, CSV işleme, birim algılama
 ├── requirements.txt    # Bağımlılıklar
@@ -102,7 +101,6 @@ pytest -v
 pytest tests/test_core.py -v           # Hesaplama motoru birim testleri
 pytest tests/test_validation.py -v     # Edge case ve kirli girdi testleri
 pytest tests/test_regression.py -v     # Kritik düzeltme regresyon testleri
-pytest tests/test_sample_cases.py -v   # Sprint 4 testleri
 pytest tests/test_cds_differential.py -v   # CDS diferansiyel modül testleri
 pytest tests/test_ui_imports.py -v         # UI import duman testleri
 ```

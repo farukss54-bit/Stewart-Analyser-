@@ -112,7 +112,6 @@ pytest --cov=. --cov-report=html
 │   ├── test_cds_differential.py  # CDS diferansiyel modül testleri
 │   ├── test_core.py              # Birim testleri
 │   ├── test_regression.py        # Regresyon testleri
-│   ├── test_sample_cases.py      # Örnek vaka bütünlük testleri
 │   ├── test_ui_imports.py        # UI import duman testleri
 │   └── test_validation.py        # Edge case testleri
 ├── requirements.txt    # Bağımlılıklar
