@@ -19,7 +19,7 @@
 
 | Katman | Teknoloji | Versiyon |
 |--------|-----------|----------|
-| Dil | Python | 3.11+ |
+| Dil | Python | 3.12 |
 | Web UI | Streamlit | >=1.28.0 |
 | Veri İşleme | Pandas, NumPy | >=2.0.0, >=1.24.0 |
 | Görselleştirme | Plotly | >=5.18.0 |
