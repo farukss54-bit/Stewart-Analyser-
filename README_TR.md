@@ -2,7 +2,7 @@
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://stewart-analyzer.streamlit.app)
 [![Tests](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml/badge.svg)](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
+[![Python](https://img.shields.io/badge/python-3.12-blue)]()
 
 **Stewart-Fencl fizikokimyasal yaklaşımı** ile kan gazı değerlendirmesi yapan, eğitim odaklı web uygulaması.
 
@@ -102,8 +102,8 @@ pytest --cov=. --cov-report=html
 ```
 .
 ├── app.py              # Streamlit UI orchestrator
-├── core.py             # Hesaplama motoru (~1700 satır)
-├── constants.py        # Klinik sabitler, eşikler, hazır vakalar (~1100 satır)
+├── core.py             # Hesaplama motoru
+├── constants.py        # Klinik sabitler, eşikler, hazır vakalar
 ├── ui_components.py    # UI render fonksiyonları
 ├── visualization.py    # Plotly grafikleri
 ├── validation.py       # 3-katmanlı validasyon, Na/Cl swap tespiti

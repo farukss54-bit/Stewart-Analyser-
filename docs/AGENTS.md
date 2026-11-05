@@ -24,7 +24,7 @@
 | Veri İşleme | Pandas, NumPy | >=2.0.0, >=1.24.0 |
 | Görselleştirme | Plotly | >=5.18.0 |
 | Test | pytest, pytest-cov | >=7.4.0, >=4.1.0 |
-| Konteyner | Docker | python:3.11-slim |
+| Konteyner | Docker | python:3.12-slim |
 | IDE | VS Code / GitHub Codespaces | devcontainer.json mevcut |
 
 **Not:** `pyproject.toml`, `setup.py` veya `package.json` yoktur. Proje düz `requirements.txt` ile yönetilir.
@@ -38,8 +38,8 @@ Tüm kaynak dosyalar proje kökündedir (flat yapı). Alt dizin yoktur.
 ```
 .
 ├── app.py              # Ana UI orchestrator — Streamlit sayfa yapısı, batch mod, sidebar
-├── core.py             # Hesaplama motoru — ~1700 satır, tüm dataclass'lar ve analiz mantığı
-├── constants.py        # Sabitler — ~1100 satır, eşik değerler, literatür referansları, hazır vakalar, UI metinleri
+├── core.py             # Hesaplama motoru — tüm dataclass'lar ve analiz mantığı
+├── constants.py        # Sabitler — eşik değerler, literatür referansları, hazır vakalar, UI metinleri
 ├── ui_components.py    # UI bileşenleri — Streamlit render fonksiyonları, değer göstergeleri
 ├── visualization.py    # Görselleştirme — Plotly grafikleri (Gamblegram, SID waterfall, katkı grafiği, pH gauge)
 ├── validation.py       # Validasyon — Girdi temizleme, 3-katmanlı validasyon, CSV satır validasyonu, Na/Cl swap tespiti
@@ -81,7 +81,7 @@ Uygulama varsayılan olarak `http://localhost:8501` adresinde açılır.
 docker build -t stewart-analyzer .
 docker run -p 8501:8501 stewart-analyzer
 ```
-- `Dockerfile`: `python:3.11-slim` tabanlı, root olmayan kullanıcı (`appuser`), healthcheck `/_stcore/health` endpoint'ine ping atar.
+- `Dockerfile`: `python:3.12-slim` tabanlı, root olmayan kullanıcı (`appuser`), healthcheck `/_stcore/health` endpoint'ine ping atar.
 - Streamlit ortam değişkenleri: `STREAMLIT_SERVER_PORT=8501`, `STREAMLIT_SERVER_ADDRESS=0.0.0.0`, `STREAMLIT_SERVER_HEADLESS=true`.
 
 ### Devcontainer (VS Code / GitHub Codespaces)

@@ -2,7 +2,7 @@
 
 [![Streamlit](https://img.shields.io/badge/Streamlit-Live%20Demo-FF4B4B?logo=streamlit&logoColor=white)](https://n7fyxlln7scrqcnsbssn9w.streamlit.app/)
 [![Tests](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml/badge.svg)](https://github.com/farukss54-bit/Stewart-Analyser-/actions/workflows/tests.yml)
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue)]()
+[![Python](https://img.shields.io/badge/python-3.12-blue)]()
 
 An **education-focused web application** for blood gas evaluation using the **Stewart-Fencl physicochemical approach**.
 
@@ -102,8 +102,8 @@ pytest --cov=. --cov-report=html
 ```
 .
 ├── app.py              # Streamlit UI orchestrator
-├── core.py             # Analysis engine (~1,700 lines)
-├── constants.py        # Clinical constants, thresholds, sample cases (~1,100 lines)
+├── core.py             # Analysis engine
+├── constants.py        # Clinical constants, thresholds, sample cases
 ├── ui_components.py    # UI render functions
 ├── visualization.py    # Plotly charts
 ├── validation.py       # 3-tier validation, Na/Cl swap detection
