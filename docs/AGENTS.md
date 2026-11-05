@@ -7,7 +7,7 @@
 ## 1. Proje Özeti
 
 **Ad:** Stewart Asit-Baz Analizi  
-**Versiyon:** v3.5.0 (`__init__.py`'de 3.4.0 olarak görünebilir)  
+**Versiyon:** v3.5.0  
 **Tür:** Streamlit tabanlı web uygulaması  
 **Amaç:** Kan gazı sonuçlarını Stewart-Fencl fizikokimyasal yaklaşımı ile analiz eden eğitim ve klinik karar destek aracı.  
 **Dil:** Türkçe (kod yorumları, docstring'ler, UI metinleri, dokümantasyon tamamen Türkçedir).  
