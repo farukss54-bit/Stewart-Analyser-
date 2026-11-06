@@ -1,10 +1,15 @@
-.main {
+.govde {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
   flex: 1;
-  padding: 32px 36px 36px;
-  min-width: 0;
 }
 
-.empty {
+.ana {
+  min-width: 0;
+  padding: 32px 36px 36px;
+}
+
+.bos {
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -13,18 +18,18 @@
   min-height: 420px;
 }
 
-.empty p {
+.bos p {
   color: var(--muted);
 }
 
-.lead {
+.baslik {
   font-family: var(--font-serif);
   font-size: var(--text-l);
   line-height: 1.35;
   font-weight: 600;
 }
 
-.tips {
+.ipuclari {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -33,8 +38,29 @@
   font-size: var(--text-s);
 }
 
-@media (max-width: 640px) {
-  .main {
+.durum {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 62ch;
+}
+
+.durum ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.hata {
+  color: var(--acid);
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  .govde {
+    display: block;
+  }
+
+  .ana {
     padding: 20px 16px 28px;
   }
 }

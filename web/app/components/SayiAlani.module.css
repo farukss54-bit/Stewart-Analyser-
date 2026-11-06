@@ -1,0 +1,51 @@
+.alan {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tam {
+  grid-column: 1 / -1;
+}
+
+.etiket {
+  font-size: var(--text-s);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.birim {
+  font-weight: 400;
+  color: var(--subtle);
+}
+
+.alan input {
+  width: 100%;
+  height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-l);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.alan input::placeholder {
+  color: var(--subtle);
+  font-weight: 400;
+}
+
+.hatali input {
+  border-color: var(--acid);
+  box-shadow: 0 0 0 1px var(--acid);
+}
+
+.hataMetni {
+  font-size: var(--text-s);
+  font-weight: 500;
+  color: var(--acid);
+}

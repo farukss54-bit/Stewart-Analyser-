@@ -12,3 +12,22 @@
 .ghost:hover {
   background: var(--raised);
 }
+
+/* Ana eylem: mürekkep dolgulu */
+.birincil {
+  min-height: 52px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--btn-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.birincil[aria-disabled="true"] {
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--subtle);
+  cursor: not-allowed;
+}

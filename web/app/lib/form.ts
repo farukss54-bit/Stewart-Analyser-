@@ -1,0 +1,201 @@
+import type { AnalyzeRequest, DerivedRequest, Meta } from "./api";
+
+export type AlanAdi = "ph" | "pco2" | "na" | "cl" | "lactate" | "albumin";
+export type AlbuminBirimi = "g/L" | "g/dL";
+export type Degerler = Record<AlanAdi, string>;
+export type Sinirlar = Meta["limits"];
+
+export interface Cihaz {
+  acik: boolean;
+  hco3: string;
+  be: string;
+  /** Baz açığı (BD) olarak girildiyse true: işareti çekirdek çevirir */
+  bd: boolean;
+}
+
+export interface AlanTanimi {
+  ad: AlanAdi;
+  etiket: string;
+  birim: string;
+  zorunlu: boolean;
+  /** Panelde satırın tamamını kaplar (yanında eşi olmayan alanlar) */
+  tam?: boolean;
+}
+
+export interface Grup {
+  baslik: string;
+  alanlar: AlanTanimi[];
+}
+
+// Hızlı mod alanları. K⁺ burada yok: hızlı modda hesaba girmez (yalnızca gelişmiş modda).
+// Zorunlu olanlar çekirdeğin gerektirdikleridir; laktat ve albümin boş bırakılabilir,
+// bu durumda etkileri değerlendirilmez (çekirdek bunu yumuşak uyarıyla bildirir).
+export const GRUPLAR: Grup[] = [
+  {
+    baslik: "Kan gazı",
+    alanlar: [
+      { ad: "ph", etiket: "pH", birim: "", zorunlu: true },
+      { ad: "pco2", etiket: "pCO₂", birim: "mmHg", zorunlu: true },
+    ],
+  },
+  {
+    baslik: "Elektrolitler",
+    alanlar: [
+      { ad: "na", etiket: "Na⁺", birim: "mmol/L", zorunlu: true },
+      { ad: "cl", etiket: "Cl⁻", birim: "mmol/L", zorunlu: true },
+      { ad: "lactate", etiket: "Laktat", birim: "mmol/L", zorunlu: false, tam: true },
+    ],
+  },
+  {
+    baslik: "Albümin",
+    alanlar: [{ ad: "albumin", etiket: "Albümin", birim: "", zorunlu: false, tam: true }],
+  },
+];
+
+export const TUM_ALANLAR: AlanTanimi[] = GRUPLAR.flatMap((g) => g.alanlar);
+
+export const BOS_DEGERLER: Degerler = { ph: "", pco2: "", na: "", cl: "", lactate: "", albumin: "" };
+export const BOS_CIHAZ: Cihaz = { acik: false, hco3: "", be: "", bd: false };
+
+// Albümin birimine göre API'nin döndürdüğü sınır anahtarı
+function sinirAnahtari(ad: AlanAdi, birim: AlbuminBirimi): string {
+  if (ad === "albumin") return birim === "g/L" ? "albumin_gl" : "albumin_gdl";
+  return ad;
+}
+
+export type Ayrisma = { tur: "bos" } | { tur: "gecersiz" } | { tur: "sayi"; deger: number };
+
+/** "7,30" ve "7.30" kabul edilir; bilimsel gösterim, boşluk ve harf kabul edilmez. */
+export function ayristir(metin: string): Ayrisma {
+  const temiz = metin.trim();
+  if (temiz === "") return { tur: "bos" };
+  if (!/^-?\d+(?:[.,]\d+)?$/.test(temiz)) return { tur: "gecersiz" };
+  const deger = Number(temiz.replace(",", "."));
+  // Çok uzun rakam dizileri Infinity olur; JSON'da null'a dönüşüp API'ye bozuk gider
+  if (!Number.isFinite(deger)) return { tur: "gecersiz" };
+  return { tur: "sayi", deger };
+}
+
+/** Alan için hata metni; hata yoksa null. Boş alan hata değildir (zorunluluk ayrıca denetlenir). */
+export function alanHatasi(
+  etiket: string,
+  metin: string,
+  sinir: { min: number; max: number } | undefined,
+): string | null {
+  const a = ayristir(metin);
+  if (a.tur === "bos") return null;
+  if (a.tur === "gecersiz") return "Sayı girin (örn. 7,30).";
+  if (sinir && (a.deger < sinir.min || a.deger > sinir.max)) {
+    return `${etiket} ${a.deger} girildi, ancak ${sinir.min} ile ${sinir.max} arasında olmalı. Değeri kontrol edin.`;
+  }
+  return null;
+}
+
+export type Hatalar = Partial<Record<AlanAdi | "cihazHco3" | "cihazBe", string>>;
+
+/** Sınırlar henüz yüklenmediyse yalnızca biçim denetlenir; sınır denetimini sunucu yapar. */
+export function hatalariBul(
+  degerler: Degerler,
+  birim: AlbuminBirimi,
+  cihaz: Cihaz,
+  sinirlar: Sinirlar | undefined,
+): Hatalar {
+  const hatalar: Hatalar = {};
+  for (const alan of TUM_ALANLAR) {
+    const etiket = alan.etiket;
+    const h = alanHatasi(etiket, degerler[alan.ad], sinirlar?.[sinirAnahtari(alan.ad, birim)]);
+    if (h) hatalar[alan.ad] = h;
+  }
+  if (cihaz.acik) {
+    const hco3 = alanHatasi("HCO₃⁻", cihaz.hco3, sinirlar?.hco3);
+    if (hco3) hatalar.cihazHco3 = hco3;
+    const be = alanHatasi("BE", cihaz.be, sinirlar?.be);
+    if (be) hatalar.cihazBe = be;
+  }
+  return hatalar;
+}
+
+/** Henüz doldurulmamış zorunlu alanlar (arayüzdeki sırayla). */
+export function eksikZorunlular(degerler: Degerler): AlanTanimi[] {
+  return TUM_ALANLAR.filter((a) => a.zorunlu && ayristir(degerler[a.ad]).tur === "bos");
+}
+
+function sayi(metin: string): number | undefined {
+  const a = ayristir(metin);
+  return a.tur === "sayi" ? a.deger : undefined;
+}
+
+/** Sınırlar içindeki cihaz değerleri; geçersiz olan istekte yer almaz. */
+function cihazDegeri(metin: string, sinir: { min: number; max: number } | undefined): number | undefined {
+  const d = sayi(metin);
+  if (d === undefined) return undefined;
+  if (sinir && (d < sinir.min || d > sinir.max)) return undefined;
+  return d;
+}
+
+/** pH ve pCO₂ geçerli değilse null: türetilmiş değerler hesaplanamaz. */
+export function turetilmisIstegi(
+  degerler: Degerler,
+  cihaz: Cihaz,
+  sinirlar: Sinirlar | undefined,
+): DerivedRequest | null {
+  const ph = sayi(degerler.ph);
+  const pco2 = sayi(degerler.pco2);
+  if (ph === undefined || pco2 === undefined) return null;
+  if (alanHatasi("pH", degerler.ph, sinirlar?.ph) || alanHatasi("pCO₂", degerler.pco2, sinirlar?.pco2)) return null;
+
+  const istek: DerivedRequest = { ph, pco2 };
+  if (cihaz.acik) {
+    const hco3 = cihazDegeri(cihaz.hco3, sinirlar?.hco3);
+    const be = cihazDegeri(cihaz.be, sinirlar?.be);
+    if (hco3 !== undefined) istek.hco3_device = hco3;
+    if (be !== undefined) {
+      istek.be_device = be;
+      istek.is_base_deficit = cihaz.bd;
+    }
+  }
+  return istek;
+}
+
+/**
+ * Analiz isteği. Cihaz BE'si HAM girildiği gibi gönderilir, BD işareti ayrı bayraktır:
+ * işareti çekirdek bir kez çevirir. Çevrilmiş değeri göndermek işareti iki kez çevirirdi.
+ */
+export function analizIstegi(
+  degerler: Degerler,
+  birim: AlbuminBirimi,
+  cihaz: Cihaz,
+  sinirlar: Sinirlar | undefined,
+): AnalyzeRequest | null {
+  const ph = sayi(degerler.ph);
+  const pco2 = sayi(degerler.pco2);
+  const na = sayi(degerler.na);
+  const cl = sayi(degerler.cl);
+  if (ph === undefined || pco2 === undefined || na === undefined || cl === undefined) return null;
+
+  const istek: AnalyzeRequest = { ph, pco2, na, cl, mode: "quick", albumin_unit: birim };
+  const lactate = sayi(degerler.lactate);
+  const albumin = sayi(degerler.albumin);
+  if (lactate !== undefined) istek.lactate = lactate;
+  if (albumin !== undefined) istek.albumin = albumin;
+
+  if (cihaz.acik) {
+    const hco3 = cihazDegeri(cihaz.hco3, sinirlar?.hco3);
+    const be = cihazDegeri(cihaz.be, sinirlar?.be);
+    if (hco3 !== undefined) istek.hco3 = hco3;
+    if (be !== undefined) {
+      istek.be = be;
+      istek.is_be_base_deficit = cihaz.bd;
+    }
+  }
+  return istek;
+}
+
+/** Birim değişince girilen değer yeni birime çevrilir; geçerli bir sayı değilse olduğu gibi kalır. */
+export function albuminCevir(metin: string, kaynak: AlbuminBirimi, hedef: AlbuminBirimi): string {
+  const a = ayristir(metin);
+  if (a.tur !== "sayi" || kaynak === hedef) return metin;
+  const sonuc = hedef === "g/dL" ? a.deger / 10 : a.deger * 10;
+  // Kayan nokta artığı (3.2500000000000004 gibi) görünmesin
+  return String(Number(sonuc.toFixed(3)));
+}

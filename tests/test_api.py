@@ -25,6 +25,7 @@ from constants import (
     SAMPLE_CASES,
 )
 from core import StewartInput, StewartOutput, analyze_stewart, calculate_be, calculate_hco3
+from scripts.export_openapi import SCHEMA_PATH, render_schema
 from services import check_be_sign_error
 
 client = TestClient(app)
@@ -69,6 +70,15 @@ class TestHealthAndMeta:
         schemas = client.get("/openapi.json").json()["components"]["schemas"]
         assert {"be_used", "headline", "mechanism_analysis", "cds_notes"} <= set(schemas["StewartOutput"]["properties"])
         assert {"version", "limits", "reference_ranges"} <= set(schemas["MetaResponse"]["properties"])
+
+
+class TestCommittedSchema:
+    def test_committed_openapi_schema_is_current(self):
+        """web/openapi.json (arayüz tiplerinin kaynağı) API'nin gerçek şemasıyla aynı olmalı."""
+        assert SCHEMA_PATH.read_text(encoding="utf-8") == render_schema(), (
+            "API şeması değişti. Güncelle: python scripts/export_openapi.py, "
+            "ardından web klasöründe npm run api:tipleri"
+        )
 
 
 class TestDerived:
@@ -185,6 +195,18 @@ class TestAnalyzeValidation:
         r = client.post("/api/analyze", json=payload)
         assert r.status_code == 200
         assert r.json()["is_valid"] is True
+
+    def test_base_deficit_flag_is_applied_once(self):
+        """Ham BE + BD bayrağı gönderilir; işaret çekirdekte yalnızca bir kez çevrilir.
+
+        Arayüz hesaplanmış (işareti çevrilmiş) değeri DEĞİL ham girişi gönderir. Aksi halde
+        işaret iki kez çevrilir ve analiz ters işaretli BE ile çalışır.
+        """
+        base = {"ph": 7.20, "pco2": 31, "na": 141, "cl": 114}
+        bd = client.post("/api/analyze", json={**base, "be": 5.0, "is_be_base_deficit": True}).json()
+        plain = client.post("/api/analyze", json={**base, "be": -5.0}).json()
+        assert bd["result"]["be_used"] == -5.0
+        assert bd["result"] == plain["result"]
 
     def test_unknown_mode_is_422(self):
         payload = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, "mode": "turbo"}

@@ -47,8 +47,16 @@ jobs:
       - name: Bağımlılıkları kur
         run: npm ci
 
+      - name: API tipleri şemayla uyumlu mu
+        run: |
+          npm run api:tipleri
+          git diff --exit-code -- app/lib/api-types.ts
+
       - name: Lint
         run: npm run lint
+
+      - name: Birim testleri
+        run: npm test
 
       - name: Derle
         run: npm run build
