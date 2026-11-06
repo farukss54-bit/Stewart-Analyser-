@@ -119,11 +119,17 @@ function Sonuclar({ veri, cihaz }: { veri: DerivedResponse | null; cihaz: Cihaz 
         ))}
 
       {veri.sign_check?.has_error ? (
-        <div className={styles.uyari} role="alert">
+        // Yalnızca uyarı, analiz engellenmez: pH ile BE işareti çelişkisi akut/kronik solunumsal
+        // bozuklukta fizyolojik olabilir (örn. KOAH: pH 7.28, BE +4)
+        <div className={styles.uyari}>
           <p>{simgesizMetin(veri.sign_check.message)}</p>
+          <p>
+            Kronik solunumsal {veri.sign_check.message.includes("asidemi") ? "asidozda" : "alkalozda"} bu birleşim
+            görülebilir. İşaret hatası değilse analize devam edin.
+          </p>
           {girilenBe.tur === "sayi" && (
             <p>
-              Düzeltmek için değeri <b>{sayiYaz(-girilenBe.deger)}</b> olarak değiştirin
+              İşaret hatasıysa değeri <b>{sayiYaz(-girilenBe.deger)}</b> olarak değiştirin
               {girilenBe.deger > 0 && !cihaz.bd ? " ya da BD kutusunu işaretleyin" : ""}.
             </p>
           )}

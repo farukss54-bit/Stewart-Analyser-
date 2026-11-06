@@ -253,15 +253,17 @@ def render_derived_values_section(ph: float, pco2: float, mode_prefix: str):
                 sign_check = check_be_sign_error(ph, be_effective)
                 
                 if sign_check["has_error"]:
-                    st.error(sign_check["message"])
+                    st.warning(sign_check["message"])
+                    st.info("ℹ️ Kronik solunumsal bozuklukta (örn. KOAH) bu birleşim görülebilir. İşaret hatası değilse analize devam edin.")
                     
                     # Net yönlendirme
                     if be_manual > 0:
-                        st.info(f"💡 **Düzeltmek için:** Değeri **{-be_manual:.1f}** olarak değiştirin veya **BD** kutusunu işaretleyin.")
+                        st.info(f"💡 **İşaret hatasıysa:** Değeri **{-be_manual:.1f}** olarak değiştirin veya **BD** kutusunu işaretleyin.")
                     else:
-                        st.info(f"💡 **Düzeltmek için:** Değeri **{-be_manual:.1f}** olarak değiştirin.")
+                        st.info(f"💡 **İşaret hatasıysa:** Değeri **{-be_manual:.1f}** olarak değiştirin.")
                     
-                    should_stop = True
+                    # Karar (Faruk): yalnızca uyarı, analiz ENGELLENMEZ. pH ile BE işareti çelişkisi
+                    # akut/kronik solunumsal bozuklukta fizyolojik olabilir (örn. KOAH: pH 7.28, BE +4).
                 
                 elif be_diff > 2:
                     st.error(f"🚨 BE farkı: {be_diff:.1f} mEq/L (hesaplanan: {be_calc:+.1f})")
@@ -269,7 +271,9 @@ def render_derived_values_section(ph: float, pco2: float, mode_prefix: str):
                 else:
                     st.success(f"✅ BE tutarlı (fark: {be_diff:.1f} mEq/L)")
                 
-                be_to_use = be_effective
+                # HAM değer döner: BD bayrağıyla birlikte çekirdeğe gider ve işaret orada bir kez
+                # çevrilir. be_effective gönderilirse işaret iki kez çevrilirdi.
+                be_to_use = be_manual
     
     return hco3_to_use, be_to_use, is_bd, should_stop
 

@@ -60,10 +60,8 @@ export default function Analiz() {
 
   const turetilmisIstek = turetilmisIstegi(degerler, cihaz, sinirlar);
   const turetilmis = useTuretilmis(turetilmisIstek);
-  const turetilmisVeri = turetilmis?.tur === "tamam" ? turetilmis.veri : null;
 
   const cihazBeVar = turetilmisIstek?.be_device !== undefined;
-  const isaretHatasi = turetilmisVeri?.sign_check?.has_error === true;
   const cihazBekliyor = cihazBeVar && turetilmis === null;
   const cihazDenetlenemedi = cihazBeVar && turetilmis !== null && turetilmis.tur !== "tamam";
 
@@ -73,7 +71,6 @@ export default function Analiz() {
     meta.tur === "hazir" &&
     eksik.length === 0 &&
     !hataVar &&
-    !isaretHatasi &&
     !cihazBekliyor &&
     !cihazDenetlenemedi &&
     analiz.tur !== "suruyor";
@@ -129,7 +126,6 @@ export default function Analiz() {
     if (meta.tur === "hata") return "API’ye ulaşılamadı. Sunucunun çalıştığından emin olun.";
     if (meta.tur === "yukleniyor") return "Sunucuya bağlanılıyor…";
     if (hataVar) return "Hata gösteren alanları düzeltin.";
-    if (isaretHatasi) return "BE işaret hatası düzeltilmeden analiz yapılamaz.";
     if (cihazDenetlenemedi) return "Cihaz değerleri denetlenemedi. API’ye ulaşılamıyor.";
     if (cihazBekliyor) return "Cihaz değerleri denetleniyor…";
     if (eksik.length > 0) {
