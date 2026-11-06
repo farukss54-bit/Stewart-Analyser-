@@ -65,6 +65,12 @@ class TestHealthAndMeta:
         assert body["clinical_significance_threshold"] == CLINICAL_SIGNIFICANCE_THRESHOLD
         assert body["reference_ranges"]["ph"] == {"low": 7.35, "high": 7.45}
 
+    def test_meta_has_display_ranges_for_hco3_and_be(self):
+        """Sonuç ekranı HCO3 ve BE için de normal bant çizer (Streamlit göstergesiyle aynı değerler)."""
+        ranges = client.get("/api/meta").json()["reference_ranges"]
+        assert ranges["hco3"] == {"low": 22.0, "high": 26.0}
+        assert ranges["be"] == {"low": -CLINICAL_SIGNIFICANCE_THRESHOLD, "high": CLINICAL_SIGNIFICANCE_THRESHOLD}
+
     def test_openapi_schema_is_typed(self):
         """Tip üretimi için şema alan tiplerini taşımalı (düz dict olmamalı)."""
         schemas = client.get("/openapi.json").json()["components"]["schemas"]

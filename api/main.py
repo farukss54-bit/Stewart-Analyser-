@@ -55,6 +55,12 @@ ROOT = Path(__file__).resolve().parent.parent
 # g/dL -> g/L çarpanı (app.py'deki albümin dönüşümüyle aynı: alb * 10)
 ALBUMIN_GDL_TO_GL = 10.0
 
+# Sonuç ekranında normal bant olarak gösterilen iki aralık. Streamlit arayüzündeki göstergeyle
+# aynıdır (ui_components.get_value_indicator: HCO3 22-26, BE ±2). constants.py'de karşılıkları
+# olmadığı için burada tutulur; oraya taşınana kadar tek kopya bu dosyadadır.
+HCO3_REFERENCE_RANGE = (22.0, 26.0)
+BE_REFERENCE_RANGE = (-CLINICAL_SIGNIFICANCE_THRESHOLD, CLINICAL_SIGNIFICANCE_THRESHOLD)
+
 
 def _read_version() -> str:
     """Sürümü kökteki __init__.py'den okur (tek kaynak)."""
@@ -85,7 +91,8 @@ def meta() -> MetaResponse:
     limits["albumin_gl"] = Limit(min=ALBUMIN_MIN_GL, max=ALBUMIN_MAX_GL)
     limits["albumin_gdl"] = Limit(min=ALBUMIN_MIN_GDL, max=ALBUMIN_MAX_GDL)
 
-    reference_ranges = {name: ReferenceRange(low=lo, high=hi) for name, (lo, hi) in REFERENCE_RANGES.items()}
+    ranges = {**REFERENCE_RANGES, "hco3": HCO3_REFERENCE_RANGE, "be": BE_REFERENCE_RANGE}
+    reference_ranges = {name: ReferenceRange(low=lo, high=hi) for name, (lo, hi) in ranges.items()}
 
     return MetaResponse(
         version=app.version,

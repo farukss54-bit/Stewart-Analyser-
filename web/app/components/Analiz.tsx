@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { api, type AnalyzeResponse } from "../lib/api";
+import { api, type AnalyzeRequest, type AnalyzeResponse, type Meta } from "../lib/api";
 import {
   albuminCevir,
   analizIstegi,
@@ -17,16 +17,18 @@ import {
   type Degerler,
   type Hatalar,
 } from "../lib/form";
+import type { Sonuc } from "../lib/sonuc";
 import { useTuretilmis } from "../lib/useTuretilmis";
 import styles from "./Analiz.module.css";
 import BosEkran from "./BosEkran";
 import GirisPaneli from "./GirisPaneli";
 import { useMeta } from "./MetaProvider";
+import SonucEkrani from "./SonucEkrani";
 
 type AnalizDurumu =
   | { tur: "bos" }
   | { tur: "suruyor" }
-  | { tur: "hazir" }
+  | { tur: "hazir"; istek: AnalyzeRequest; sonuc: Sonuc }
   | { tur: "gecersiz"; hatalar: string[] }
   | { tur: "ag" }
   | { tur: "sunucu" }
@@ -76,8 +78,21 @@ export default function Analiz() {
     !cihazDenetlenemedi &&
     analiz.tur !== "suruyor";
 
+  // Girdiler değişince sonuç gizlenir: ekranda yalnızca şu anki değerlerin sonucu görünür.
+  // Süren bir analiz de iptal edilir.
+  function sonucuGizle() {
+    sonIstek.current?.abort();
+    setAnaliz((onceki) => (onceki.tur === "bos" ? onceki : { tur: "bos" }));
+  }
+
   function degerDegisti(ad: AlanAdi, deger: string) {
+    sonucuGizle();
     setDegerler((onceki) => ({ ...onceki, [ad]: deger }));
+  }
+
+  function cihazDegisti(yeni: Cihaz) {
+    sonucuGizle();
+    setCihaz(yeni);
   }
 
   function alanAyrildi(ad: AlanAnahtari) {
@@ -86,6 +101,7 @@ export default function Analiz() {
 
   function birimDegisti(yeni: AlbuminBirimi) {
     if (yeni === albuminBirimi) return;
+    sonucuGizle();
     // Girilen değer yeni birime çevrilir; yoksa 25 g/L, g/dL olarak 25 sayılırdı
     setDegerler((onceki) => ({ ...onceki, albumin: albuminCevir(onceki.albumin, albuminBirimi, yeni) }));
     setAlbuminBirimi(yeni);
@@ -102,7 +118,7 @@ export default function Analiz() {
 
     try {
       const sonuc = await api.analiz(istek, iptal.signal);
-      if (sonuc.tur === "tamam") setAnaliz(analizDurumu(sonuc.veri));
+      if (sonuc.tur === "tamam") setAnaliz(analizDurumu(istek, sonuc.veri));
       else setAnaliz({ tur: sonuc.tur });
     } catch {
       // Yeni bir analiz başlatıldı; onun sonucu gösterilecek
@@ -147,34 +163,33 @@ export default function Analiz() {
         onDeger={degerDegisti}
         onAlanAyrildi={alanAyrildi}
         onBirim={birimDegisti}
-        onCihaz={setCihaz}
+        onCihaz={cihazDegisti}
         onGonder={gonder}
       />
       <main className={styles.ana}>
-        <AnaAlan durum={analiz} />
+        <AnaAlan durum={analiz} meta={meta.tur === "hazir" ? meta.meta : undefined} />
       </main>
     </div>
   );
 }
 
-function analizDurumu(yanit: AnalyzeResponse): AnalizDurumu {
-  return yanit.is_valid ? { tur: "hazir" } : { tur: "gecersiz", hatalar: yanit.errors };
+function analizDurumu(istek: AnalyzeRequest, yanit: AnalyzeResponse): AnalizDurumu {
+  if (!yanit.is_valid) return { tur: "gecersiz", hatalar: yanit.errors };
+  // Geçerli bir analizde sonuç her zaman vardır; yoksa API beklenmedik bir yanıt vermiştir
+  if (!yanit.result) return { tur: "sunucu" };
+  return { tur: "hazir", istek, sonuc: yanit.result };
 }
 
-// Sonuç ekranı Aşama 4'te eklenecek; şimdilik yalnızca durum bildirilir
-function AnaAlan({ durum }: { durum: AnalizDurumu }) {
+// Ana alan: duruma göre boş ekran, süren analiz, sonuç ya da hata mesajı
+function AnaAlan({ durum, meta }: { durum: AnalizDurumu; meta: Meta | undefined }) {
   switch (durum.tur) {
     case "bos":
       return <BosEkran />;
     case "suruyor":
       return <p role="status">Analiz ediliyor…</p>;
     case "hazir":
-      return (
-        <div className={styles.durum} role="status">
-          <h1 className={styles.baslik}>Analiz tamamlandı.</h1>
-          <p>Sonuç ekranı bir sonraki aşamada eklenecek.</p>
-        </div>
-      );
+      // Sonuç yalnızca analizin yapıldığı girdilerle gösterilir; meta yoksa (olmaz) gösterilmez
+      return meta ? <SonucEkrani istek={durum.istek} sonuc={durum.sonuc} meta={meta} /> : null;
     case "gecersiz":
       return (
         <div className={styles.durum} role="alert">
