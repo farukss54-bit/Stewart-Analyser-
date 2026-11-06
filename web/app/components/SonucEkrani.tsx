@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 import type { AnalyzeRequest, Meta } from "../lib/api";
 import { notGruplari, ozetSatirlari, uyarilar, type Sonuc } from "../lib/sonuc";
+import AnyonAcigi from "./AnyonAcigi";
 import MekanizmaListesi from "./MekanizmaListesi";
 import Notlar from "./Notlar";
+import SidBolumu from "./SidBolumu";
 import styles from "./SonucEkrani.module.css";
 import TemelDegerler from "./TemelDegerler";
 
@@ -11,9 +13,11 @@ interface Props {
   istek: AnalyzeRequest;
   sonuc: Sonuc;
   meta: Meta;
+  /** "Eksik alanlara git": girilmeyen alana odaklanır */
+  onAlanaGit: (alan: string) => void;
 }
 
-export default function SonucEkrani({ istek, sonuc, meta }: Props) {
+export default function SonucEkrani({ istek, sonuc, meta, onAlanaGit }: Props) {
   const baslik = useRef<HTMLHeadingElement>(null);
 
   // Sonuç göründüğünde odak başlığa geçer: ekran okuyucu sonucu okur, dar ekranda sayfa oraya kayar
@@ -45,7 +49,22 @@ export default function SonucEkrani({ istek, sonuc, meta }: Props) {
       </section>
 
       <TemelDegerler istek={istek} sonuc={sonuc} araliklar={meta.reference_ranges} />
-      <MekanizmaListesi sonuc={sonuc} esik={meta.clinical_significance_threshold} />
+      {/* SID katmanları, SIG ve anyon açığı yalnızca gelişmiş modda gösterilir */}
+      {istek.mode === "advanced" && (
+        <>
+          <SidBolumu istek={istek} sonuc={sonuc} araliklar={meta.reference_ranges} onAlanaGit={onAlanaGit} />
+          <AnyonAcigi
+            sonuc={sonuc}
+            normal={meta.reference_ranges.anion_gap}
+            esik={meta.anion_gap_screening_threshold}
+          />
+        </>
+      )}
+      <MekanizmaListesi
+        sonuc={sonuc}
+        esik={meta.clinical_significance_threshold}
+        gelismis={istek.mode === "advanced"}
+      />
       {notlar.length > 0 && <Notlar gruplar={notlar} />}
 
       {uyari.length > 0 && (

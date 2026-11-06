@@ -27,6 +27,11 @@
   color: var(--muted);
 }
 
+.grupNotu {
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
 .alanlar {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

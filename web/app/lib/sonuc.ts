@@ -57,7 +57,7 @@ const ETIKET: Record<string, MekanizmaSatiri["etiket"]> = {
  * koşullarda) içerir, oysa satırların toplamı ölçülen baz açığını tutmalıdır.
  * "Baskın/Anlamlı" etiketi ve açıklama metni, çekirdeğin listesinde varsa oradan gelir.
  */
-export function mekanizmaSatirlari(sonuc: Sonuc, esik: number): MekanizmaSatiri[] {
+export function mekanizmaSatirlari(sonuc: Sonuc, esik: number, gelismis = false): MekanizmaSatiri[] {
   const cekirdek = new Map<MekanizmaKimligi, CekirdekMekanizma>();
   for (const m of sonuc.mechanism_analysis?.all_mechanisms ?? []) {
     const kimlik = CEKIRDEK_KIMLIGI[m.identifier];
@@ -80,7 +80,7 @@ export function mekanizmaSatirlari(sonuc: Sonuc, esik: number): MekanizmaSatiri[
     // Girilmeyen laktat/albümin payı çekirdekte artığa katılır; artık "açıklanamayan" olarak okunmamalı
     const girilmeyen = kimlik === "residual" ? girilmeyenler(sonuc) : [];
     const soluk = girilmeyen.length > 0;
-    let metin = m?.description ?? varsayilanMetin(kimlik, kucuk, esik);
+    let metin = m?.description ?? varsayilanMetin(kimlik, kucuk, esik, gelismis);
     if (soluk) {
       const uyari = `Girilmeyen ${girilmeyen.join(" ve ")} etkisini de içerir; ayrı yorumlanmamalıdır.`;
       metin = m ? `${m.description}. ${uyari}` : uyari;
@@ -107,10 +107,13 @@ function girilmeyenler(sonuc: Sonuc): string[] {
   return liste;
 }
 
-function varsayilanMetin(kimlik: MekanizmaKimligi, kucuk: boolean, esik: number): string {
+function varsayilanMetin(kimlik: MekanizmaKimligi, kucuk: boolean, esik: number, gelismis: boolean): string {
   if (kucuk) return `Etkisi ${esik} mEq/L’nin altında.`;
   if (kimlik === "residual") {
-    return "Diğer mekanizmaların açıklamadığı pay. Ölçülmemiş anyonları ayrıca değerlendirmek için gelişmiş mod gerekir.";
+    // Gelişmiş modda ölçülmemiş anyonlar zaten SIG satırında değerlendirilir
+    return gelismis
+      ? "Diğer mekanizmaların açıklamadığı pay. Ölçülmemiş anyonlar için SIG satırına bakın."
+      : "Diğer mekanizmaların açıklamadığı pay. Ölçülmemiş anyonları ayrıca değerlendirmek için gelişmiş mod gerekir.";
   }
   return "Bu mekanizmanın baz açığına katkısı.";
 }
@@ -264,4 +267,196 @@ export function ozetSatirlari(sonuc: Sonuc): OzetSatiri[] {
 /** Uyarı listesi: çekirdeğin uyarıları ve yumuşak uyarıları, tekrarsız */
 export function uyarilar(sonuc: Sonuc): string[] {
   return [...new Set([...(sonuc.warnings ?? []), ...(sonuc.soft_warnings ?? [])])];
+}
+
+// ---------------------------------------------------------------------------
+// Gelişmiş mod: SID katmanları, SIG ve anyon açığı
+// ---------------------------------------------------------------------------
+
+/** Analizde girilmeyen isteğe bağlı değerler, ekrandaki sırayla */
+const GIRILEBILEN: { alan: "lactate" | "albumin" | "k" | "ca" | "mg" | "po4"; ad: string; sembol: string }[] = [
+  { alan: "lactate", ad: "laktat", sembol: "laktat" },
+  { alan: "albumin", ad: "albümin", sembol: "albümin" },
+  { alan: "k", ad: "K", sembol: "K⁺" },
+  { alan: "ca", ad: "Ca", sembol: "Ca²⁺" },
+  { alan: "mg", ad: "Mg", sembol: "Mg²⁺" },
+  { alan: "po4", ad: "fosfat", sembol: "fosfat" },
+];
+
+type IstekDegerleri = Partial<Record<"lactate" | "albumin" | "k" | "ca" | "mg" | "po4", number | null>>;
+
+/** Girilmeyen isteğe bağlı değerler (gelişmiş modda SIG'in kesinliğini belirler) */
+export function girilmeyenDegerler(istek: IstekDegerleri): { alan: string; ad: string; sembol: string }[] {
+  return GIRILEBILEN.filter((g) => istek[g.alan] === undefined || istek[g.alan] === null);
+}
+
+function listele(adlar: string[]): string {
+  if (adlar.length <= 1) return adlar.join("");
+  return `${adlar.slice(0, -1).join(", ")} ve ${adlar[adlar.length - 1]}`;
+}
+
+/** "Ca ve Mg girilmedi" gibi cümle; her şey girildiyse null. */
+export function girilmeyenCumlesi(istek: IstekDegerleri): string | null {
+  const eksik = girilmeyenDegerler(istek);
+  if (eksik.length === 0) return null;
+  const metin = `${listele(eksik.map((e) => e.ad))} girilmedi`;
+  return metin.charAt(0).toLocaleUpperCase("tr") + metin.slice(1);
+}
+
+/**
+ * SIG'in yanındaki etiket: hüküm vermez, veri durumunu söyler ("Tam veriyle hesaplandı",
+ * "Ca ve Mg girilmedi"). Durum, çekirdeğin sig_reliability alanından değil girilen değerlerden
+ * çıkarılır: çekirdek K⁺ ve fosfat eksikliğini güvenilirlik değerlendirmesine katmaz.
+ */
+export function sigEtiketi(istek: IstekDegerleri): { metin: string; tam: boolean } {
+  const cumle = girilmeyenCumlesi(istek);
+  return cumle === null ? { metin: "Tam veriyle hesaplandı", tam: true } : { metin: cumle, tam: false };
+}
+
+/** Çekirdeğin SIG yorumu yarı İngilizce gelir ("… (unmeasured anions likely)"); parantezli İngilizce kısım atılır. */
+export function sigYorumu(sonuc: Sonuc): string {
+  return (sonuc.sig_interpretation ?? "").replace(/\s*\([A-Za-z ,.'-]+\)\s*$/, "").trim();
+}
+
+export interface SidBasamagi {
+  kimlik: "simple" | "basic" | "full" | "effective";
+  ad: string;
+  alt: string;
+  /** Hesaplanamadıysa null (örn. laktat girilmediği için temel katman) */
+  deger: number | null;
+  /** Bu katmanın normal değeri (referans bandının ortası); etkin SID için yok */
+  normal: number | null;
+  /** Eksik değerle hesaplandı: çubuk kesikli çizilir */
+  eksik: boolean;
+}
+
+export interface SidMerdiveni {
+  basamaklar: SidBasamagi[];
+  sig: { deger: number; baslangic: number; bitis: number };
+  /** Çubuk ölçeği (mmol/L): en az 15–45, değerler dışarı taşarsa genişler */
+  olcek: { min: number; max: number };
+}
+
+const SID_ARALIGI = { simple: "sid_simple", basic: "sid_basic", full: "sid_full" } as const;
+
+function ortasi(aralik: { low: number; high: number } | undefined): number | null {
+  return aralik ? (aralik.low + aralik.high) / 2 : null;
+}
+
+/** Gelişmiş modun SID merdiveni; SIG hesaplanamadıysa (gelişmiş mod değilse) null. */
+export function sidMerdiveni(
+  sonuc: Sonuc,
+  araliklar: Record<string, { low: number; high: number }>,
+): SidMerdiveni | null {
+  const sig = sonuc.sig;
+  const etkin = sonuc.sid_effective;
+  if (sig === null || sig === undefined || etkin === null || etkin === undefined) return null;
+  const v = sonuc.sid_values;
+
+  const basamaklar: SidBasamagi[] = [
+    {
+      kimlik: "simple",
+      ad: "Na⁺ − Cl⁻",
+      alt: "Basit",
+      deger: v.sid_simple,
+      normal: ortasi(araliklar[SID_ARALIGI.simple]),
+      eksik: false,
+    },
+    {
+      kimlik: "basic",
+      ad: "… − laktat",
+      alt: v.sid_basic === null ? "Laktat girilmedi" : "Temel",
+      deger: v.sid_basic,
+      normal: ortasi(araliklar[SID_ARALIGI.basic]),
+      eksik: false,
+    },
+    {
+      kimlik: "full",
+      ad: v.sid_full_status === "complete" ? "… + K⁺ + Ca²⁺ + Mg²⁺" : "… + K⁺ + Ca²⁺ + Mg²⁺ (eksik)",
+      alt: "Tam (SIDa)",
+      deger: v.sid_full,
+      normal: ortasi(araliklar[SID_ARALIGI.full]),
+      eksik: v.sid_full_status !== "complete",
+    },
+    {
+      kimlik: "effective",
+      ad: "Etkin (SIDe)",
+      alt: "albümin, fosfat, pH ve pCO₂ ile",
+      deger: etkin,
+      normal: null,
+      eksik: false,
+    },
+  ];
+
+  const noktalar = [
+    ...basamaklar.flatMap((b) => [b.deger, b.normal]),
+    etkin + sig,
+  ].filter((n): n is number => n !== null);
+  const olcek = {
+    min: Math.min(15, Math.floor(Math.min(...noktalar) / 5) * 5),
+    max: Math.max(45, Math.ceil(Math.max(...noktalar) / 5) * 5),
+  };
+
+  return {
+    basamaklar,
+    sig: { deger: sig, baslangic: Math.min(etkin, etkin + sig), bitis: Math.max(etkin, etkin + sig) },
+    olcek,
+  };
+}
+
+export interface AnyonAcigiDegerleri {
+  olculen: number;
+  /** Albümin girilmediyse null */
+  duzeltilmis: number | null;
+  normal: { low: number; high: number };
+  esik: number;
+  /** Çubuk ölçeği: en az 0–30 */
+  olcek: { min: number; max: number };
+  metin: string;
+}
+
+/**
+ * Anyon açığı bölümü. Karşılaştırmalar ekranda yazılan (1 ondalık) değerle yapılır; yoksa sınırda
+ * yuvarlanan bir değer eşiğin üstünde yazılı görünüp altında sayılırdı.
+ */
+export function anyonAcigi(
+  sonuc: Sonuc,
+  normal: { low: number; high: number },
+  esik: number,
+): AnyonAcigiDegerleri {
+  const olculen = Number((sonuc.anion_gap ?? 0).toFixed(1));
+  const duzeltilmis =
+    sonuc.anion_gap_corrected === null || sonuc.anion_gap_corrected === undefined
+      ? null
+      : Number(sonuc.anion_gap_corrected.toFixed(1));
+  const noktalar = [olculen, duzeltilmis ?? 0, esik];
+  return {
+    olculen,
+    duzeltilmis,
+    normal,
+    esik,
+    olcek: { min: 0, max: Math.max(30, Math.ceil((Math.max(...noktalar) + 3) / 5) * 5) },
+    metin: anyonAcigiMetni(olculen, duzeltilmis, esik),
+  };
+}
+
+function anyonAcigiMetni(olculen: number, duzeltilmis: number | null, esik: number): string {
+  if (duzeltilmis === null) {
+    const yon = olculen > esik ? "üstünde" : "altında";
+    return `Ölçülen değer tarama eşiğinin (${esik}) ${yon}. Albümin girilmediği için düzeltilmiş değer hesaplanamadı.`;
+  }
+  const olculenUstte = olculen > esik;
+  const duzeltilmisUstte = duzeltilmis > esik;
+  if (olculenUstte && duzeltilmisUstte) return `İkisi de tarama eşiğinin (${esik}) üstünde.${duzeltmeYonu(olculen, duzeltilmis)}`;
+  if (!olculenUstte && !duzeltilmisUstte) return `İkisi de tarama eşiğinin (${esik}) altında.${duzeltmeYonu(olculen, duzeltilmis)}`;
+  if (duzeltilmisUstte) {
+    return `Ölçülen değer tarama eşiğinin (${esik}) altında; albümine göre düzeltilince eşiğin üstüne çıkıyor.`;
+  }
+  return `Ölçülen değer tarama eşiğinin (${esik}) üstünde; albümine göre düzeltilince eşiğin altına iniyor.`;
+}
+
+function duzeltmeYonu(olculen: number, duzeltilmis: number): string {
+  if (duzeltilmis > olculen) return " Albümin düşük olduğu için düzeltilmiş değer ölçülenden büyük.";
+  if (duzeltilmis < olculen) return " Albümin yüksek olduğu için düzeltilmiş değer ölçülenden küçük.";
+  return "";
 }

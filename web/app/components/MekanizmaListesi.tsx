@@ -7,12 +7,14 @@ interface Props {
   sonuc: Sonuc;
   /** Anlamlılık eşiği (mEq/L), API'den */
   esik: number;
+  /** Gelişmiş mod: ölçülmemiş anyonlar SIG satırında ayrıca değerlendirilir */
+  gelismis?: boolean;
 }
 
-export default function MekanizmaListesi({ sonuc, esik }: Props) {
+export default function MekanizmaListesi({ sonuc, esik, gelismis }: Props) {
   const [kucukAcik, setKucukAcik] = useState(false);
 
-  const satirlar = mekanizmaSatirlari(sonuc, esik);
+  const satirlar = mekanizmaSatirlari(sonuc, esik, gelismis);
   const yari = cubukYariGenisligi(satirlar);
   const gorunen = satirlar.filter((s) => !s.kucuk);
   const gizli = satirlar.filter((s) => s.kucuk);

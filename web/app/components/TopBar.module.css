@@ -48,6 +48,33 @@
   flex-wrap: wrap;
 }
 
+/* Mod seçici: seçili mod mürekkep dolgulu */
+.mod {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.mod button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mod button.secili {
+  background: var(--ink);
+  color: var(--btn-ink);
+  font-weight: 700;
+}
+
 @media (max-width: 640px) {
   .top {
     flex-direction: column;

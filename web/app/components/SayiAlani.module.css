@@ -49,3 +49,9 @@
   font-weight: 500;
   color: var(--acid);
 }
+
+/* Girilmemiş ileri parametre: kesikli çerçeve (zorunlu olmadığını ve boş olduğunu gösterir) */
+.eksik input {
+  border-style: dashed;
+  border-color: var(--subtle);
+}

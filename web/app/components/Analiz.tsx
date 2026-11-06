@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { api, type AnalyzeRequest, type AnalyzeResponse, type Meta, type Vaka } from "../lib/api";
 import {
+  alanlar,
   albuminCevir,
   analizIstegi,
   BOS_CIHAZ,
@@ -10,15 +11,15 @@ import {
   eksikZorunlular,
   hatalariBul,
   turetilmisIstegi,
-  TUM_ALANLAR,
   vakaDegerleri,
   type AlanAdi,
   type AlbuminBirimi,
   type Cihaz,
   type Degerler,
   type Hatalar,
+  type Mod,
 } from "../lib/form";
-import type { Sonuc } from "../lib/sonuc";
+import { girilmeyenCumlesi, type Sonuc } from "../lib/sonuc";
 import { useTuretilmis } from "../lib/useTuretilmis";
 import styles from "./Analiz.module.css";
 import BosEkran from "./BosEkran";
@@ -42,12 +43,14 @@ type AlanAnahtari = keyof Hatalar;
 // "4 alandan 1’i" gibi sayı ekleri (0–4)
 const SAYI_EKI = ["ı", "i", "si", "ü", "ü"];
 
-const ZORUNLU_SAYISI = TUM_ALANLAR.filter((a) => a.zorunlu).length;
+// Zorunlu alanlar iki modda da aynıdır
+const ZORUNLU_SAYISI = alanlar("hizli").filter((a) => a.zorunlu).length;
 
 export default function Analiz() {
   const meta = useMeta();
   const sinirlar = meta.tur === "hazir" ? meta.meta.limits : undefined;
 
+  const [mod, setMod] = useState<Mod>("hizli");
   const [degerler, setDegerler] = useState<Degerler>(BOS_DEGERLER);
   const [albuminBirimi, setAlbuminBirimi] = useState<AlbuminBirimi>("g/L");
   const [cihaz, setCihaz] = useState<Cihaz>(BOS_CIHAZ);
@@ -56,7 +59,7 @@ export default function Analiz() {
   const [vakaPaneliAcik, setVakaPaneliAcik] = useState(false);
   const sonIstek = useRef<AbortController | null>(null);
 
-  const tumHatalar = hatalariBul(degerler, albuminBirimi, cihaz, sinirlar);
+  const tumHatalar = hatalariBul(degerler, albuminBirimi, cihaz, sinirlar, mod);
   // Yazarken uyarı çıkmasın: bir alanın hatası, alandan ayrıldıktan sonra gösterilir
   const gorunenHatalar = Object.fromEntries(
     Object.entries(tumHatalar).filter(([ad]) => dokunulan[ad as AlanAnahtari]),
@@ -69,7 +72,7 @@ export default function Analiz() {
   const cihazBekliyor = cihazBeVar && turetilmis === null;
   const cihazDenetlenemedi = cihazBeVar && turetilmis !== null && turetilmis.tur !== "tamam";
 
-  const eksik = eksikZorunlular(degerler);
+  const eksik = eksikZorunlular(degerler, mod);
   const hataVar = Object.keys(tumHatalar).length > 0;
   const analizEtkin =
     meta.tur === "hazir" &&
@@ -84,6 +87,13 @@ export default function Analiz() {
   function sonucuGizle() {
     sonIstek.current?.abort();
     setAnaliz((onceki) => (onceki.tur === "bos" ? onceki : { tur: "bos" }));
+  }
+
+  // Mod değişince önceki sonuç gizlenir (başka modun sonucu başka alanlara dayanır); girilen değerler korunur
+  function modDegisti(yeni: Mod) {
+    if (yeni === mod) return;
+    sonucuGizle();
+    setMod(yeni);
   }
 
   function degerDegisti(ad: AlanAdi, deger: string) {
@@ -107,6 +117,11 @@ export default function Analiz() {
     setVakaPaneliAcik(false);
   }
 
+  // "Eksik alanlara git": girilmeyen alana odaklanır (dar ekranda sayfa oraya kayar)
+  function alanaGit(ad: string) {
+    document.querySelector<HTMLInputElement>(`[data-alan="${ad}"]`)?.focus();
+  }
+
   function alanAyrildi(ad: AlanAnahtari) {
     setDokunulan((onceki) => ({ ...onceki, [ad]: true }));
   }
@@ -120,7 +135,7 @@ export default function Analiz() {
   }
 
   async function gonder() {
-    const istek = analizIstegi(degerler, albuminBirimi, cihaz, sinirlar);
+    const istek = analizIstegi(degerler, albuminBirimi, cihaz, sinirlar, mod);
     if (istek === null) return;
 
     sonIstek.current?.abort();
@@ -147,6 +162,13 @@ export default function Analiz() {
       const dolu = ZORUNLU_SAYISI - eksik.length;
       return `Zorunlu ${ZORUNLU_SAYISI} alandan ${dolu}’${SAYI_EKI[dolu]} dolu. Eksik: ${eksik.map((a) => a.etiket).join(", ")}.`;
     }
+    if (mod === "gelismis") {
+      // Girilmeyen isteğe bağlı değerler SIG'in kesinliğini azaltır
+      const istek = analizIstegi(degerler, albuminBirimi, cihaz, sinirlar, mod);
+      const girilmeyen = istek && girilmeyenCumlesi(istek);
+      if (girilmeyen) return `${girilmeyen}; SIG yaklaşık hesaplanacak.`;
+      return "Fizyolojik mekanizmaları tanımlar; tanı veya tedavi önerisi değildir.";
+    }
     const girilmeyen = [];
     if (degerler.lactate.trim() === "") girilmeyen.push("laktat");
     if (degerler.albumin.trim() === "") girilmeyen.push("albümin");
@@ -160,9 +182,10 @@ export default function Analiz() {
 
   return (
     <>
-      <TopBar onVakalar={() => setVakaPaneliAcik(true)} />
+      <TopBar mod={mod} onMod={modDegisti} onVakalar={() => setVakaPaneliAcik(true)} />
       <div className={styles.govde}>
         <GirisPaneli
+          mod={mod}
           degerler={degerler}
           albuminBirimi={albuminBirimi}
           cihaz={cihaz}
@@ -184,6 +207,7 @@ export default function Analiz() {
             durum={analiz}
             meta={meta.tur === "hazir" ? meta.meta : undefined}
             onVakalar={() => setVakaPaneliAcik(true)}
+            onAlanaGit={alanaGit}
           />
         </main>
       </div>
@@ -204,10 +228,12 @@ function AnaAlan({
   durum,
   meta,
   onVakalar,
+  onAlanaGit,
 }: {
   durum: AnalizDurumu;
   meta: Meta | undefined;
   onVakalar: () => void;
+  onAlanaGit: (alan: string) => void;
 }) {
   switch (durum.tur) {
     case "bos":
@@ -216,7 +242,7 @@ function AnaAlan({
       return <p role="status">Analiz ediliyor…</p>;
     case "hazir":
       // Sonuç yalnızca analizin yapıldığı girdilerle gösterilir; meta yoksa (olmaz) gösterilmez
-      return meta ? <SonucEkrani istek={durum.istek} sonuc={durum.sonuc} meta={meta} /> : null;
+      return meta ? <SonucEkrani istek={durum.istek} sonuc={durum.sonuc} meta={meta} onAlanaGit={onAlanaGit} /> : null;
     case "gecersiz":
       return (
         <div className={styles.durum} role="alert">

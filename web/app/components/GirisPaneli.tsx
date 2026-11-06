@@ -1,12 +1,13 @@
 import type { FormEvent } from "react";
 import type { ApiSonuc, DerivedResponse } from "../lib/api";
 import {
-  GRUPLAR,
+  gruplar,
   type AlanAdi,
   type AlbuminBirimi,
   type Cihaz,
   type Degerler,
   type Hatalar,
+  type Mod,
 } from "../lib/form";
 import dugme from "./Button.module.css";
 import styles from "./GirisPaneli.module.css";
@@ -14,6 +15,7 @@ import SayiAlani from "./SayiAlani";
 import TuretilmisDegerler from "./TuretilmisDegerler";
 
 interface Props {
+  mod: Mod;
   degerler: Degerler;
   albuminBirimi: AlbuminBirimi;
   cihaz: Cihaz;
@@ -42,7 +44,7 @@ export default function GirisPaneli(p: Props) {
 
   return (
     <form className={styles.panel} aria-label="Girilen değerler" noValidate onSubmit={gonder}>
-      {GRUPLAR.map((grup) => {
+      {gruplar(p.mod).map((grup) => {
         const albuminGrubu = grup.alanlar.some((a) => a.ad === "albumin");
         return (
           <section key={grup.baslik} className={styles.grup}>
@@ -64,10 +66,13 @@ export default function GirisPaneli(p: Props) {
                 </div>
               )}
             </div>
+            {grup.not && <p className={styles.grupNotu}>{grup.not}</p>}
             <div className={styles.alanlar}>
               {grup.alanlar.map((alan) => (
                 <SayiAlani
                   key={alan.ad}
+                  alanAdi={alan.ad}
+                  ileri={alan.ileri}
                   etiket={alan.etiket}
                   birim={alan.ad === "albumin" ? p.albuminBirimi : alan.birim}
                   deger={p.degerler[alan.ad]}

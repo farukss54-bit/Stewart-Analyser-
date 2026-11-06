@@ -1,6 +1,8 @@
 import type { AnalyzeRequest, DerivedRequest, Meta } from "./api";
 
-export type AlanAdi = "ph" | "pco2" | "na" | "cl" | "lactate" | "albumin";
+export type AlanAdi = "ph" | "pco2" | "na" | "cl" | "lactate" | "albumin" | "k" | "ca" | "mg" | "po4";
+/** Hızlı mod: pH, pCO₂, Na⁺, Cl⁻, laktat, albümin. Gelişmiş mod: bunlara K⁺, Ca²⁺, Mg²⁺ ve fosfat eklenir. */
+export type Mod = "hizli" | "gelismis";
 export type AlbuminBirimi = "g/L" | "g/dL";
 export type Degerler = Record<AlanAdi, string>;
 export type Sinirlar = Meta["limits"];
@@ -20,17 +22,21 @@ export interface AlanTanimi {
   zorunlu: boolean;
   /** Panelde satırın tamamını kaplar (yanında eşi olmayan alanlar) */
   tam?: boolean;
+  /** Gelişmiş modun ileri parametresi (K⁺, Ca²⁺, Mg²⁺, fosfat): boşken kesikli çerçeveyle işaretlenir */
+  ileri?: boolean;
 }
 
 export interface Grup {
   baslik: string;
   alanlar: AlanTanimi[];
+  /** Grup başlığının altındaki kısa açıklama */
+  not?: string;
 }
 
 // Hızlı mod alanları. K⁺ burada yok: hızlı modda hesaba girmez (yalnızca gelişmiş modda).
 // Zorunlu olanlar çekirdeğin gerektirdikleridir; laktat ve albümin boş bırakılabilir,
 // bu durumda etkileri değerlendirilmez (çekirdek bunu yumuşak uyarıyla bildirir).
-export const GRUPLAR: Grup[] = [
+const GRUPLAR_HIZLI: Grup[] = [
   {
     baslik: "Kan gazı",
     alanlar: [
@@ -52,9 +58,51 @@ export const GRUPLAR: Grup[] = [
   },
 ];
 
-export const TUM_ALANLAR: AlanTanimi[] = GRUPLAR.flatMap((g) => g.alanlar);
+// Gelişmiş mod: K⁺, Ca²⁺, Mg²⁺ ve fosfat isteğe bağlıdır; girilmeyenler SIG'in kesinliğini azaltır.
+// Birimleri çekirdeğin beklediği gibidir (iyonize Ca, Mg ve fosfat mmol/L).
+const GRUPLAR_GELISMIS: Grup[] = [
+  GRUPLAR_HIZLI[0],
+  {
+    baslik: "Elektrolitler",
+    alanlar: [
+      { ad: "na", etiket: "Na⁺", birim: "mmol/L", zorunlu: true },
+      { ad: "cl", etiket: "Cl⁻", birim: "mmol/L", zorunlu: true },
+      { ad: "k", etiket: "K⁺", birim: "mmol/L", zorunlu: false, ileri: true },
+      { ad: "lactate", etiket: "Laktat", birim: "mmol/L", zorunlu: false },
+    ],
+  },
+  {
+    baslik: "İleri parametreler",
+    not: "İsteğe bağlı. Girilirse ölçülmemiş anyonlar (SIG) tam hesaplanır.",
+    alanlar: [
+      { ad: "ca", etiket: "Ca²⁺ (iyonize)", birim: "mmol/L", zorunlu: false, tam: true, ileri: true },
+      { ad: "mg", etiket: "Mg²⁺", birim: "mmol/L", zorunlu: false, ileri: true },
+      { ad: "po4", etiket: "Fosfat", birim: "mmol/L", zorunlu: false, ileri: true },
+    ],
+  },
+  GRUPLAR_HIZLI[2],
+];
 
-export const BOS_DEGERLER: Degerler = { ph: "", pco2: "", na: "", cl: "", lactate: "", albumin: "" };
+export function gruplar(mod: Mod): Grup[] {
+  return mod === "gelismis" ? GRUPLAR_GELISMIS : GRUPLAR_HIZLI;
+}
+
+export function alanlar(mod: Mod): AlanTanimi[] {
+  return gruplar(mod).flatMap((g) => g.alanlar);
+}
+
+export const BOS_DEGERLER: Degerler = {
+  ph: "",
+  pco2: "",
+  na: "",
+  cl: "",
+  lactate: "",
+  albumin: "",
+  k: "",
+  ca: "",
+  mg: "",
+  po4: "",
+};
 export const BOS_CIHAZ: Cihaz = { acik: false, hco3: "", be: "", bd: false };
 
 // Albümin birimine göre API'nin döndürdüğü sınır anahtarı
@@ -99,9 +147,11 @@ export function hatalariBul(
   birim: AlbuminBirimi,
   cihaz: Cihaz,
   sinirlar: Sinirlar | undefined,
+  mod: Mod = "hizli",
 ): Hatalar {
   const hatalar: Hatalar = {};
-  for (const alan of TUM_ALANLAR) {
+  // Yalnızca ekrandaki alanlar denetlenir: hızlı modda gizli kalan K⁺ vb. analizi engellemez
+  for (const alan of alanlar(mod)) {
     const etiket = alan.etiket;
     const h = alanHatasi(etiket, degerler[alan.ad], sinirlar?.[sinirAnahtari(alan.ad, birim)]);
     if (h) hatalar[alan.ad] = h;
@@ -116,8 +166,8 @@ export function hatalariBul(
 }
 
 /** Henüz doldurulmamış zorunlu alanlar (arayüzdeki sırayla). */
-export function eksikZorunlular(degerler: Degerler): AlanTanimi[] {
-  return TUM_ALANLAR.filter((a) => a.zorunlu && ayristir(degerler[a.ad]).tur === "bos");
+export function eksikZorunlular(degerler: Degerler, mod: Mod = "hizli"): AlanTanimi[] {
+  return alanlar(mod).filter((a) => a.zorunlu && ayristir(degerler[a.ad]).tur === "bos");
 }
 
 function sayi(metin: string): number | undefined {
@@ -166,6 +216,7 @@ export function analizIstegi(
   birim: AlbuminBirimi,
   cihaz: Cihaz,
   sinirlar: Sinirlar | undefined,
+  mod: Mod = "hizli",
 ): AnalyzeRequest | null {
   const ph = sayi(degerler.ph);
   const pco2 = sayi(degerler.pco2);
@@ -173,11 +224,18 @@ export function analizIstegi(
   const cl = sayi(degerler.cl);
   if (ph === undefined || pco2 === undefined || na === undefined || cl === undefined) return null;
 
-  const istek: AnalyzeRequest = { ph, pco2, na, cl, mode: "quick", albumin_unit: birim };
+  const istek: AnalyzeRequest = { ph, pco2, na, cl, mode: mod === "gelismis" ? "advanced" : "quick", albumin_unit: birim };
   const lactate = sayi(degerler.lactate);
   const albumin = sayi(degerler.albumin);
   if (lactate !== undefined) istek.lactate = lactate;
   if (albumin !== undefined) istek.albumin = albumin;
+  // K⁺, Ca²⁺, Mg²⁺ ve fosfat yalnızca gelişmiş modda gönderilir (hızlı modda hesaba girmez)
+  if (mod === "gelismis") {
+    for (const ad of ["k", "ca", "mg", "po4"] as const) {
+      const d = sayi(degerler[ad]);
+      if (d !== undefined) istek[ad] = d;
+    }
+  }
 
   if (cihaz.acik) {
     const hco3 = cihazDegeri(cihaz.hco3, sinirlar?.hco3);
@@ -201,8 +259,8 @@ export function albuminCevir(metin: string, kaynak: AlbuminBirimi, hedef: Albumi
 }
 
 /**
- * Hazır vakanın değerlerini forma çevirir. Albümin g/L'dir. K⁺ hızlı modda kullanılmadığı için
- * yüklenmez.
+ * Hazır vakanın değerlerini forma çevirir. Albümin g/L'dir. K⁺ her zaman yüklenir ama yalnızca
+ * gelişmiş modda kullanılır (hızlı modda alan gizlidir ve istekte yer almaz).
  *
  * Vakadaki BE, cihaz BE alanına yazılır ama cihaz bölümü KAPALI kalır, yani analizde kullanılmaz
  * (BE pH ve pCO₂'den hesaplanır). Streamlit de böyle davranır. Cihaz değeri olarak kullanmak
@@ -219,6 +277,10 @@ export function vakaDegerleri(degerler: Record<string, number>): { degerler: Deg
       cl: yaz(degerler.cl),
       lactate: yaz(degerler.lactate),
       albumin: yaz(degerler.albumin_gl),
+      k: yaz(degerler.k),
+      ca: "",
+      mg: "",
+      po4: "",
     },
     cihaz: typeof degerler.be === "number" ? { acik: false, hco3: "", be: yaz(degerler.be), bd: false } : BOS_CIHAZ,
   };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  alanlar,
   albuminCevir,
   alanHatasi,
   analizIstegi,
@@ -7,6 +8,7 @@ import {
   BOS_CIHAZ,
   BOS_DEGERLER,
   eksikZorunlular,
+  gruplar,
   hatalariBul,
   turetilmisIstegi,
   vakaDegerleri,
@@ -25,10 +27,17 @@ const SINIRLAR: Sinirlar = {
   be: { min: -30, max: 30 },
   albumin_gl: { min: 5, max: 60 },
   albumin_gdl: { min: 0.5, max: 6 },
+  k: { min: 1.5, max: 10 },
+  ca: { min: 0.5, max: 2.5 },
+  mg: { min: 0.3, max: 3 },
+  po4: { min: 0.3, max: 4 },
 };
 
 // Tasarım örneğindeki kurgusal vaka
-const VAKA: Degerler = { ph: "7.30", pco2: "31", na: "141", cl: "114", lactate: "2.8", albumin: "25" };
+const VAKA: Degerler = { ...BOS_DEGERLER, ph: "7.30", pco2: "31", na: "141", cl: "114", lactate: "2.8", albumin: "25" };
+
+// Gelişmiş modda ek olarak girilen değerler
+const ILERI: Partial<Degerler> = { k: "4.2", ca: "1.15", mg: "0.85", po4: "1.0" };
 
 describe("ayristir", () => {
   it("nokta ve virgülü kabul eder", () => {
@@ -202,7 +211,7 @@ describe("vakaDegerleri", () => {
 
   it("vakanın değerlerini forma çevirir; albümin g/L alanına gider", () => {
     const { degerler } = vakaDegerleri(SEPSIS);
-    expect(degerler).toEqual({ ph: "7.38", pco2: "32", na: "138", cl: "108", lactate: "3.5", albumin: "22" });
+    expect(degerler).toMatchObject({ ph: "7.38", pco2: "32", na: "138", cl: "108", lactate: "3.5", albumin: "22" });
   });
 
   it("vakadaki BE cihaz alanına yazılır, işareti çevrilmez, ama cihaz bölümü kapalı kalır", () => {
@@ -214,8 +223,11 @@ describe("vakaDegerleri", () => {
     expect(vakaDegerleri({ ...SEPSIS, be: 0 }).cihaz).toEqual({ acik: false, hco3: "", be: "0", bd: false });
   });
 
-  it("K⁺ hızlı modda kullanılmadığı için forma girmez", () => {
-    expect(Object.values(vakaDegerleri(SEPSIS).degerler)).not.toContain("4.2");
+  it("K⁺ forma yüklenir ama yalnızca gelişmiş modda isteğe girer; Ca²⁺, Mg²⁺ ve fosfat vakada yoktur", () => {
+    const { degerler, cihaz } = vakaDegerleri(SEPSIS);
+    expect(degerler).toMatchObject({ k: "4.2", ca: "", mg: "", po4: "" });
+    expect(analizIstegi(degerler, "g/L", cihaz, SINIRLAR)).not.toHaveProperty("k");
+    expect(analizIstegi(degerler, "g/L", cihaz, SINIRLAR, "gelismis")).toMatchObject({ k: 4.2, mode: "advanced" });
   });
 
   it("eksik alanları boş bırakır, cihaz bölümünü açmaz", () => {
@@ -237,5 +249,61 @@ describe("vakaDegerleri", () => {
     const { degerler, cihaz } = vakaDegerleri(SEPSIS);
     const istek = analizIstegi(degerler, "g/L", { ...cihaz, acik: true }, SINIRLAR);
     expect(istek).toMatchObject({ be: -4, is_be_base_deficit: false });
+  });
+});
+
+describe("gelişmiş mod", () => {
+  it("alan listesi hızlı moda K⁺, Ca²⁺, Mg²⁺ ve fosfat ekler; zorunlu alanlar aynı kalır", () => {
+    expect(alanlar("hizli").map((a) => a.ad)).toEqual(["ph", "pco2", "na", "cl", "lactate", "albumin"]);
+    expect(alanlar("gelismis").map((a) => a.ad)).toEqual([
+      "ph", "pco2", "na", "cl", "k", "lactate", "ca", "mg", "po4", "albumin",
+    ]);
+    expect(alanlar("gelismis").filter((a) => a.zorunlu).map((a) => a.ad)).toEqual(["ph", "pco2", "na", "cl"]);
+  });
+
+  it("ileri parametreler grubunun açıklaması vardır", () => {
+    expect(gruplar("gelismis").find((g) => g.baslik === "İleri parametreler")?.not).toContain("SIG");
+    expect(gruplar("hizli").every((g) => g.not === undefined)).toBe(true);
+  });
+
+  it("isteği gelişmiş moda çevirir ve girilen ileri değerleri taşır", () => {
+    expect(analizIstegi({ ...VAKA, ...ILERI }, "g/L", BOS_CIHAZ, SINIRLAR, "gelismis")).toEqual({
+      ph: 7.3,
+      pco2: 31,
+      na: 141,
+      cl: 114,
+      lactate: 2.8,
+      albumin: 25,
+      albumin_unit: "g/L",
+      mode: "advanced",
+      k: 4.2,
+      ca: 1.15,
+      mg: 0.85,
+      po4: 1,
+    });
+  });
+
+  it("boş bırakılan ileri değerler isteğe girmez", () => {
+    const istek = analizIstegi({ ...VAKA, k: "4,2" }, "g/L", BOS_CIHAZ, SINIRLAR, "gelismis");
+    expect(istek).toMatchObject({ k: 4.2 });
+    for (const ad of ["ca", "mg", "po4"]) expect(istek).not.toHaveProperty(ad);
+  });
+
+  it("hızlı modda ileri değerler girilmiş olsa bile istekte yer almaz", () => {
+    const istek = analizIstegi({ ...VAKA, ...ILERI }, "g/L", BOS_CIHAZ, SINIRLAR);
+    expect(istek?.mode).toBe("quick");
+    for (const ad of ["k", "ca", "mg", "po4"]) expect(istek).not.toHaveProperty(ad);
+  });
+
+  it("ileri alanların sınır hatası yalnızca gelişmiş modda görünür", () => {
+    const hatali = { ...VAKA, ca: "9", k: "abc" };
+    expect(hatalariBul(hatali, "g/L", BOS_CIHAZ, SINIRLAR)).toEqual({});
+    const hatalar = hatalariBul(hatali, "g/L", BOS_CIHAZ, SINIRLAR, "gelismis");
+    expect(Object.keys(hatalar).sort()).toEqual(["ca", "k"]);
+    expect(hatalar.ca).toContain("0.5 ile 2.5");
+  });
+
+  it("boş ileri alanlar zorunlu değildir", () => {
+    expect(eksikZorunlular(VAKA, "gelismis")).toEqual([]);
   });
 });
