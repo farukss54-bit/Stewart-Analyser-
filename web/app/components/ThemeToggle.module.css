@@ -1,0 +1,4 @@
+/* Etiket "Tema" → "Açık temaya geç" / "Koyu temaya geç" olarak değişir; genişlik sabit kalsın */
+.sabit {
+  min-width: 10rem;
+}

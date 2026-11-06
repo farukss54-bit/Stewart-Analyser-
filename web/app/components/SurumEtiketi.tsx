@@ -7,8 +7,8 @@ type Durum =
   | { tur: "hazir"; surum: string }
   | { tur: "hata" };
 
-// Aşama 0: arayüzün API'ye ulaştığını gösteren geçici bileşen.
-export default function ApiStatus() {
+// Sürüm tek kaynaktan (kökteki __init__.py) gelir; arayüzde sabit yazılmaz
+export default function SurumEtiketi() {
   const [durum, setDurum] = useState<Durum>({ tur: "yukleniyor" });
 
   useEffect(() => {
@@ -30,14 +30,7 @@ export default function ApiStatus() {
     };
   }, []);
 
-  if (durum.tur === "yukleniyor") return <p>API’ye bağlanılıyor…</p>;
-  if (durum.tur === "hata") {
-    return (
-      <p role="alert">
-        API’ye ulaşılamadı. Python sunucusunun çalıştığından emin olun
-        (uvicorn api.main:app --port 8000).
-      </p>
-    );
-  }
-  return <p>API hazır, sürüm v{durum.surum}</p>;
+  if (durum.tur === "yukleniyor") return <p>Sürüm alınıyor…</p>;
+  if (durum.tur === "hata") return <p>API’ye ulaşılamadı</p>;
+  return <p>v{durum.surum}</p>;
 }

@@ -1,0 +1,14 @@
+/* Ortak düğme stilleri. Her bileşen kendi stil dosyasından düğme stili tanımlamaz. */
+.ghost {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ghost:hover {
+  background: var(--raised);
+}

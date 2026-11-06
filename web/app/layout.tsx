@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Atkinson_Hyperlegible_Next, Source_Serif_4 } from "next/font/google";
+import Footer from "./components/Footer";
+import TopBar from "./components/TopBar";
+import { TEMA_ANAHTARI } from "./components/tema";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Türkçe karakterler (ğ, ş, ı, İ) latin-ext alt kümesindedir
+const atkinson = Atkinson_Hyperlegible_Next({
+  variable: "--font-atkinson",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin", "latin-ext"],
+  weight: "600",
 });
 
 export const metadata: Metadata = {
@@ -18,10 +24,26 @@ export const metadata: Metadata = {
     "Stewart-Fencl yaklaşımıyla kan gazı değerlendirmesi. Eğitim amaçlıdır; tanı veya tedavi önerisi değildir.",
 };
 
+// Kullanıcı tema seçtiyse sayfa çizilmeden uygulanır (yanlış temayla yanıp sönmesin).
+// Yalnızca "light" veya "dark" kabul edilir; depolama kapalıysa sessizce atlanır.
+const temaBetigi = `try{var t=localStorage.getItem(${JSON.stringify(TEMA_ANAHTARI)});if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="tr" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>{children}</body>
+    // suppressHydrationWarning: betik data-theme özniteliğini React'ten önce ekler
+    <html
+      lang="tr"
+      className={`${atkinson.variable} ${sourceSerif.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: temaBetigi }} />
+      </head>
+      <body>
+        <TopBar />
+        {children}
+        <Footer />
+      </body>
     </html>
   );
 }

@@ -1,0 +1,40 @@
+.main {
+  flex: 1;
+  padding: 32px 36px 36px;
+  min-width: 0;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  max-width: 520px;
+  min-height: 420px;
+}
+
+.empty p {
+  color: var(--muted);
+}
+
+.lead {
+  font-family: var(--font-serif);
+  font-size: var(--text-l);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.tips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-s);
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding: 20px 16px 28px;
+  }
+}
