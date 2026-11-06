@@ -877,6 +877,10 @@
           "clinical_significance_threshold": {
             "type": "number",
             "title": "Clinical Significance Threshold"
+          },
+          "anion_gap_screening_threshold": {
+            "type": "number",
+            "title": "Anion Gap Screening Threshold"
           }
         },
         "type": "object",
@@ -884,7 +888,8 @@
           "version",
           "limits",
           "reference_ranges",
-          "clinical_significance_threshold"
+          "clinical_significance_threshold",
+          "anion_gap_screening_threshold"
         ],
         "title": "MetaResponse"
       },

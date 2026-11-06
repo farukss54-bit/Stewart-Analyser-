@@ -27,18 +27,30 @@ from api.schemas import (
     SignCheck,
 )
 from constants import (
+    AG_HIGH_THRESHOLD,
+    AG_NORMAL_HIGH,
     ALBUMIN_MAX_GDL,
     ALBUMIN_MAX_GL,
     ALBUMIN_MIN_GDL,
     ALBUMIN_MIN_GL,
     BE_MAX,
     BE_MIN,
+    CA_MAX,
+    CA_MIN,
     CLINICAL_SIGNIFICANCE_THRESHOLD,
     HCO3_MAX,
     HCO3_MIN,
+    MG_MAX,
+    MG_MIN,
     PHYSIOLOGIC_LIMITS,
+    PO4_MAX,
+    PO4_MIN,
     REFERENCE_RANGES,
     SAMPLE_CASES,
+    SID_NORMAL_BASIC,
+    SID_NORMAL_FULL,
+    SID_NORMAL_RANGE,
+    SID_NORMAL_SIMPLE,
 )
 from core import (
     StewartInput,
@@ -60,6 +72,16 @@ ALBUMIN_GDL_TO_GL = 10.0
 # olmadığı için burada tutulur; oraya taşınana kadar tek kopya bu dosyadadır.
 HCO3_REFERENCE_RANGE = (22.0, 26.0)
 BE_REFERENCE_RANGE = (-CLINICAL_SIGNIFICANCE_THRESHOLD, CLINICAL_SIGNIFICANCE_THRESHOLD)
+
+# Gelişmiş modun SID merdiveninde her katmanın normal değeri çizilir (constants.py'deki normal
+# değer ± SID_NORMAL_RANGE). Anyon açığının alt normal sınırı constants.py'de yoktur; AG_NORMAL_HIGH
+# yorumundaki "3-11" aralığının alt ucu burada tutulur.
+SID_REFERENCE_RANGES = {
+    "sid_simple": SID_NORMAL_SIMPLE,
+    "sid_basic": SID_NORMAL_BASIC,
+    "sid_full": SID_NORMAL_FULL,
+}
+ANION_GAP_REFERENCE_RANGE = (3.0, AG_NORMAL_HIGH)
 
 
 def _read_version() -> str:
@@ -90,8 +112,18 @@ def meta() -> MetaResponse:
     limits["be"] = Limit(min=BE_MIN, max=BE_MAX)
     limits["albumin_gl"] = Limit(min=ALBUMIN_MIN_GL, max=ALBUMIN_MAX_GL)
     limits["albumin_gdl"] = Limit(min=ALBUMIN_MIN_GDL, max=ALBUMIN_MAX_GDL)
+    # PHYSIOLOGIC_LIMITS'te yok; core.validate_input bu üçünü doğrudan constants.py sınırlarıyla denetler
+    limits["ca"] = Limit(min=CA_MIN, max=CA_MAX)
+    limits["mg"] = Limit(min=MG_MIN, max=MG_MAX)
+    limits["po4"] = Limit(min=PO4_MIN, max=PO4_MAX)
 
-    ranges = {**REFERENCE_RANGES, "hco3": HCO3_REFERENCE_RANGE, "be": BE_REFERENCE_RANGE}
+    ranges = {
+        **REFERENCE_RANGES,
+        "hco3": HCO3_REFERENCE_RANGE,
+        "be": BE_REFERENCE_RANGE,
+        "anion_gap": ANION_GAP_REFERENCE_RANGE,
+        **{ad: (normal - SID_NORMAL_RANGE, normal + SID_NORMAL_RANGE) for ad, normal in SID_REFERENCE_RANGES.items()},
+    }
     reference_ranges = {name: ReferenceRange(low=lo, high=hi) for name, (lo, hi) in ranges.items()}
 
     return MetaResponse(
@@ -99,6 +131,7 @@ def meta() -> MetaResponse:
         limits=limits,
         reference_ranges=reference_ranges,
         clinical_significance_threshold=CLINICAL_SIGNIFICANCE_THRESHOLD,
+        anion_gap_screening_threshold=AG_HIGH_THRESHOLD,
     )
 
 

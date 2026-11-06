@@ -71,6 +71,32 @@ class TestHealthAndMeta:
         assert ranges["hco3"] == {"low": 22.0, "high": 26.0}
         assert ranges["be"] == {"low": -CLINICAL_SIGNIFICANCE_THRESHOLD, "high": CLINICAL_SIGNIFICANCE_THRESHOLD}
 
+    def test_meta_has_advanced_mode_limits_and_references(self):
+        """Gelişmiş mod: Ca/Mg/fosfat sınırları (core.validate_input ile aynı), SID katman ve anyon açığı referansları."""
+        from constants import (
+            AG_HIGH_THRESHOLD,
+            CA_MAX,
+            CA_MIN,
+            MG_MAX,
+            MG_MIN,
+            PO4_MAX,
+            PO4_MIN,
+            SID_NORMAL_BASIC,
+            SID_NORMAL_FULL,
+            SID_NORMAL_RANGE,
+            SID_NORMAL_SIMPLE,
+        )
+
+        body = client.get("/api/meta").json()
+        assert body["limits"]["ca"] == {"min": CA_MIN, "max": CA_MAX}
+        assert body["limits"]["mg"] == {"min": MG_MIN, "max": MG_MAX}
+        assert body["limits"]["po4"] == {"min": PO4_MIN, "max": PO4_MAX}
+        assert body["anion_gap_screening_threshold"] == AG_HIGH_THRESHOLD
+        ranges = body["reference_ranges"]
+        for ad, normal in (("sid_simple", SID_NORMAL_SIMPLE), ("sid_basic", SID_NORMAL_BASIC), ("sid_full", SID_NORMAL_FULL)):
+            assert ranges[ad] == {"low": normal - SID_NORMAL_RANGE, "high": normal + SID_NORMAL_RANGE}
+        assert ranges["anion_gap"] == {"low": 3.0, "high": 11.0}
+
     def test_openapi_schema_is_typed(self):
         """Tip üretimi için şema alan tiplerini taşımalı (düz dict olmamalı)."""
         schemas = client.get("/openapi.json").json()["components"]["schemas"]

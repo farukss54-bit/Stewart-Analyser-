@@ -52,6 +52,7 @@ class MetaResponse(BaseModel):
     limits: dict[str, Limit]
     reference_ranges: dict[str, ReferenceRange]
     clinical_significance_threshold: float
+    anion_gap_screening_threshold: float
 
 
 # === /api/analyze ===

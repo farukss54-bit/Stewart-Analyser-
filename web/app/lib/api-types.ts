@@ -405,6 +405,8 @@ export interface components {
             };
             /** Clinical Significance Threshold */
             clinical_significance_threshold: number;
+            /** Anion Gap Screening Threshold */
+            anion_gap_screening_threshold: number;
         };
         /** ReferenceRange */
         ReferenceRange: {
