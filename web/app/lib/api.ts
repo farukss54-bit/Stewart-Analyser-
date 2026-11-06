@@ -6,6 +6,7 @@ export type DerivedRequest = components["schemas"]["DerivedRequest"];
 export type DerivedResponse = components["schemas"]["DerivedResponse"];
 export type AnalyzeRequest = components["schemas"]["AnalyzeRequest"];
 export type AnalyzeResponse = components["schemas"]["AnalyzeResponse"];
+export type Vaka = components["schemas"]["Case"];
 
 // API yanıt vermezse istek sonsuza kadar beklemesin
 const ZAMAN_ASIMI_MS = 8000;
@@ -59,4 +60,5 @@ export const api = {
     istek<DerivedResponse>("/api/derived", gonder(govde), signal),
   analiz: (govde: AnalyzeRequest, signal?: AbortSignal) =>
     istek<AnalyzeResponse>("/api/analyze", gonder(govde), signal),
+  vakalar: (signal?: AbortSignal) => istek<Vaka[]>("/api/cases", undefined, signal),
 };

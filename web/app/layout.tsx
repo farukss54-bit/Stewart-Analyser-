@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Atkinson_Hyperlegible_Next, Source_Serif_4 } from "next/font/google";
 import Footer from "./components/Footer";
 import { MetaProvider } from "./components/MetaProvider";
-import TopBar from "./components/TopBar";
 import { TEMA_ANAHTARI } from "./components/tema";
 import "./globals.css";
 
@@ -42,7 +41,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body>
         <MetaProvider>
-          <TopBar />
           {children}
           <Footer />
         </MetaProvider>

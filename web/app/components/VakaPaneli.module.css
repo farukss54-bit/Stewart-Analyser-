@@ -1,0 +1,276 @@
+/* Yerleşik <dialog>: geniş ekranda sağdan açılan panel, telefonda alttan açılan sayfa */
+.panel {
+  margin: 0 0 0 auto;
+  padding: 0;
+  width: min(460px, 100%);
+  max-width: 100%;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.panel[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel::backdrop {
+  background: var(--scrim);
+}
+
+.tutamac {
+  display: none;
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: var(--subtle);
+}
+
+.baslikSatiri {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px 12px;
+}
+
+.baslik {
+  font-size: var(--text-l);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.altBaslik {
+  max-width: 34ch;
+  margin-top: 4px;
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.kapat {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.kapat:hover {
+  background: var(--raised);
+}
+
+.kapat svg {
+  width: 18px;
+  height: 18px;
+}
+
+.liste {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 12px;
+}
+
+.mesaj {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  color: var(--muted);
+}
+
+.vakalar {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vaka {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  gap: 4px 14px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.vaka:hover {
+  background: var(--raised);
+}
+
+.vaka.secili {
+  border-radius: 10px 10px 0 0;
+  border-top-color: transparent;
+  background: var(--raised);
+}
+
+.ad {
+  font-weight: 700;
+}
+
+.aciklama,
+.ozet {
+  grid-column: 1;
+  font-size: var(--text-s);
+}
+
+.aciklama {
+  color: var(--muted);
+}
+
+.ozet {
+  color: var(--subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.be {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+}
+
+.beYazi {
+  display: block;
+  font-size: var(--text-s);
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.beYazi.asit {
+  color: var(--acid);
+}
+
+.beYazi.baz {
+  color: var(--base);
+}
+
+.beYazi.sifir {
+  color: var(--muted);
+}
+
+.beIz {
+  position: relative;
+  display: block;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.beEksen {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 2px;
+  background: var(--muted);
+}
+
+.beCubuk {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.beCubuk.asit {
+  border-radius: 3px 0 0 3px;
+  background: var(--acid);
+}
+
+.beCubuk.baz {
+  border-radius: 0 3px 3px 0;
+  background: var(--base);
+}
+
+.ayrinti {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 4px;
+  padding: 4px 12px 16px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0 0 10px 10px;
+  background: var(--raised);
+}
+
+.degerler {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin: 0;
+}
+
+.degerler dt {
+  font-size: var(--text-s);
+  color: var(--subtle);
+}
+
+.degerler dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ogretici {
+  font-size: var(--text-s);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.ayrinti p {
+  max-width: 60ch;
+  margin: 2px 0 0;
+}
+
+.ayrinti .not {
+  margin: 0;
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.alt {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+}
+
+.yukle {
+  flex: 1 1 220px;
+}
+
+@media (max-width: 640px) {
+  .panel {
+    margin: auto 0 0;
+    width: 100%;
+    height: 86dvh;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    border-radius: 16px 16px 0 0;
+  }
+
+  .tutamac {
+    display: block;
+  }
+
+  .degerler {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

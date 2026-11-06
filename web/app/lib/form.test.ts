@@ -9,6 +9,7 @@ import {
   eksikZorunlular,
   hatalariBul,
   turetilmisIstegi,
+  vakaDegerleri,
   type Degerler,
   type Sinirlar,
 } from "./form";
@@ -192,5 +193,49 @@ describe("albuminCevir", () => {
 
   it("aynı birime çevirmek değeri değiştirmez", () => {
     expect(albuminCevir("25", "g/L", "g/L")).toBe("25");
+  });
+});
+
+describe("vakaDegerleri", () => {
+  // constants.py SAMPLE_CASES: "Sepsis + Hipoalbüminemi"
+  const SEPSIS = { ph: 7.38, pco2: 32.0, na: 138.0, cl: 108.0, k: 4.2, lactate: 3.5, albumin_gl: 22.0, be: -4.0 };
+
+  it("vakanın değerlerini forma çevirir; albümin g/L alanına gider", () => {
+    const { degerler } = vakaDegerleri(SEPSIS);
+    expect(degerler).toEqual({ ph: "7.38", pco2: "32", na: "138", cl: "108", lactate: "3.5", albumin: "22" });
+  });
+
+  it("vakadaki BE cihaz alanına yazılır, işareti çevrilmez, ama cihaz bölümü kapalı kalır", () => {
+    const { cihaz } = vakaDegerleri(SEPSIS);
+    expect(cihaz).toEqual({ acik: false, hco3: "", be: "-4", bd: false });
+  });
+
+  it("BE sıfır olan vakada da aynıdır", () => {
+    expect(vakaDegerleri({ ...SEPSIS, be: 0 }).cihaz).toEqual({ acik: false, hco3: "", be: "0", bd: false });
+  });
+
+  it("K⁺ hızlı modda kullanılmadığı için forma girmez", () => {
+    expect(Object.values(vakaDegerleri(SEPSIS).degerler)).not.toContain("4.2");
+  });
+
+  it("eksik alanları boş bırakır, cihaz bölümünü açmaz", () => {
+    const { degerler, cihaz } = vakaDegerleri({ ph: 7.4, pco2: 40, na: 140, cl: 102 });
+    expect(degerler.lactate).toBe("");
+    expect(degerler.albumin).toBe("");
+    expect(cihaz).toEqual(BOS_CIHAZ);
+  });
+
+  it("yüklenen değerler form doğrulamasından hatasız geçer; BE analiz isteğine girmez (hesaplanır)", () => {
+    const { degerler, cihaz } = vakaDegerleri(SEPSIS);
+    expect(hatalariBul(degerler, "g/L", cihaz, SINIRLAR)).toEqual({});
+    const istek = analizIstegi(degerler, "g/L", cihaz, SINIRLAR);
+    expect(istek).toMatchObject({ ph: 7.38, albumin: 22 });
+    expect(istek).not.toHaveProperty("be");
+  });
+
+  it("kullanıcı cihaz bölümünü açarsa vakadaki BE ham değeriyle kullanılır", () => {
+    const { degerler, cihaz } = vakaDegerleri(SEPSIS);
+    const istek = analizIstegi(degerler, "g/L", { ...cihaz, acik: true }, SINIRLAR);
+    expect(istek).toMatchObject({ be: -4, is_be_base_deficit: false });
   });
 });

@@ -31,3 +31,22 @@
   color: var(--subtle);
   cursor: not-allowed;
 }
+
+/* Ana eylem, küçük boy (boş ekran, panel altı) */
+.dolgun {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--btn-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dolgun[aria-disabled="true"] {
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--subtle);
+  cursor: not-allowed;
+}

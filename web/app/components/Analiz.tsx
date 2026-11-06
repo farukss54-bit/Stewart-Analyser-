@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { api, type AnalyzeRequest, type AnalyzeResponse, type Meta } from "../lib/api";
+import { api, type AnalyzeRequest, type AnalyzeResponse, type Meta, type Vaka } from "../lib/api";
 import {
   albuminCevir,
   analizIstegi,
@@ -11,6 +11,7 @@ import {
   hatalariBul,
   turetilmisIstegi,
   TUM_ALANLAR,
+  vakaDegerleri,
   type AlanAdi,
   type AlbuminBirimi,
   type Cihaz,
@@ -24,6 +25,8 @@ import BosEkran from "./BosEkran";
 import GirisPaneli from "./GirisPaneli";
 import { useMeta } from "./MetaProvider";
 import SonucEkrani from "./SonucEkrani";
+import TopBar from "./TopBar";
+import VakaPaneli from "./VakaPaneli";
 
 type AnalizDurumu =
   | { tur: "bos" }
@@ -50,6 +53,7 @@ export default function Analiz() {
   const [cihaz, setCihaz] = useState<Cihaz>(BOS_CIHAZ);
   const [dokunulan, setDokunulan] = useState<Partial<Record<AlanAnahtari, true>>>({});
   const [analiz, setAnaliz] = useState<AnalizDurumu>({ tur: "bos" });
+  const [vakaPaneliAcik, setVakaPaneliAcik] = useState(false);
   const sonIstek = useRef<AbortController | null>(null);
 
   const tumHatalar = hatalariBul(degerler, albuminBirimi, cihaz, sinirlar);
@@ -90,6 +94,17 @@ export default function Analiz() {
   function cihazDegisti(yeni: Cihaz) {
     sonucuGizle();
     setCihaz(yeni);
+  }
+
+  // Hazır vakanın değerleri forma yüklenir; önceki sonuç gizlenir (değerler değişti)
+  function vakaYukle(vaka: Vaka) {
+    sonucuGizle();
+    const yuklenen = vakaDegerleri(vaka.values);
+    setDegerler(yuklenen.degerler);
+    setAlbuminBirimi("g/L");
+    setCihaz(yuklenen.cihaz);
+    setDokunulan({});
+    setVakaPaneliAcik(false);
   }
 
   function alanAyrildi(ad: AlanAnahtari) {
@@ -144,28 +159,36 @@ export default function Analiz() {
   }
 
   return (
-    <div className={styles.govde}>
-      <GirisPaneli
-        degerler={degerler}
-        albuminBirimi={albuminBirimi}
-        cihaz={cihaz}
-        hatalar={gorunenHatalar}
-        hesaplanabilir={turetilmisIstek !== null}
-        turetilmis={turetilmis}
-        analizEtkin={analizEtkin}
-        analizYapildi={analiz.tur === "hazir"}
-        analizSuruyor={analiz.tur === "suruyor"}
-        yardimMetni={yardimMetni()}
-        onDeger={degerDegisti}
-        onAlanAyrildi={alanAyrildi}
-        onBirim={birimDegisti}
-        onCihaz={cihazDegisti}
-        onGonder={gonder}
-      />
-      <main className={styles.ana}>
-        <AnaAlan durum={analiz} meta={meta.tur === "hazir" ? meta.meta : undefined} />
-      </main>
-    </div>
+    <>
+      <TopBar onVakalar={() => setVakaPaneliAcik(true)} />
+      <div className={styles.govde}>
+        <GirisPaneli
+          degerler={degerler}
+          albuminBirimi={albuminBirimi}
+          cihaz={cihaz}
+          hatalar={gorunenHatalar}
+          hesaplanabilir={turetilmisIstek !== null}
+          turetilmis={turetilmis}
+          analizEtkin={analizEtkin}
+          analizYapildi={analiz.tur === "hazir"}
+          analizSuruyor={analiz.tur === "suruyor"}
+          yardimMetni={yardimMetni()}
+          onDeger={degerDegisti}
+          onAlanAyrildi={alanAyrildi}
+          onBirim={birimDegisti}
+          onCihaz={cihazDegisti}
+          onGonder={gonder}
+        />
+        <main className={styles.ana}>
+          <AnaAlan
+            durum={analiz}
+            meta={meta.tur === "hazir" ? meta.meta : undefined}
+            onVakalar={() => setVakaPaneliAcik(true)}
+          />
+        </main>
+      </div>
+      <VakaPaneli acik={vakaPaneliAcik} onKapat={() => setVakaPaneliAcik(false)} onYukle={vakaYukle} />
+    </>
   );
 }
 
@@ -177,10 +200,18 @@ function analizDurumu(istek: AnalyzeRequest, yanit: AnalyzeResponse): AnalizDuru
 }
 
 // Ana alan: duruma göre boş ekran, süren analiz, sonuç ya da hata mesajı
-function AnaAlan({ durum, meta }: { durum: AnalizDurumu; meta: Meta | undefined }) {
+function AnaAlan({
+  durum,
+  meta,
+  onVakalar,
+}: {
+  durum: AnalizDurumu;
+  meta: Meta | undefined;
+  onVakalar: () => void;
+}) {
   switch (durum.tur) {
     case "bos":
-      return <BosEkran />;
+      return <BosEkran onVakalar={onVakalar} />;
     case "suruyor":
       return <p role="status">Analiz ediliyor…</p>;
     case "hazir":

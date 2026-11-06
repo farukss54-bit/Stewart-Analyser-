@@ -199,3 +199,27 @@ export function albuminCevir(metin: string, kaynak: AlbuminBirimi, hedef: Albumi
   // Kayan nokta artığı (3.2500000000000004 gibi) görünmesin
   return String(Number(sonuc.toFixed(3)));
 }
+
+/**
+ * Hazır vakanın değerlerini forma çevirir. Albümin g/L'dir. K⁺ hızlı modda kullanılmadığı için
+ * yüklenmez.
+ *
+ * Vakadaki BE, cihaz BE alanına yazılır ama cihaz bölümü KAPALI kalır, yani analizde kullanılmaz
+ * (BE pH ve pCO₂'den hesaplanır). Streamlit de böyle davranır. Cihaz değeri olarak kullanmak
+ * kullanıcının seçimidir: örneğin KOAH vakası (pH 7.28, BE +4.0) cihaz değeri olarak girilince BE
+ * işaret denetimi tarafından engellenir.
+ */
+export function vakaDegerleri(degerler: Record<string, number>): { degerler: Degerler; cihaz: Cihaz } {
+  const yaz = (v: number | undefined) => (typeof v === "number" ? String(v) : "");
+  return {
+    degerler: {
+      ph: yaz(degerler.ph),
+      pco2: yaz(degerler.pco2),
+      na: yaz(degerler.na),
+      cl: yaz(degerler.cl),
+      lactate: yaz(degerler.lactate),
+      albumin: yaz(degerler.albumin_gl),
+    },
+    cihaz: typeof degerler.be === "number" ? { acik: false, hco3: "", be: yaz(degerler.be), bd: false } : BOS_CIHAZ,
+  };
+}
