@@ -15,9 +15,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from core import (
     StewartInput, analyze_stewart, output_to_dict, dict_to_input,
     calculate_hco3, calculate_be, interpret_sid_direction,
-    normalize_input, stewart_input_from_normalized
+    normalize_input
 )
-from validation import validate_csv_row
 
 # === CONSTANTS ===
 from constants import (
@@ -29,7 +28,6 @@ from constants import (
     ALBUMIN_MIN_GDL, ALBUMIN_MAX_GDL, ALBUMIN_NORMAL_GDL,
     PO4_MIN, PO4_MAX, PO4_NORMAL,
     BE_MIN, BE_MAX,
-    PH_NORMAL_LOW, PH_NORMAL_HIGH,
     UI_TEXTS, SAMPLE_CASES, REFERENCES
 )
 
@@ -54,7 +52,10 @@ from ui_components import (
 from visualization import render_visualization_section
 
 # === LOGGING ===
-from logger import log_user_action, log_analysis_error, log_batch_progress
+from logger import log_user_action, log_analysis_error
+
+# === SERVICES ===
+from services import process_batch, check_be_sign_error
 
 
 # =============================================================================
@@ -171,80 +172,6 @@ def create_download_csv(inp, out):
     data = output_to_dict(inp, out)
     df = pd.DataFrame([data])
     return df.to_csv(index=False).encode("utf-8")
-
-
-def process_batch(df, mode):
-    """Process batch CSV data"""
-    results = []
-    errors = []
-    total = max(len(df), 1)
-
-    for idx, row in df.iterrows():
-        _progress = min((idx + 1) / total, 1.0)
-        log_batch_progress(idx + 1, total, "processing")
-
-        row_dict = row.to_dict()
-        validation = validate_csv_row(row_dict, idx)
-
-        if not validation.is_valid:
-            error_msg = "; ".join(validation.errors)
-            results.append({"row": idx + 1, "status": "ERROR", "errors": error_msg})
-            errors.append({"row": idx + 1, "errors": error_msg})
-            continue
-
-        try:
-            inp = stewart_input_from_normalized(validation.normalized_values)
-            out, val = analyze_stewart(inp, mode)
-
-            if val.is_valid:
-                result = output_to_dict(inp, out)
-                result.update({
-                    "row": idx + 1,
-                    "status": "OK",
-                    "warnings": "|".join(val.warnings),
-                })
-                results.append(result)
-            else:
-                error_text = "; ".join(val.errors)
-                results.append({"row": idx + 1, "status": "ERROR", "errors": error_text})
-                errors.append({"row": idx + 1, "errors": error_text})
-        except Exception as e:
-            err = str(e)
-            results.append({"row": idx + 1, "status": "ERROR", "errors": err})
-            errors.append({"row": idx + 1, "errors": err})
-            log_analysis_error("batch_row_failed", {"row": idx, "error": err})
-
-    log_batch_progress(total, total, "complete")
-    return results, errors
-
-
-def check_be_sign_error(ph: float, be: float) -> dict:
-    """
-    BE işaret hatası kontrolü.
-    
-    Returns:
-        dict with keys:
-        - has_error: bool
-        - message: str
-        - suggested_be: float (işaret düzeltilmiş)
-    """
-    # pH asidemi gösteriyor ama BE pozitif (alkaloz)
-    if ph < PH_NORMAL_LOW and be > 2:
-        return {
-            "has_error": True,
-            "message": f"⚠️ pH ({ph:.2f}) asidemi gösteriyor ama BE ({be:+.1f}) pozitif. İşaret hatası olabilir!",
-            "suggested_be": -be
-        }
-    
-    # pH alkalemi gösteriyor ama BE negatif (asidoz)
-    if ph > PH_NORMAL_HIGH and be < -2:
-        return {
-            "has_error": True,
-            "message": f"⚠️ pH ({ph:.2f}) alkalemi gösteriyor ama BE ({be:+.1f}) negatif. İşaret hatası olabilir!",
-            "suggested_be": -be
-        }
-    
-    return {"has_error": False, "message": "", "suggested_be": be}
 
 
 def render_derived_values_section(ph: float, pco2: float, mode_prefix: str):
