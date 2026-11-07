@@ -78,4 +78,15 @@ describe("api istemcisi", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
     expect(await api.csv({ ph: 7.3, pco2: 31, na: 141, cl: 114 })).toEqual({ tur: "ag" });
   });
+
+  it("toplu analiz isteğinde CSV metnini ve modu JSON olarak gönderir", async () => {
+    const sahteFetch = vi.fn().mockResolvedValue(yanitla(200, '{"is_valid":true,"total":1}'));
+    vi.stubGlobal("fetch", sahteFetch);
+    const sonuc = await api.toplu("ph,pco2,na,cl", "advanced");
+    const [yol, init] = sahteFetch.mock.calls[0];
+    expect(yol).toBe("/api/batch");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ csv: "ph,pco2,na,cl", mode: "advanced" });
+    expect(sonuc).toEqual({ tur: "tamam", veri: { is_valid: true, total: 1 } });
+  });
 });

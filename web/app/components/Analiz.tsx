@@ -16,6 +16,7 @@ import {
   type AlbuminBirimi,
   type Cihaz,
   type Degerler,
+  type Gorunum,
   type Hatalar,
   type Mod,
 } from "../lib/form";
@@ -27,6 +28,7 @@ import GirisPaneli from "./GirisPaneli";
 import { useMeta } from "./MetaProvider";
 import SonucEkrani from "./SonucEkrani";
 import TopBar from "./TopBar";
+import TopluAnaliz from "./TopluAnaliz";
 import VakaPaneli from "./VakaPaneli";
 
 type AnalizDurumu =
@@ -51,6 +53,7 @@ export default function Analiz() {
   const sinirlar = meta.tur === "hazir" ? meta.meta.limits : undefined;
 
   const [mod, setMod] = useState<Mod>("hizli");
+  const [gorunum, setGorunum] = useState<Gorunum>("tekli");
   const [degerler, setDegerler] = useState<Degerler>(BOS_DEGERLER);
   const [albuminBirimi, setAlbuminBirimi] = useState<AlbuminBirimi>("g/L");
   const [cihaz, setCihaz] = useState<Cihaz>(BOS_CIHAZ);
@@ -114,6 +117,7 @@ export default function Analiz() {
     setAlbuminBirimi("g/L");
     setCihaz(yuklenen.cihaz);
     setDokunulan({});
+    setGorunum("tekli");
     setVakaPaneliAcik(false);
   }
 
@@ -182,8 +186,18 @@ export default function Analiz() {
 
   return (
     <>
-      <TopBar mod={mod} onMod={modDegisti} onVakalar={() => setVakaPaneliAcik(true)} />
-      <div className={styles.govde}>
+      <TopBar
+        mod={mod}
+        onMod={modDegisti}
+        gorunum={gorunum}
+        onGorunum={setGorunum}
+        onVakalar={() => setVakaPaneliAcik(true)}
+      />
+      {/* Toplu görünüm açık kalır (gizlenir), böylece görünümler arası geçişte seçilen dosya ve sonuç kaybolmaz */}
+      <main className={styles.ana} hidden={gorunum !== "toplu"}>
+        <TopluAnaliz mod={mod} />
+      </main>
+      <div className={styles.govde} hidden={gorunum !== "tekli"}>
         <GirisPaneli
           mod={mod}
           degerler={degerler}

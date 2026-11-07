@@ -3,6 +3,8 @@ import type { AnalyzeRequest, DerivedRequest, Meta } from "./api";
 export type AlanAdi = "ph" | "pco2" | "na" | "cl" | "lactate" | "albumin" | "k" | "ca" | "mg" | "po4";
 /** Hızlı mod: pH, pCO₂, Na⁺, Cl⁻, laktat, albümin. Gelişmiş mod: bunlara K⁺, Ca²⁺, Mg²⁺ ve fosfat eklenir. */
 export type Mod = "hizli" | "gelismis";
+/** Ekranın iki görünümü: tek vaka formu ya da toplu CSV analizi */
+export type Gorunum = "tekli" | "toplu";
 export type AlbuminBirimi = "g/L" | "g/dL";
 export type Degerler = Record<AlanAdi, string>;
 export type Sinirlar = Meta["limits"];

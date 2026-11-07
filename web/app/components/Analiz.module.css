@@ -4,6 +4,11 @@
   flex: 1;
 }
 
+/* display tanımlı olduğu için hidden özniteliği ayrıca güçlendirilir */
+.govde[hidden] {
+  display: none;
+}
+
 .ana {
   min-width: 0;
   padding: 32px 36px 36px;

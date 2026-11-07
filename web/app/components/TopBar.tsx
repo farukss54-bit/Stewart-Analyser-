@@ -1,6 +1,6 @@
 "use client";
 
-import type { Mod } from "../lib/form";
+import type { Gorunum, Mod } from "../lib/form";
 import dugme from "./Button.module.css";
 import ThemeToggle from "./ThemeToggle";
 import styles from "./TopBar.module.css";
@@ -10,14 +10,17 @@ const MODLAR: { mod: Mod; ad: string }[] = [
   { mod: "gelismis", ad: "Gelişmiş" },
 ];
 
-// "Toplu analiz (CSV)" seçeneği, ekranı eklendiği aşamada gelir
 export default function TopBar({
   mod,
   onMod,
+  gorunum,
+  onGorunum,
   onVakalar,
 }: {
   mod: Mod;
   onMod: (mod: Mod) => void;
+  gorunum: Gorunum;
+  onGorunum: (gorunum: Gorunum) => void;
   onVakalar: () => void;
 }) {
   return (
@@ -43,6 +46,14 @@ export default function TopBar({
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className={`${dugme.ghost} ${styles.gorunum}`}
+          aria-pressed={gorunum === "toplu"}
+          onClick={() => onGorunum(gorunum === "toplu" ? "tekli" : "toplu")}
+        >
+          Toplu CSV
+        </button>
         <button type="button" className={dugme.ghost} onClick={onVakalar}>
           Hazır vakalar
         </button>

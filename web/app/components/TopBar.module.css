@@ -75,6 +75,13 @@
   font-weight: 700;
 }
 
+/* Toplu CSV görünümü açıkken düğme basılı görünür */
+.gorunum[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--raised);
+  font-weight: 700;
+}
+
 @media (max-width: 640px) {
   .top {
     flex-direction: column;

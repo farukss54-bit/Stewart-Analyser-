@@ -7,9 +7,13 @@ export type DerivedResponse = components["schemas"]["DerivedResponse"];
 export type AnalyzeRequest = components["schemas"]["AnalyzeRequest"];
 export type AnalyzeResponse = components["schemas"]["AnalyzeResponse"];
 export type Vaka = components["schemas"]["Case"];
+export type TopluYanit = components["schemas"]["BatchResponse"];
+export type TopluSatir = components["schemas"]["BatchRow"];
 
 // API yanıt vermezse istek sonsuza kadar beklemesin
 const ZAMAN_ASIMI_MS = 8000;
+// Toplu analiz binlerce satır içerebilir
+const TOPLU_ZAMAN_ASIMI_MS = 60000;
 
 /**
  * İstek sonucu. Hata türleri ayrıdır çünkü kullanıcıya söylenecek şey farklıdır:
@@ -28,8 +32,9 @@ async function istek<T>(
   init?: RequestInit,
   signal?: AbortSignal,
   oku: (yanit: Response) => Promise<T> = (yanit) => yanit.json() as Promise<T>,
+  zamanAsimiMs: number = ZAMAN_ASIMI_MS,
 ): Promise<ApiSonuc<T>> {
-  const zamanAsimi = AbortSignal.timeout(ZAMAN_ASIMI_MS);
+  const zamanAsimi = AbortSignal.timeout(zamanAsimiMs);
   try {
     const yanit = await fetch(yol, {
       ...init,
@@ -69,4 +74,13 @@ export const api = {
   // Tek analizin CSV dosyası; içeriği Streamlit'teki indirmeyle aynıdır
   csv: (govde: AnalyzeRequest, signal?: AbortSignal) =>
     istek<Blob>("/api/analyze/csv", gonder(govde), signal, (yanit) => yanit.blob()),
+  // CSV metnindeki her satır ayrı analiz edilir
+  toplu: (csv: string, mod: AnalyzeRequest["mode"], signal?: AbortSignal) =>
+    istek<TopluYanit>(
+      "/api/batch",
+      gonder({ csv, mode: mod }),
+      signal,
+      (yanit) => yanit.json() as Promise<TopluYanit>,
+      TOPLU_ZAMAN_ASIMI_MS,
+    ),
 };
