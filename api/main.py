@@ -67,7 +67,7 @@ from core import (
     check_hco3_consistency,
     output_to_dict,
 )
-from api.batch import run_batch
+from api.batch import CSV_BOM, run_batch
 from services import check_be_sign_error
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -230,7 +230,7 @@ def analyze_csv(req: AnalyzeRequest) -> Response:
     writer.writeheader()
     writer.writerow(row)
     return Response(
-        content=buffer.getvalue().encode("utf-8"),
+        content=(CSV_BOM + buffer.getvalue()).encode("utf-8"),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="stewart_result.csv"'},
     )

@@ -12,7 +12,7 @@ import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
-from api.batch import MAX_CSV_CHARS, MAX_ROWS
+from api.batch import CSV_BOM, MAX_CSV_CHARS, MAX_ROWS
 from api.main import app
 from services import process_batch
 
@@ -25,6 +25,11 @@ SAMPLE_CSV = """ph,pco2,na,cl,k,lactate,albumin_gl,be
 7.25,25,136,100,5.0,8.0,28,-12"""
 
 
+def _dosya(body: dict) -> str:
+    """Sonuç dosyasının BOM'suz metni (karşılaştırma için)."""
+    return body["csv"].removeprefix(CSV_BOM)
+
+
 def _post(text: str, mode: str = "quick"):
     return client.post("/api/batch", json={"csv": text, "mode": mode})
 
@@ -34,16 +39,16 @@ class TestBatchMatchesStreamlitPath:
         body = _post(SAMPLE_CSV).json()
         results, _ = process_batch(pd.read_csv(io.StringIO(SAMPLE_CSV)), "quick")
         expected = pd.DataFrame(results).to_csv(index=False)
-        assert body["csv"].splitlines() == expected.splitlines()
+        assert _dosya(body).splitlines() == expected.splitlines()
 
     def test_advanced_mode_is_passed_through(self):
         text = "ph,pco2,na,cl,k,ca,mg,po4,lactate,albumin_gl\n7.30,31,141,114,4.1,1.2,0.8,1.1,2.8,25"
         body = _post(text, "advanced").json()
         results, _ = process_batch(pd.read_csv(io.StringIO(text)), "advanced")
-        assert body["csv"].splitlines() == pd.DataFrame(results).to_csv(index=False).splitlines()
+        assert _dosya(body).splitlines() == pd.DataFrame(results).to_csv(index=False).splitlines()
         # Gelişmiş modda SIG hesaplanır; hızlı modda hesaplanmaz
-        advanced = list(csv.DictReader(io.StringIO(body["csv"])))[0]
-        quick = list(csv.DictReader(io.StringIO(_post(text, "quick").json()["csv"])))[0]
+        advanced = list(csv.DictReader(io.StringIO(_dosya(body))))[0]
+        quick = list(csv.DictReader(io.StringIO(_dosya(_post(text, "quick").json()))))[0]
         assert advanced["sig"] != quick["sig"]
 
     def test_counts_and_rows(self):
@@ -57,10 +62,13 @@ class TestBatchMatchesStreamlitPath:
         assert first["be_used"] == pytest.approx(0.0)
         assert first["headline"]
 
-    def test_result_file_has_no_bom_and_can_be_read_back(self):
+    def test_result_file_starts_with_bom_and_can_be_read_back(self):
         body = _post(SAMPLE_CSV).json()
-        assert body["csv"].startswith("ph,")
-        assert len(list(csv.DictReader(io.StringIO(body["csv"])))) == 3
+        # Türkçe Excel, BOM'suz UTF-8 dosyadaki Türkçe karakterleri bozar
+        assert body["csv"].startswith(CSV_BOM + "ph,")
+        assert len(list(csv.DictReader(io.StringIO(_dosya(body))))) == 3
+        # BOM'lu sonuç dosyası toplu yüklemeye geri verilebilir
+        assert _post(body["csv"]).json()["total"] == 3
 
 
 class TestBatchRowErrors:

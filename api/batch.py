@@ -16,6 +16,10 @@ from services import process_batch
 
 # API'nin kendi koruması (Streamlit'in yükleme sınırı yerine). Sınırı aşan dosya analiz edilmez.
 MAX_CSV_CHARS = 2_000_000
+
+# İndirilen CSV dosyaları UTF-8 BOM ile başlar: Türkçe Excel BOM'suz dosyayı ANSI sanıp Türkçe karakterleri
+# bozar. pandas ve bu API BOM'u okurken atar, yani dosya toplu yüklemeye geri verilebilir.
+CSV_BOM = "\ufeff"
 MAX_ROWS = 5000
 
 
@@ -54,7 +58,7 @@ def run_batch(csv_text: str, mode: str) -> BatchResponse:
         return _bos([f"Dosya çok büyük (en fazla {MAX_CSV_CHARS // 1_000_000} MB)."])
 
     try:
-        df = pd.read_csv(io.StringIO(csv_text.lstrip("﻿")))
+        df = pd.read_csv(io.StringIO(csv_text.lstrip(CSV_BOM)))
     except (pd.errors.EmptyDataError, pd.errors.ParserError, ValueError) as err:
         return _bos([f"CSV okunamadı: {err}"])
 
@@ -71,5 +75,5 @@ def run_batch(csv_text: str, mode: str) -> BatchResponse:
         ok=len(results) - len(errors),
         failed=len(errors),
         rows=[_satir(r) for r in results],
-        csv=pd.DataFrame(results).to_csv(index=False, lineterminator="\n"),
+        csv=CSV_BOM + pd.DataFrame(results).to_csv(index=False, lineterminator="\n"),
     )

@@ -249,6 +249,11 @@ class TestAnalyzeValidation:
         assert client.post("/api/analyze", json=payload).status_code == 422
 
 
+def _csv_text(response) -> str:
+    """İndirilen dosyanın metni (BOM atılmış): Excel için dosya BOM ile başlar, içerik BOM'suz karşılaştırılır."""
+    return response.content.decode("utf-8-sig")
+
+
 class TestAnalyzeCsv:
     REQUEST = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, "lactate": 2.8, "albumin": 25}
 
@@ -259,21 +264,28 @@ class TestAnalyzeCsv:
         inp = StewartInput(ph=7.30, pco2=31.0, na=141.0, cl=114.0, lactate=2.8, albumin_gl=25.0)
         out, _ = analyze_stewart(inp, "quick")
         expected = pd.DataFrame([output_to_dict(inp, out)]).to_csv(index=False)
-        assert r.text.splitlines() == expected.splitlines()
+        assert _csv_text(r).splitlines() == expected.splitlines()
 
     def test_is_a_single_data_row_that_can_be_read_back(self):
         r = client.post("/api/analyze/csv", json=self.REQUEST)
-        rows = list(csv.DictReader(io.StringIO(r.text)))
+        rows = list(csv.DictReader(io.StringIO(_csv_text(r))))
         assert len(rows) == 1
         assert float(rows[0]["be_used"]) == pytest.approx(-10.4)
 
-    def test_is_sent_as_a_utf8_attachment_without_bom(self):
+    def test_is_sent_as_a_utf8_attachment_with_bom(self):
         r = client.post("/api/analyze/csv", json=self.REQUEST)
         assert r.headers["content-type"].startswith("text/csv")
         assert "charset=utf-8" in r.headers["content-type"]
         assert 'filename="stewart_result.csv"' in r.headers["content-disposition"]
-        # BOM ilk sütun adını bozar (CSV toplu yüklemeye geri verildiğinde "ph" bulunamaz)
-        assert r.content.startswith(b"ph,")
+        # Türkçe Excel, BOM'suz UTF-8 dosyadaki Türkçe karakterleri bozar
+        assert r.content.startswith(b"\xef\xbb\xbfph,")
+
+    def test_downloaded_file_can_be_uploaded_back_to_batch(self):
+        """BOM'lu dosya toplu yüklemeye geri verilince ilk sütun adı ("ph") bozulmaz."""
+        dosya = client.post("/api/analyze/csv", json=self.REQUEST).content
+        assert list(pd.read_csv(io.BytesIO(dosya)).columns)[0] == "ph"
+        geri = client.post("/api/batch", json={"csv": dosya.decode("utf-8"), "mode": "quick"}).json()
+        assert geri["is_valid"] is True and geri["total"] == 1
 
     def test_advanced_mode_matches_the_streamlit_download(self):
         request = {**self.REQUEST, "k": 4.1, "ca": CA_NORMAL, "mg": MG_NORMAL, "po4": PO4_NORMAL, "mode": "advanced"}
@@ -282,12 +294,12 @@ class TestAnalyzeCsv:
                            po4=PO4_NORMAL, lactate=2.8, albumin_gl=25.0)
         out, _ = analyze_stewart(inp, "advanced")
         expected = pd.DataFrame([output_to_dict(inp, out)]).to_csv(index=False)
-        assert r.text.splitlines() == expected.splitlines()
+        assert _csv_text(r).splitlines() == expected.splitlines()
 
     def test_albumin_in_gdl_is_converted_like_analyze(self):
         in_gl = client.post("/api/analyze/csv", json={**self.REQUEST, "albumin": 25.0, "albumin_unit": "g/L"})
         in_gdl = client.post("/api/analyze/csv", json={**self.REQUEST, "albumin": 2.5, "albumin_unit": "g/dL"})
-        assert in_gdl.text == in_gl.text
+        assert in_gdl.content == in_gl.content
 
     def test_invalid_input_has_nothing_to_download(self):
         r = client.post("/api/analyze/csv", json={"ph": 9.5, "pco2": 31, "na": 141, "cl": 114})
