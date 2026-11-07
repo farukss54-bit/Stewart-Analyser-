@@ -89,4 +89,12 @@ describe("api istemcisi", () => {
     expect(JSON.parse(init.body)).toEqual({ csv: "ph,pco2,na,cl", mode: "advanced" });
     expect(sonuc).toEqual({ tur: "tamam", veri: { is_valid: true, total: 1 } });
   });
+
+  it("referansları listeler", async () => {
+    const liste = [{ id: "stewart_1983", text: "Stewart PA. 1983" }];
+    const sahteFetch = vi.fn().mockResolvedValue(yanitla(200, JSON.stringify(liste)));
+    vi.stubGlobal("fetch", sahteFetch);
+    expect(await api.referanslar()).toEqual({ tur: "tamam", veri: liste });
+    expect(sahteFetch.mock.calls[0][0]).toBe("/api/references");
+  });
 });

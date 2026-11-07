@@ -7,6 +7,7 @@ export type DerivedResponse = components["schemas"]["DerivedResponse"];
 export type AnalyzeRequest = components["schemas"]["AnalyzeRequest"];
 export type AnalyzeResponse = components["schemas"]["AnalyzeResponse"];
 export type Vaka = components["schemas"]["Case"];
+export type Referans = components["schemas"]["Reference"];
 export type TopluYanit = components["schemas"]["BatchResponse"];
 export type TopluSatir = components["schemas"]["BatchRow"];
 
@@ -71,6 +72,7 @@ export const api = {
   analiz: (govde: AnalyzeRequest, signal?: AbortSignal) =>
     istek<AnalyzeResponse>("/api/analyze", gonder(govde), signal),
   vakalar: (signal?: AbortSignal) => istek<Vaka[]>("/api/cases", undefined, signal),
+  referanslar: (signal?: AbortSignal) => istek<Referans[]>("/api/references", undefined, signal),
   // Tek analizin CSV dosyası; içeriği Streamlit'teki indirmeyle aynıdır
   csv: (govde: AnalyzeRequest, signal?: AbortSignal) =>
     istek<Blob>("/api/analyze/csv", gonder(govde), signal, (yanit) => yanit.blob()),
