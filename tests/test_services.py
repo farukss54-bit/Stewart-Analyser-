@@ -63,3 +63,31 @@ class TestProcessBatch:
     def test_empty_dataframe_returns_nothing(self):
         df = pd.DataFrame(columns=["ph", "pco2", "na", "cl"])
         assert process_batch(df, "quick") == ([], [])
+
+
+class TestBatchSwapWarning:
+    """Na/Cl kolon yer değiştirme şüphesi satır doğrulamasında üretilir; sonuç satırına da yansımalıdır."""
+
+    SWAPPED = {"ph": 7.30, "pco2": 31, "na": 104, "cl": 141, "lactate": 2.8, "albumin_gl": 25}
+    NORMAL = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, "lactate": 2.8, "albumin_gl": 25}
+
+    def test_swap_suspicion_reaches_the_result_row(self):
+        results, _ = process_batch(pd.DataFrame([self.SWAPPED]), "quick")
+        assert results[0]["status"] == "OK"
+        assert "KOLON HATASI ŞÜPHESİ" in results[0]["warnings"]
+
+    def test_original_values_are_kept_not_corrected(self):
+        results, _ = process_batch(pd.DataFrame([self.SWAPPED]), "quick")
+        assert results[0]["na"] == 104.0
+        assert results[0]["cl"] == 141.0
+
+    def test_clean_row_has_no_warning(self):
+        results, _ = process_batch(pd.DataFrame([self.NORMAL]), "quick")
+        assert results[0]["warnings"] == ""
+
+    def test_warning_is_attributed_to_its_own_row(self):
+        df = pd.DataFrame([self.NORMAL, self.SWAPPED])
+        results, _ = process_batch(df, "quick")
+        assert results[0]["warnings"] == ""
+        assert "Satır 2" in results[1]["warnings"]
+

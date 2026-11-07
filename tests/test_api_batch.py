@@ -92,6 +92,14 @@ class TestBatchRowErrors:
         assert row["warnings"] == []
 
 
+class TestBatchSwapSuspicion:
+    def test_swapped_na_cl_row_carries_the_warning_and_keeps_its_values(self):
+        body = _post("ph,pco2,na,cl\n7.30,31,104,141").json()
+        row = body["rows"][0]
+        assert row["status"] == "OK"
+        assert any("KOLON HATASI" in w for w in row["warnings"])
+
+
 class TestBatchUnreadableInput:
     @pytest.mark.parametrize("text", ["", "ph,pco2,na,cl", "\n\n"])
     def test_empty_or_header_only_file_is_rejected_with_a_reason(self, text):

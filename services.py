@@ -36,10 +36,12 @@ def process_batch(df, mode):
 
             if val.is_valid:
                 result = output_to_dict(inp, out)
+                # Satır doğrulamasının uyarıları (örn. Na/Cl kolon yer değiştirme şüphesi) da sonuca girer;
+                # aksi halde şüpheli satır uyarısız analiz edilmiş görünürdü
                 result.update({
                     "row": idx + 1,
                     "status": "OK",
-                    "warnings": "|".join(val.warnings),
+                    "warnings": "|".join(validation.warnings + val.warnings),
                 })
                 results.append(result)
             else:
