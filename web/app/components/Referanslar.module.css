@@ -1,0 +1,49 @@
+.kutu {
+  flex-basis: 100%;
+}
+
+.ozet {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.ozet::-webkit-details-marker {
+  display: none;
+}
+
+/* Ok işareti: Klasik karşılaştırma bölümüyle aynı */
+.ozet::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-left: 10px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+}
+
+.kutu[open] .ozet::after {
+  transform: rotate(-135deg);
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100ch;
+  margin: 0 0 12px;
+  padding-left: 20px;
+}
+
+.hata {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: var(--acid);
+}

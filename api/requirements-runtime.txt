@@ -1,0 +1,4 @@
+# Stewart Asit-Baz Analizi - API çalışma zamanı bağımlılıkları (Docker imajı bunu kullanır)
+fastapi>=0.162.0
+uvicorn>=0.54.0
+pandas>=2.0.0

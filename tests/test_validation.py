@@ -93,9 +93,10 @@ class TestSanitizeNumeric:
         assert sanitize_numeric("yüksek") is None
     
     def test_mixed_text_numbers(self):
-        """Text mixed with numbers - extract numbers"""
-        assert sanitize_numeric("140 mmol/L") == 140.0
-        assert sanitize_numeric("pH: 7.40") == 7.40
+        """Sayı dışı karakter içeren metin geçersizdir (Faruk kararı, 2026-11-06): eskiden "140 mmol/L" -> 140.0
+        ve "pH: 7.40" -> 7.40 olarak sessizce kabul ediliyordu; "13 8" -> 138 gibi bozuk değerler de geçiyordu."""
+        assert sanitize_numeric("140 mmol/L") is None
+        assert sanitize_numeric("pH: 7.40") is None
     
     # --- Special float values ---
     def test_infinity(self):
@@ -569,3 +570,54 @@ class TestClinicalEdgeCases:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# =============================================================================
+# SAYI DIŞI KARAKTER İÇEREN DEĞERLER REDDEDİLİR
+# =============================================================================
+
+class TestJunkCharactersAreRejected:
+    """Eskiden sayı dışı karakterler sessizce silinip değer kabul ediliyordu ("7.3x" -> 7.3, "13 8" -> 138)."""
+
+    @pytest.mark.parametrize("junk", ["7.3x", "7,3x", "1e0", "13 8", "7 30", "140 mmol/L", "~7.3", "7.3.1", "7..3", "٧.٣"])
+    def test_sanitize_numeric_returns_none(self, junk):
+        assert sanitize_numeric(junk) is None
+
+    @pytest.mark.parametrize("ok, expected", [("7.30", 7.30), ("7,30", 7.30), (" 140 ", 140.0), ("5.", 5.0), (".5", 0.5), ("0", 0.0)])
+    def test_well_formed_numbers_still_parse(self, ok, expected):
+        assert sanitize_numeric(ok) == expected
+
+    def test_negative_still_depends_on_the_flag(self):
+        assert sanitize_numeric("-5") is None
+        assert sanitize_numeric("-5", allow_negative=True) == -5.0
+        assert sanitize_numeric("-5x", allow_negative=True) is None
+
+    @pytest.mark.parametrize("placeholder", ["", "  ", "n/a", "N/A", "nan", "NaN", "null", "none", "-"])
+    def test_missing_markers_are_not_errors(self, placeholder):
+        """Boş hücre ve "n/a" gibi işaretler hata değil, "girilmemiş"tir."""
+        row = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, "lactate": placeholder, "be": placeholder, "hco3": placeholder}
+        result = validate_csv_row(row, 0)
+        assert result.is_valid, result.errors
+
+    @pytest.mark.parametrize("field", ["ph", "pco2", "na", "cl"])
+    def test_junk_in_a_required_field_makes_the_row_invalid_with_the_reason(self, field):
+        row = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, field: "12x"}
+        result = validate_csv_row(row, 4)
+        assert not result.is_valid
+        assert any("'12x'" in e and "okunamadı" in e for e in result.errors)
+        assert any(e.startswith("Satır 5") for e in result.errors)
+
+    @pytest.mark.parametrize("field", ["be", "hco3", "albumin_gl", "lactate", "k"])
+    def test_junk_in_an_optional_field_makes_the_row_invalid(self, field):
+        """İsteğe bağlı değer bozuksa sessizce yok sayılmaz (BE bozuksa BE hesaplanıp kullanılırdı)."""
+        row = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, field: "4x"}
+        result = validate_csv_row(row, 0)
+        assert not result.is_valid
+        assert result.errors
+
+    def test_valid_row_is_unaffected(self):
+        row = {"ph": "7,30", "pco2": " 31 ", "na": 141, "cl": "114", "lactate": "2,8", "be": "-6", "albumin_gl": "25"}
+        result = validate_csv_row(row, 0)
+        assert result.is_valid
+        assert result.normalized_values["ph"] == 7.30
+        assert result.normalized_values["be"] == -6.0

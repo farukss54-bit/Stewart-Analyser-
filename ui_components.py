@@ -488,8 +488,9 @@ def render_classic_comparison(classic_comparison):
         with st.expander("🔍 Klasik Yaklaşıma Göre Fark", expanded=False):
             for diff in classic_comparison.differences:
                 st.markdown(f"• {diff}")
-            st.markdown("---")
-            st.markdown(f"**{classic_comparison.stewart_advantage}**")
+            if classic_comparison.stewart_advantage:
+                st.markdown("---")
+                st.markdown(f"**{classic_comparison.stewart_advantage}**")
             if classic_comparison.missed_by_classic:
                 st.warning("Klasik analizde gözden kaçabilecek durumlar: " + ", ".join(classic_comparison.missed_by_classic))
 

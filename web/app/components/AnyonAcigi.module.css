@@ -1,0 +1,134 @@
+.h2 {
+  font-size: var(--text-l);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.kutu {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+
+.sayilar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 40px;
+  margin: 0;
+}
+
+.sayi dt {
+  font-size: var(--text-s);
+  color: var(--subtle);
+}
+
+.sayi dd {
+  margin: 0;
+  font-size: var(--text-xl);
+  line-height: 1.15;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sayi dd span {
+  margin-left: 6px;
+  font-size: var(--text-s);
+  font-weight: 400;
+  color: var(--subtle);
+}
+
+.duzeltilmis dd {
+  color: var(--acid);
+}
+
+/* Çubuk 0 ile ölçek sonu arasındadır; işaret etiketleri çubuğun altına, eşik etiketi üstüne taşar */
+.cubuk {
+  position: relative;
+  height: 8px;
+  margin: 22px 0 30px;
+  border-radius: 4px;
+  background: var(--raised);
+}
+
+.bant {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 4px;
+  background: var(--band);
+}
+
+.kayma {
+  position: absolute;
+  top: 1px;
+  height: 6px;
+  border-top: 2px dashed var(--acid);
+  border-radius: 2px;
+  background: var(--acid-bg);
+}
+
+.esik {
+  position: absolute;
+  top: -8px;
+  bottom: -8px;
+  width: 2px;
+  background: var(--muted);
+}
+
+.esikEtiketi {
+  position: absolute;
+  top: -30px;
+  transform: translateX(-50%);
+  font-size: var(--text-s);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.isaret {
+  position: absolute;
+  top: -5px;
+  width: 4px;
+  height: 18px;
+  border-radius: 2px;
+}
+
+.olculen {
+  background: var(--ink);
+}
+
+.duzeltilmisIsaret {
+  background: var(--acid);
+}
+
+.etiket {
+  position: absolute;
+  top: 20px;
+  transform: translateX(-50%);
+  font-size: var(--text-s);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.etiketAsit {
+  color: var(--acid);
+}
+
+/* İki işaret birbirine yakınsa etiketler üst üste binmesin: küçük değerin etiketi işaretin soluna, büyüğünün sağına yaslanır */
+.solaYasli {
+  transform: translateX(calc(-100% + 2px));
+}
+
+.sagaYasli {
+  transform: translateX(-2px);
+}
+
+.metin {
+  max-width: 76ch;
+  font-size: var(--text-s);
+  color: var(--muted);
+}

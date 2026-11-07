@@ -1,0 +1,193 @@
+.baslikSatiri {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.h2 {
+  font-size: var(--text-l);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.alt {
+  max-width: 64ch;
+  margin-top: 4px;
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+/* SIG'in veri durumu: tam veride düz, eksik veride kesikli çerçeve */
+.durum {
+  padding: 1px 10px;
+  border: 1px solid var(--subtle);
+  border-radius: 999px;
+  font-size: var(--text-s);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.durum.eksik {
+  border-style: dashed;
+}
+
+.olcek,
+.satir {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr) 72px;
+  gap: 16px;
+}
+
+.olcek {
+  margin-top: 20px;
+  font-size: var(--text-s);
+  color: var(--subtle);
+}
+
+.isaretler {
+  display: flex;
+  justify-content: space-between;
+  font-variant-numeric: tabular-nums;
+}
+
+.birim {
+  text-align: right;
+}
+
+.satir {
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+
+.ad {
+  font-weight: 700;
+}
+
+.altAd {
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.yol {
+  position: relative;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--raised);
+}
+
+.cubuk {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 0 3px 3px 0;
+}
+
+.dolu {
+  background: var(--ink);
+}
+
+.soluk {
+  background: var(--subtle);
+}
+
+/* Eksik veriyle hesaplanan katman: içi boş, kesikli çerçeve */
+.kesik {
+  border: 2px dashed var(--ink);
+  border-left: 0;
+  background: transparent;
+}
+
+.normal {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  background: var(--ink);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.deger {
+  text-align: right;
+  font-size: var(--text-l);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sig {
+  margin-top: 4px;
+  border-top: 2px solid var(--ink);
+}
+
+.sig .deger {
+  color: var(--acid);
+}
+
+.fark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border: 2px dashed var(--acid);
+  border-radius: 3px;
+  background: repeating-linear-gradient(135deg, var(--acid-bg) 0 6px, transparent 6px 12px);
+}
+
+.not {
+  max-width: 76ch;
+  margin-top: 12px;
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.normalOrnek {
+  display: inline-block;
+  width: 2px;
+  height: 12px;
+  margin-right: 8px;
+  vertical-align: -1px;
+  background: var(--ink);
+}
+
+.hatirlatma {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px dashed var(--subtle);
+  border-radius: 10px;
+}
+
+.hatirlatma p {
+  flex: 1 1 280px;
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .olcek,
+  .satir {
+    grid-template-columns: minmax(0, 1fr) 64px;
+    gap: 8px 12px;
+  }
+
+  /* Ölçek, ad sütunu olmadığı için çubuğun üstüne tam genişlikte oturur */
+  .olcek {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .olcek span:first-child,
+  .birim {
+    display: none;
+  }
+
+  .satir .yol {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

@@ -1,0 +1,1625 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Stewart Asit-Baz Analizi API",
+    "version": "3.5.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "description": "Sunucunun ayakta olduğunu bildirir.",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/meta": {
+      "get": {
+        "summary": "Meta",
+        "description": "Arayüzün ihtiyaç duyduğu sürüm, fizyolojik sınırlar ve referans aralıkları.\n\nDeğerlerin hepsi constants.py'den gelir; burada yeni eşik tanımlanmaz.",
+        "operationId": "meta_api_meta_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/derived": {
+      "post": {
+        "summary": "Derived",
+        "description": "pH ve pCO2'den HCO3 ve BE'yi hesaplar; cihaz değerleri verilmişse tutarlılığı denetler.\n\nMantık, Streamlit arayüzündeki \"türetilmiş değerler\" bölümüyle aynıdır (BE işaret\nhatası denetimi dahil). Analizi engellemek arayüzün işidir; bu uç yalnızca bildirir.",
+        "operationId": "derived_api_derived_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DerivedRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DerivedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyze": {
+      "post": {
+        "summary": "Analyze",
+        "description": "Stewart analizini çalıştırır.\n\nGirdi doğrulamayı geçmezse 200 döner, is_valid=False olur ve hatalar listelenir\n(istek biçimi bozuksa FastAPI 422 verir).",
+        "operationId": "analyze_api_analyze_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/analyze/csv": {
+      "post": {
+        "summary": "Analyze Csv",
+        "description": "Tek analizin sonucunu CSV olarak döndürür (başlık satırı + tek satır).\n\nSütunlar ve değerler Streamlit'teki \"Sonucu İndir (CSV)\" ile aynıdır: core.output_to_dict.\nGirdi doğrulamayı geçmezse indirilecek sonuç yoktur; 422 ve hata listesi döner.",
+        "operationId": "analyze_csv_api_analyze_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batch": {
+      "post": {
+        "summary": "Batch",
+        "description": "CSV metnindeki her satırı analiz eder (Streamlit'teki toplu analizle aynı yol).\n\nGeçersiz satır diğerlerini durdurmaz; satırın durumu ERROR olur ve nedeni yazılır.\nDosya okunamazsa ya da sınırı aşarsa 200 döner, is_valid=False olur.",
+        "operationId": "batch_api_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/references": {
+      "get": {
+        "summary": "References",
+        "description": "Streamlit alt bilgisindeki \"Referanslar\" listesi (constants.REFERENCES), aynı sırayla.",
+        "operationId": "references_api_references_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Reference"
+                  },
+                  "type": "array",
+                  "title": "Response References Api References Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cases": {
+      "get": {
+        "summary": "Cases",
+        "description": "Hazır (eğitim amaçlı) vakalar.",
+        "operationId": "cases_api_cases_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Case"
+                  },
+                  "type": "array",
+                  "title": "Response Cases Api Cases Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalyzeRequest": {
+        "properties": {
+          "ph": {
+            "type": "number",
+            "title": "Ph"
+          },
+          "pco2": {
+            "type": "number",
+            "title": "Pco2"
+          },
+          "na": {
+            "type": "number",
+            "title": "Na"
+          },
+          "cl": {
+            "type": "number",
+            "title": "Cl"
+          },
+          "hco3": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hco3"
+          },
+          "be": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 30.0,
+                "minimum": -30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Be"
+          },
+          "is_be_base_deficit": {
+            "type": "boolean",
+            "title": "Is Be Base Deficit",
+            "default": false
+          },
+          "k": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "K"
+          },
+          "ca": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ca"
+          },
+          "mg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mg"
+          },
+          "lactate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lactate"
+          },
+          "po4": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Po4"
+          },
+          "albumin": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Albumin"
+          },
+          "albumin_unit": {
+            "type": "string",
+            "enum": [
+              "g/L",
+              "g/dL"
+            ],
+            "title": "Albumin Unit",
+            "default": "g/L"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "quick",
+              "advanced"
+            ],
+            "title": "Mode",
+            "default": "quick"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ph",
+          "pco2",
+          "na",
+          "cl"
+        ],
+        "title": "AnalyzeRequest",
+        "description": "Analiz girdisi.\n\npH, pCO2, Na, Cl, K, Ca, Mg, laktat, albümin ve fosfatın aralık denetimi çekirdekteki\ndoğrulamada yapılır (is_valid=False döner). HCO3 ve BE'nin denetimi çekirdekte olmadığı\niçin istek modelinde yapılır (sınır dışı değer 422 verir)."
+      },
+      "AnalyzeResponse": {
+        "properties": {
+          "is_valid": {
+            "type": "boolean",
+            "title": "Is Valid"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StewartOutput"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_valid",
+          "errors",
+          "warnings",
+          "result"
+        ],
+        "title": "AnalyzeResponse",
+        "description": "Doğrulama geçmezse is_valid=False olur ve result boş kalır."
+      },
+      "BatchRequest": {
+        "properties": {
+          "csv": {
+            "type": "string",
+            "title": "Csv"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "quick",
+              "advanced"
+            ],
+            "title": "Mode",
+            "default": "quick"
+          }
+        },
+        "type": "object",
+        "required": [
+          "csv"
+        ],
+        "title": "BatchRequest",
+        "description": "CSV dosyasının metni. Sütunlar Streamlit'teki örnek CSV ile aynıdır (ph, pco2, na, cl, ...)."
+      },
+      "BatchResponse": {
+        "properties": {
+          "is_valid": {
+            "type": "boolean",
+            "title": "Is Valid"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "ok": {
+            "type": "integer",
+            "title": "Ok"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/BatchRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "csv": {
+            "type": "string",
+            "title": "Csv"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_valid",
+          "errors",
+          "total",
+          "ok",
+          "failed",
+          "rows",
+          "csv"
+        ],
+        "title": "BatchResponse",
+        "description": "Dosya okunamazsa ya da sınırı aşarsa is_valid=False olur ve nedeni errors'ta yazar."
+      },
+      "BatchRow": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "ERROR"
+            ],
+            "title": "Status"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "ph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ph"
+          },
+          "pco2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pco2"
+          },
+          "be_used": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Be Used"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "status",
+          "warnings",
+          "flags"
+        ],
+        "title": "BatchRow",
+        "description": "Tabloda gösterilen özet; tüm sütunlar `csv` alanındaki dosyadadır."
+      },
+      "CDSNote": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "condition": {
+            "type": "string",
+            "title": "Condition"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "mechanisms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mechanisms"
+          },
+          "references": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "References"
+          }
+        },
+        "type": "object",
+        "required": [
+          "category",
+          "condition",
+          "note"
+        ],
+        "title": "CDSNote",
+        "description": "Klinik karar destek notu"
+      },
+      "Case": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Values"
+          },
+          "teaching_point": {
+            "type": "string",
+            "title": "Teaching Point"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "values",
+          "teaching_point"
+        ],
+        "title": "Case"
+      },
+      "ClassicComparison": {
+        "properties": {
+          "differences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Differences"
+          },
+          "missed_by_classic": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missed By Classic"
+          },
+          "stewart_advantage": {
+            "type": "string",
+            "title": "Stewart Advantage"
+          }
+        },
+        "type": "object",
+        "required": [
+          "differences",
+          "missed_by_classic",
+          "stewart_advantage"
+        ],
+        "title": "ClassicComparison",
+        "description": "Klasik yaklaşıma göre fark analizi"
+      },
+      "CompensationStatus": {
+        "type": "string",
+        "enum": [
+          "appropriate",
+          "added_resp_alkalosis",
+          "added_resp_acidosis",
+          "primary_resp_acidosis_acute",
+          "primary_resp_acidosis_subacute",
+          "primary_resp_acidosis_chronic",
+          "primary_resp_alkalosis_acute",
+          "primary_resp_alkalosis_subacute",
+          "primary_resp_alkalosis_chronic",
+          "none"
+        ],
+        "title": "CompensationStatus"
+      },
+      "Consistency": {
+        "properties": {
+          "consistent": {
+            "type": "boolean",
+            "title": "Consistent"
+          },
+          "diff": {
+            "type": "number",
+            "title": "Diff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "consistent",
+          "diff"
+        ],
+        "title": "Consistency"
+      },
+      "ContributionBreakdown": {
+        "properties": {
+          "acidosis_contributors": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array",
+              "maxItems": 3,
+              "minItems": 3
+            },
+            "type": "array",
+            "title": "Acidosis Contributors"
+          },
+          "alkalosis_contributors": {
+            "items": {
+              "prefixItems": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ],
+              "type": "array",
+              "maxItems": 3,
+              "minItems": 3
+            },
+            "type": "array",
+            "title": "Alkalosis Contributors"
+          },
+          "respiratory_effect": {
+            "prefixItems": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "type": "array",
+            "maxItems": 3,
+            "minItems": 3,
+            "title": "Respiratory Effect"
+          },
+          "net_metabolic": {
+            "type": "number",
+            "title": "Net Metabolic"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "acidosis_contributors",
+          "alkalosis_contributors",
+          "respiratory_effect",
+          "net_metabolic",
+          "summary"
+        ],
+        "title": "ContributionBreakdown",
+        "description": "pH'a etki eden kuvvetlerin ayrıştırılması"
+      },
+      "DerivedRequest": {
+        "properties": {
+          "ph": {
+            "type": "number",
+            "maximum": 7.9,
+            "minimum": 6.5,
+            "title": "Ph"
+          },
+          "pco2": {
+            "type": "number",
+            "maximum": 250.0,
+            "minimum": 5.0,
+            "title": "Pco2"
+          },
+          "hco3_device": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 50.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hco3 Device"
+          },
+          "be_device": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 30.0,
+                "minimum": -30.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Be Device"
+          },
+          "is_base_deficit": {
+            "type": "boolean",
+            "title": "Is Base Deficit",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "ph",
+          "pco2"
+        ],
+        "title": "DerivedRequest",
+        "description": "HCO3 ve BE önizlemesi. Fizyolojik sınır dışı değerler 422 ile reddedilir."
+      },
+      "DerivedResponse": {
+        "properties": {
+          "hco3_calculated": {
+            "type": "number",
+            "title": "Hco3 Calculated"
+          },
+          "be_calculated": {
+            "type": "number",
+            "title": "Be Calculated"
+          },
+          "hco3_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Consistency"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "be_effective": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Be Effective"
+          },
+          "be_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Consistency"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sign_check": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SignCheck"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "hco3_calculated",
+          "be_calculated"
+        ],
+        "title": "DerivedResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Headline": {
+        "properties": {
+          "dominant_mechanism": {
+            "type": "string",
+            "title": "Dominant Mechanism"
+          },
+          "significant_mechanisms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Significant Mechanisms"
+          },
+          "contributing_mechanisms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Contributing Mechanisms"
+          },
+          "respiratory_status": {
+            "type": "string",
+            "title": "Respiratory Status",
+            "default": ""
+          },
+          "pattern_note": {
+            "type": "string",
+            "title": "Pattern Note",
+            "default": ""
+          },
+          "confidence": {
+            "type": "string",
+            "title": "Confidence",
+            "default": "high"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dominant_mechanism"
+        ],
+        "title": "Headline",
+        "description": "Primer sonuç satırı - REFACTORED for mechanism-based output"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "HealthResponse"
+      },
+      "Limit": {
+        "properties": {
+          "min": {
+            "type": "number",
+            "title": "Min"
+          },
+          "max": {
+            "type": "number",
+            "title": "Max"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min",
+          "max"
+        ],
+        "title": "Limit"
+      },
+      "MechanismAnalysis": {
+        "properties": {
+          "total_metabolic_effect": {
+            "type": "number",
+            "title": "Total Metabolic Effect"
+          },
+          "dominant_mechanism": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MechanismContribution"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "significant_mechanisms": {
+            "items": {
+              "$ref": "#/components/schemas/MechanismContribution"
+            },
+            "type": "array",
+            "title": "Significant Mechanisms"
+          },
+          "contributing_mechanisms": {
+            "items": {
+              "$ref": "#/components/schemas/MechanismContribution"
+            },
+            "type": "array",
+            "title": "Contributing Mechanisms"
+          },
+          "all_mechanisms": {
+            "items": {
+              "$ref": "#/components/schemas/MechanismContribution"
+            },
+            "type": "array",
+            "title": "All Mechanisms"
+          },
+          "pattern_description": {
+            "type": "string",
+            "title": "Pattern Description",
+            "default": ""
+          },
+          "respiratory_status": {
+            "type": "string",
+            "title": "Respiratory Status",
+            "default": ""
+          },
+          "respiratory_details": {
+            "type": "string",
+            "title": "Respiratory Details",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_metabolic_effect"
+        ],
+        "title": "MechanismAnalysis",
+        "description": "Contribution-based mekanizma analizi"
+      },
+      "MechanismContribution": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "identifier": {
+            "type": "string",
+            "title": "Identifier"
+          },
+          "effect_meq": {
+            "type": "number",
+            "title": "Effect Meq"
+          },
+          "contribution_percent": {
+            "type": "number",
+            "title": "Contribution Percent"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level"
+          },
+          "direction": {
+            "type": "string",
+            "title": "Direction"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "identifier",
+          "effect_meq",
+          "contribution_percent",
+          "level",
+          "direction",
+          "description"
+        ],
+        "title": "MechanismContribution",
+        "description": "Bir mekanizmanın BE'ye katkısı"
+      },
+      "MetaResponse": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "limits": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Limit"
+            },
+            "type": "object",
+            "title": "Limits"
+          },
+          "reference_ranges": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ReferenceRange"
+            },
+            "type": "object",
+            "title": "Reference Ranges"
+          },
+          "clinical_significance_threshold": {
+            "type": "number",
+            "title": "Clinical Significance Threshold"
+          },
+          "anion_gap_screening_threshold": {
+            "type": "number",
+            "title": "Anion Gap Screening Threshold"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "limits",
+          "reference_ranges",
+          "clinical_significance_threshold",
+          "anion_gap_screening_threshold"
+        ],
+        "title": "MetaResponse"
+      },
+      "Reference": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "Reference"
+      },
+      "ReferenceRange": {
+        "properties": {
+          "low": {
+            "type": "number",
+            "title": "Low"
+          },
+          "high": {
+            "type": "number",
+            "title": "High"
+          }
+        },
+        "type": "object",
+        "required": [
+          "low",
+          "high"
+        ],
+        "title": "ReferenceRange"
+      },
+      "SIDValues": {
+        "properties": {
+          "sid_simple": {
+            "type": "number",
+            "title": "Sid Simple"
+          },
+          "sid_simple_status": {
+            "type": "string",
+            "title": "Sid Simple Status"
+          },
+          "sid_basic": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sid Basic"
+          },
+          "sid_basic_status": {
+            "type": "string",
+            "title": "Sid Basic Status"
+          },
+          "sid_full": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sid Full"
+          },
+          "sid_full_status": {
+            "type": "string",
+            "title": "Sid Full Status"
+          },
+          "sid_full_missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sid Full Missing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sid_simple",
+          "sid_simple_status",
+          "sid_basic",
+          "sid_basic_status",
+          "sid_full",
+          "sid_full_status",
+          "sid_full_missing"
+        ],
+        "title": "SIDValues",
+        "description": "3 katmanlı SID değerleri"
+      },
+      "SignCheck": {
+        "properties": {
+          "has_error": {
+            "type": "boolean",
+            "title": "Has Error"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "suggested_be": {
+            "type": "number",
+            "title": "Suggested Be"
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_error",
+          "message",
+          "suggested_be"
+        ],
+        "title": "SignCheck"
+      },
+      "StewartOutput": {
+        "properties": {
+          "hco3_calculated": {
+            "type": "number",
+            "title": "Hco3 Calculated"
+          },
+          "hco3_used": {
+            "type": "number",
+            "title": "Hco3 Used"
+          },
+          "hco3_source": {
+            "type": "string",
+            "title": "Hco3 Source"
+          },
+          "be_calculated": {
+            "type": "number",
+            "title": "Be Calculated"
+          },
+          "be_used": {
+            "type": "number",
+            "title": "Be Used"
+          },
+          "be_source": {
+            "type": "string",
+            "title": "Be Source"
+          },
+          "sid_values": {
+            "$ref": "#/components/schemas/SIDValues"
+          },
+          "sid_effective": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sid Effective"
+          },
+          "sig": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sig"
+          },
+          "sig_reliability": {
+            "type": "string",
+            "title": "Sig Reliability",
+            "default": "unknown"
+          },
+          "sig_interpretation": {
+            "type": "string",
+            "title": "Sig Interpretation",
+            "default": ""
+          },
+          "cl_na_ratio": {
+            "type": "number",
+            "title": "Cl Na Ratio",
+            "default": 0.0
+          },
+          "sid_effect": {
+            "type": "number",
+            "title": "Sid Effect",
+            "default": 0.0
+          },
+          "albumin_effect": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Albumin Effect"
+          },
+          "lactate_effect": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lactate Effect"
+          },
+          "residual_effect": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Residual Effect"
+          },
+          "respiratory_effect": {
+            "type": "number",
+            "title": "Respiratory Effect",
+            "default": 0.0
+          },
+          "anion_gap": {
+            "type": "number",
+            "title": "Anion Gap",
+            "default": 0.0
+          },
+          "anion_gap_corrected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anion Gap Corrected"
+          },
+          "expected_pco2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Pco2"
+          },
+          "expected_hco3": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Hco3"
+          },
+          "compensation_status": {
+            "type": "string",
+            "title": "Compensation Status",
+            "default": ""
+          },
+          "compensation_code": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CompensationStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "compensation_details": {
+            "type": "string",
+            "title": "Compensation Details",
+            "default": ""
+          },
+          "observed_expected_diff": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed Expected Diff"
+          },
+          "contribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ContributionBreakdown"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mechanism_analysis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MechanismAnalysis"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Headline"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "classic_comparison": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ClassicComparison"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cds_notes": {
+            "items": {
+              "$ref": "#/components/schemas/CDSNote"
+            },
+            "type": "array",
+            "title": "Cds Notes"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "soft_warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Soft Warnings"
+          },
+          "interpretations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Interpretations"
+          },
+          "dominant_disorder": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dominant Disorder"
+          },
+          "disorder_components": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Disorder Components"
+          },
+          "missing_params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Params"
+          },
+          "assumed_params": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Assumed Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hco3_calculated",
+          "hco3_used",
+          "hco3_source",
+          "be_calculated",
+          "be_used",
+          "be_source",
+          "sid_values"
+        ],
+        "title": "StewartOutput",
+        "description": "Stewart analizi çıktıları"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

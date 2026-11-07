@@ -1,0 +1,8 @@
+# Stewart Asit-Baz Analizi - API bağımlılıkları
+# Kök requirements.txt'e EKLENMEZ: Streamlit uygulaması bunlara ihtiyaç duymaz.
+# Kurulum: pip install -r requirements.txt -r api/requirements.txt
+
+-r requirements-runtime.txt
+
+# Test (FastAPI TestClient için; güncel Starlette httpx yerine httpx2 ister)
+httpx2>=2.0.0

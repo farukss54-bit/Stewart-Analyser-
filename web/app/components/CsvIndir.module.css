@@ -1,0 +1,17 @@
+.alan {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.alan p {
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+.hata {
+  color: var(--acid);
+}

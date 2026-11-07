@@ -27,13 +27,13 @@
 | Konteyner | Docker | python:3.12-slim |
 | IDE | VS Code / GitHub Codespaces | devcontainer.json mevcut |
 
-**Not:** `pyproject.toml`, `setup.py` veya `package.json` yoktur. Proje düz `requirements.txt` ile yönetilir.
+**Not:** `pyproject.toml` ve `setup.py` yoktur. Python tarafı düz `requirements.txt` ile yönetilir. `feature/react-arayuz` dalında ek olarak `api/requirements.txt` (FastAPI) ve `web/package.json` (Next.js 16, React 19, TypeScript, Vitest) vardır; ikisi de Streamlit uygulamasının bağımlılıklarına karışmaz.
 
 ---
 
 ## 3. Proje Yapısı
 
-Tüm kaynak dosyalar proje kökündedir (flat yapı). Alt dizin yoktur.
+Streamlit uygulamasının kaynak dosyaları proje kökündedir (flat yapı). React arayüzü için `api/` ve `web/` alt dizinleri, ortak yardımcılar için kökte `services.py` vardır.
 
 ```
 .
@@ -50,10 +50,17 @@ Tüm kaynak dosyalar proje kökündedir (flat yapı). Alt dizin yoktur.
 │   ├── test_regression.py        # Regresyon testleri — Kritik düzeltmelerin doğrulanması
 │   ├── test_ui_imports.py        # UI import duman testleri
 │   └── test_validation.py        # Edge case testleri — Kirli girdi, CSV işleme, birim algılama
-├── requirements.txt    # Bağımlılıklar
+├── services.py         # Çerçevesiz ortak yardımcılar — process_batch, check_be_sign_error (Streamlit ve API kullanır)
+├── api/                # FastAPI katmanı (main.py, schemas.py, batch.py) — hesaplama yapmaz, core.py'yi çağırır
+├── web/                # Next.js arayüzü (app/components, app/lib, openapi.json, api-types.ts)
+├── scripts/            # dev.ps1 (API + web birlikte), export_openapi.py (OpenAPI şemasını web/'e yazar)
+├── requirements.txt    # Bağımlılıklar (Streamlit)
+├── api/requirements.txt  # API bağımlılıkları (fastapi, uvicorn, httpx2)
 ├── Dockerfile          # Üretim konteyneri
 └── .devcontainer/devcontainer.json  # VS Code / Codespaces yapılandırması
 ```
+
+`tests/` altına ayrıca `test_api.py`, `test_api_batch.py` (API; çekirdekle altın testler), `test_services.py` ve `test_app_bd.py` (Streamlit BD kutusu, `AppTest`) eklenmiştir.
 
 ### Modül Sorumlulukları
 
@@ -75,6 +82,17 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 Uygulama varsayılan olarak `http://localhost:8501` adresinde açılır.
+
+### React/Next.js arayüzü (`feature/react-arayuz`)
+```bash
+pip install -r requirements.txt -r api/requirements.txt
+cd web && npm install && cd ..
+.\scripts\dev.ps1                       # Windows: API (8000) + web (3000)
+# ya da iki terminalde: uvicorn api.main:app --port 8000   ve   cd web && npm run dev
+```
+- API durumsuzdur; değer saklamaz. Hesaplama `core.py`'dedir, `api/` yalnızca çağırır ve JSON'a çevirir.
+- Web arayüzü klinik sayı hesaplamaz: gösterilen değerler çekirdek çıktısından ve `/api/meta`'dan gelir (eşikler, sınırlar, referans aralıkları arayüzde sabit yazılmaz).
+- API şeması değişirse: `python scripts/export_openapi.py`, ardından `cd web && npm run api:tipleri`. `tests/test_api.py::test_committed_openapi_schema_is_current` ve CI'daki git-diff adımı eski şemayı yakalar.
 
 ### Docker
 ```bash
@@ -103,7 +121,17 @@ pytest tests/test_validation.py -v     # Edge case ve kirli girdi testleri
 pytest tests/test_regression.py -v     # Kritik düzeltme regresyon testleri
 pytest tests/test_cds_differential.py -v   # CDS diferansiyel modül testleri
 pytest tests/test_ui_imports.py -v         # UI import duman testleri
+pytest tests/test_api.py tests/test_api_batch.py -v   # HTTP API (FastAPI TestClient)
 ```
+
+### Web arayüzü testleri
+```bash
+cd web
+npm test          # Vitest (app/lib/*.test.ts)
+npm run lint
+npm run build
+```
+Tarayıcıda uçtan uca denetim (başsız tarayıcı + axe-core erişilebilirlik) depoda tutulmaz; sonuçları PR açıklamasında raporlanır.
 
 ### Coverage
 ```bash
@@ -238,6 +266,8 @@ Yeni UI bölümleri eklerken bu sorumluluk reddi metinlerini korumak veya benzer
 | Yeni hazır vaka | `constants.py` (SAMPLE_CASES), `app.py` (sidebar otomatik çeker) |
 | Yeni CDS notu | `constants.py` (CDS_NOTES), `core.py` (generate_cds_notes) |
 | Regresyon testi yazma | `tests/test_regression.py`, `tests/test_core.py` (örnekler) |
+| Yeni API ucu / yanıt alanı | `api/main.py`, `api/schemas.py`, `tests/test_api.py`; ardından `scripts/export_openapi.py` + `npm run api:tipleri` |
+| Web arayüzü bileşeni | `web/app/components`, `web/app/lib` (saf yardımcılar + Vitest testi), `web/app/globals.css` (tema değişkenleri) |
 | Performans optimizasyonu | `core.py` (analyze_stewart ana fonksiyonu), `app.py` (Streamlit cache/SessionState) |
 
 ---
@@ -249,6 +279,8 @@ Yeni UI bölümleri eklerken bu sorumluluk reddi metinlerini korumak veya benzer
 3. **Na/Cl swap'i otomatik düzeltmek**: Validasyon modülü sadece şüphe raporlar, asla otomatik düzeltme yapmaz.
 4. **Yeni sabitleri `core.py`'ye yazmak**: Tüm klinik sabitler `constants.py`'de toplanır. `core.py` sadece `constants.py`'den import eder.
 5. **İngilizce yorum/docstring eklemek**: Mevcut Türkçe dokümantasyonu İngilizce ile karıştırmamak gerekir. Yeni kod Türkçe açıklamalarla yazılmalıdır.
+6. **Web arayüzünde klinik sayı veya eşik yazmak**: Eşik, sınır, referans aralığı ve sonuç metni çekirdekten/`/api/meta`'dan gelir. Arayüzde yalnızca sunum (yerleşim, biçim, renk) olur; yeni bir klinik ifade gerekiyorsa önce `core.py`/`constants.py` tarafında karara bağlanır.
+7. **OpenAPI şemasını güncellemeden API değiştirmek**: `web/openapi.json` ve `web/app/lib/api-types.ts` depoda tutulur; eski olursa pytest ve CI hata verir.
 
 ---
 

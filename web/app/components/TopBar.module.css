@@ -1,0 +1,96 @@
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 28px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+}
+
+/* İki küçük çubuk: mercan (asit yönü) ve mavi (baz yönü) */
+.mark {
+  width: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mark i {
+  display: block;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.mark i:nth-child(1) {
+  width: 10px;
+  background: var(--acid);
+}
+
+.mark i:nth-child(2) {
+  width: 8px;
+  margin-left: 10px;
+  background: var(--base);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Mod seçici: seçili mod mürekkep dolgulu */
+.mod {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.mod button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mod button.secili {
+  background: var(--ink);
+  color: var(--btn-ink);
+  font-weight: 700;
+}
+
+/* Toplu CSV görünümü açıkken düğme basılı görünür */
+.gorunum[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--raised);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .top {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+  }
+
+  .nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

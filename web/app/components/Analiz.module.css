@@ -1,0 +1,85 @@
+.govde {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  flex: 1;
+}
+
+/* display tanımlı olduğu için hidden özniteliği ayrıca güçlendirilir */
+.govde[hidden] {
+  display: none;
+}
+
+.ana {
+  /* Toplu görünümde (grid dışında) alt bilgiyi sayfanın altında tutar */
+  flex: 1;
+  min-width: 0;
+  padding: 32px 36px 36px;
+}
+
+.bos {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  max-width: 520px;
+  min-height: 420px;
+}
+
+.bos p {
+  color: var(--muted);
+}
+
+.baslik {
+  font-family: var(--font-serif);
+  font-size: var(--text-l);
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+.ipuclari {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-s);
+}
+
+.durum {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 62ch;
+}
+
+.durum ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.hata {
+  color: var(--acid);
+  font-weight: 500;
+}
+
+/* Tablet: iki sütun kalır, giriş paneli daralır */
+@media (max-width: 1000px) {
+  .govde {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .ana {
+    padding: 24px;
+  }
+}
+
+/* Telefon: giriş paneli ve sonuç alt alta */
+@media (max-width: 700px) {
+  .govde {
+    display: block;
+  }
+
+  .ana {
+    padding: 20px 16px 28px;
+  }
+}

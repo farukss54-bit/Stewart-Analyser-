@@ -1,0 +1,97 @@
+/*
+  Tasarım değişkenleri. Kaynak: tasarım örneği (koyu ve açık tema).
+  Her renk light-dark(açık, koyu) olarak tek yerde tanımlanır; hangisinin
+  kullanılacağını color-scheme belirler:
+    - varsayılan: cihaz ayarı (light dark)
+    - kullanıcı seçtiyse: <html data-theme="light|dark"> (bkz. ThemeToggle)
+*/
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#eef1f5, #0f141b);
+  --panel: light-dark(#ffffff, #161d26);
+  --raised: light-dark(#f4f6f9, #1d2631);
+  --line: light-dark(#d2d9e2, #2d3947);
+  --ink: light-dark(#18212c, #eef2f7);
+  --muted: light-dark(#465467, #b0bccb);
+  --subtle: light-dark(#566578, #93a0b1);
+  --btn-ink: light-dark(#ffffff, #0f141b);
+  --scrim: light-dark(rgb(24 33 44 / 0.42), rgb(5 8 12 / 0.62));
+
+  /* Asit yönü (mercan) ve baz yönü (mavi) */
+  --acid: light-dark(#b03d2c, #ff9484);
+  --acid-bg: light-dark(rgb(176 61 44 / 0.1), rgb(255 148 132 / 0.16));
+  --base: light-dark(#1a5ca3, #85bbff);
+  --base-bg: light-dark(rgb(26 92 163 / 0.1), rgb(133 187 255 / 0.16));
+  --band: light-dark(rgb(24 33 44 / 0.12), rgb(238 242 247 / 0.16));
+
+  /* Dört kademeli yazı ölçeği (13 / 15 / 20 / 30 px). rem: tarayıcının yazı boyutu ayarına uyar */
+  --text-s: 0.8125rem;
+  --text-m: 0.9375rem;
+  --text-l: 1.25rem;
+  --text-xl: 1.875rem;
+
+  --font-ui: var(--font-atkinson), system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--text-m);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Hareket azaltma tercihi: animasyon ve geçişler fiilen kapanır (durum değişimi yine görünür) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

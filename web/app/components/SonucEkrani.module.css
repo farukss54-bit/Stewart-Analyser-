@@ -1,0 +1,69 @@
+.sonuc {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.lead {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.baslik {
+  max-width: 26em;
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  line-height: 1.28;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Odak programla başlığa verilir; kutu çizgisi gerekmez */
+.baslik:focus {
+  outline: none;
+}
+
+.desen {
+  max-width: 62ch;
+  color: var(--muted);
+}
+
+.ozet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 36px;
+  margin: 0;
+}
+
+.ozetSatiri dt {
+  font-size: var(--text-s);
+  color: var(--subtle);
+}
+
+.ozetSatiri dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.h2 {
+  font-size: var(--text-l);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.uyarilar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding-left: 20px;
+  max-width: 78ch;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .baslik {
+    font-size: 1.5rem;
+  }
+}

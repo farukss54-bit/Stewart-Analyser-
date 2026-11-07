@@ -1,0 +1,12 @@
+# Docker derleme bağlamına girmeyenler (Streamlit imajı ve API imajı depo kökünden derlenir)
+.git
+.claude
+.devcontainer
+.github
+**/node_modules
+web
+**/__pycache__
+**/*.pyc
+.pytest_cache
+*.zip
+.env
