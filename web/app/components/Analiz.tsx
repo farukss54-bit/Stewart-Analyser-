@@ -193,10 +193,6 @@ export default function Analiz() {
         onGorunum={setGorunum}
         onVakalar={() => setVakaPaneliAcik(true)}
       />
-      {/* Toplu görünüm açık kalır (gizlenir), böylece görünümler arası geçişte seçilen dosya ve sonuç kaybolmaz */}
-      <main className={styles.ana} hidden={gorunum !== "toplu"}>
-        <TopluAnaliz mod={mod} />
-      </main>
       <div className={styles.govde} hidden={gorunum !== "tekli"}>
         <GirisPaneli
           mod={mod}
@@ -225,6 +221,10 @@ export default function Analiz() {
           />
         </main>
       </div>
+      {/* Toplu görünüm açık kalır (gizlenir), böylece görünümler arası geçişte seçilen dosya ve sonuç kaybolmaz */}
+      <main className={styles.ana} hidden={gorunum !== "toplu"}>
+        <TopluAnaliz mod={mod} />
+      </main>
       <VakaPaneli acik={vakaPaneliAcik} onKapat={() => setVakaPaneliAcik(false)} onYukle={vakaYukle} />
     </>
   );

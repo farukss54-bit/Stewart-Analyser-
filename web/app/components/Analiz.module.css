@@ -10,6 +10,8 @@
 }
 
 .ana {
+  /* Toplu görünümde (grid dışında) alt bilgiyi sayfanın altında tutar */
+  flex: 1;
   min-width: 0;
   padding: 32px 36px 36px;
 }

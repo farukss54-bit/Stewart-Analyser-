@@ -3,6 +3,7 @@ import type { AnalyzeRequest, Meta } from "../lib/api";
 import { klasikKarsilastirma, notGruplari, ozetSatirlari, uyarilar, type Sonuc } from "../lib/sonuc";
 import AnyonAcigi from "./AnyonAcigi";
 import CsvIndir from "./CsvIndir";
+import Grafikler from "./Grafikler";
 import KlasikKarsilastirma from "./KlasikKarsilastirma";
 import MekanizmaListesi from "./MekanizmaListesi";
 import Notlar from "./Notlar";
@@ -69,6 +70,7 @@ export default function SonucEkrani({ istek, sonuc, meta, onAlanaGit }: Props) {
         gelismis={istek.mode === "advanced"}
       />
       {notlar.length > 0 && <Notlar gruplar={notlar} />}
+      <Grafikler istek={istek} sonuc={sonuc} meta={meta} />
       {klasik && <KlasikKarsilastirma karsilastirma={klasik} />}
 
       {uyari.length > 0 && (

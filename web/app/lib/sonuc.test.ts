@@ -9,6 +9,7 @@ import {
   normalMetni,
   notGruplari,
   ozetSatirlari,
+  toplamEtki,
   uyarilar,
   yuzde,
   type Sonuc,
@@ -307,5 +308,15 @@ describe("klasikKarsilastirma", () => {
   it("karşılaştırma hiç yoksa null döner", () => {
     expect(klasikKarsilastirma(sonuc({ classic_comparison: null }))).toBeNull();
     expect(klasikKarsilastirma(sonuc({}))).toBeNull();
+  });
+});
+
+describe("toplamEtki", () => {
+  it("çekirdeğin toplam metabolik etkisini verir", () => {
+    expect(toplamEtki(ORNEK)).toBe(-10.4);
+  });
+
+  it("mekanizma analizi yoksa kullanılan BE'ye döner", () => {
+    expect(toplamEtki(sonuc({ mechanism_analysis: null }))).toBe(-10.4);
   });
 });

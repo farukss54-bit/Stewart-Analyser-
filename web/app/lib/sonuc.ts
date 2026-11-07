@@ -118,6 +118,11 @@ function varsayilanMetin(kimlik: MekanizmaKimligi, kucuk: boolean, esik: number,
   return "Bu mekanizmanın baz açığına katkısı.";
 }
 
+/** Mekanizmaların toplam etkisi = ölçülen baz fazlası (çekirdeğin toplamı; yoksa kullanılan BE) */
+export function toplamEtki(sonuc: Sonuc): number {
+  return sonuc.mechanism_analysis?.total_metabolic_effect ?? sonuc.be_used;
+}
+
 /** Çubuk ölçeğinin yarı genişliği (mEq/L): en büyük etkiyi sığdırır, en az 12 */
 export function cubukYariGenisligi(satirlar: MekanizmaSatiri[]): number {
   const enBuyuk = Math.max(0, ...satirlar.map((s) => Math.abs(s.etki)));

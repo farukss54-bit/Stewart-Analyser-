@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { sayiYaz } from "../lib/bicim";
-import { cubukYariGenisligi, mekanizmaSatirlari, type MekanizmaSatiri, type Sonuc } from "../lib/sonuc";
+import { cubukYariGenisligi, mekanizmaSatirlari, toplamEtki, type MekanizmaSatiri, type Sonuc } from "../lib/sonuc";
 import styles from "./MekanizmaListesi.module.css";
 
 interface Props {
@@ -18,7 +18,7 @@ export default function MekanizmaListesi({ sonuc, esik, gelismis }: Props) {
   const yari = cubukYariGenisligi(satirlar);
   const gorunen = satirlar.filter((s) => !s.kucuk);
   const gizli = satirlar.filter((s) => s.kucuk);
-  const toplam = sonuc.mechanism_analysis?.total_metabolic_effect ?? sonuc.be_used;
+  const toplam = toplamEtki(sonuc);
 
   const toplamEtiketi =
     gizli.length > 0 && !kucukAcik

@@ -1,0 +1,228 @@
+.grafik {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+/* Yalnızca ekran okuyucu için başlık */
+.gizli {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.dugme {
+  text-align: left;
+}
+
+.izgara {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+}
+
+.h3 {
+  font-size: var(--text-m);
+  font-weight: 700;
+}
+
+.alt,
+.dipnot {
+  font-size: var(--text-s);
+  color: var(--muted);
+}
+
+/* --- Baz açığı şelalesi --- */
+.selale {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.satir {
+  display: grid;
+  grid-template-columns: minmax(96px, 150px) minmax(0, 1fr) 56px;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--text-s);
+}
+
+.etiket {
+  overflow-wrap: anywhere;
+}
+
+.toplam {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+}
+
+.soluk .cubuk {
+  opacity: 0.45;
+}
+
+.iz {
+  position: relative;
+  height: 20px;
+}
+
+.sifir {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 0;
+  border-left: 1px solid var(--subtle);
+}
+
+.cubuk {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  min-width: 2px;
+  border-radius: 3px;
+}
+
+.asit {
+  background: var(--acid);
+}
+
+.baz {
+  background: var(--base);
+}
+
+.sayi {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.sayi_asit {
+  color: var(--acid);
+}
+
+.sayi_baz {
+  color: var(--base);
+}
+
+/* --- Güçlü iyon farkı sütunları --- */
+.sutunlar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cizim {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 28px;
+  height: 220px;
+  border-bottom: 1px solid var(--subtle);
+}
+
+.sutun {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 96px;
+  height: 100%;
+}
+
+.blok,
+.fark {
+  display: flex;
+  justify-content: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Değer çubuğun altında durur: kesikli normal çizgi yazının üstünden geçmesin */
+.blok {
+  align-items: flex-end;
+  padding-bottom: 8px;
+  border-radius: 6px 6px 0 0;
+}
+
+.na {
+  background: var(--base-bg);
+  border: 1px solid var(--base);
+  color: var(--base);
+}
+
+.cl {
+  background: var(--acid-bg);
+  border: 1px solid var(--acid);
+  border-bottom: 0;
+  color: var(--acid);
+}
+
+/* Aradaki fark: kesikli çerçeve */
+.fark {
+  align-items: center;
+  border: 1px dashed var(--subtle);
+  border-bottom: 0;
+  color: var(--muted);
+}
+
+.normal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--ink);
+}
+
+.adlar {
+  display: flex;
+  justify-content: center;
+  gap: 28px;
+  font-weight: 700;
+}
+
+.adlar span {
+  width: 96px;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .panel {
+    padding: 16px;
+  }
+
+  /* Dar ekranda etiket üstte, çubuk altta */
+  .satir {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    gap: 4px 12px;
+  }
+
+  .etiket {
+    grid-column: 1;
+  }
+
+  .sayi {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .iz {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
