@@ -160,6 +160,45 @@
         }
       }
     },
+    "/api/batch": {
+      "post": {
+        "summary": "Batch",
+        "description": "CSV metnindeki her satırı analiz eder (Streamlit'teki toplu analizle aynı yol).\n\nGeçersiz satır diğerlerini durdurmaz; satırın durumu ERROR olur ve nedeni yazılır.\nDosya okunamazsa ya da sınırı aşarsa 200 döner, is_valid=False olur.",
+        "operationId": "batch_api_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases": {
       "get": {
         "summary": "Cases",
@@ -370,6 +409,173 @@
         ],
         "title": "AnalyzeResponse",
         "description": "Doğrulama geçmezse is_valid=False olur ve result boş kalır."
+      },
+      "BatchRequest": {
+        "properties": {
+          "csv": {
+            "type": "string",
+            "title": "Csv"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "quick",
+              "advanced"
+            ],
+            "title": "Mode",
+            "default": "quick"
+          }
+        },
+        "type": "object",
+        "required": [
+          "csv"
+        ],
+        "title": "BatchRequest",
+        "description": "CSV dosyasının metni. Sütunlar Streamlit'teki örnek CSV ile aynıdır (ph, pco2, na, cl, ...)."
+      },
+      "BatchResponse": {
+        "properties": {
+          "is_valid": {
+            "type": "boolean",
+            "title": "Is Valid"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "ok": {
+            "type": "integer",
+            "title": "Ok"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/BatchRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "csv": {
+            "type": "string",
+            "title": "Csv"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_valid",
+          "errors",
+          "total",
+          "ok",
+          "failed",
+          "rows",
+          "csv"
+        ],
+        "title": "BatchResponse",
+        "description": "Dosya okunamazsa ya da sınırı aşarsa is_valid=False olur ve nedeni errors'ta yazar."
+      },
+      "BatchRow": {
+        "properties": {
+          "row": {
+            "type": "integer",
+            "title": "Row"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK",
+              "ERROR"
+            ],
+            "title": "Status"
+          },
+          "errors": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Errors"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "flags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "ph": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ph"
+          },
+          "pco2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pco2"
+          },
+          "be_used": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Be Used"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Headline"
+          }
+        },
+        "type": "object",
+        "required": [
+          "row",
+          "status",
+          "warnings",
+          "flags"
+        ],
+        "title": "BatchRow",
+        "description": "Tabloda gösterilen özet; tüm sütunlar `csv` alanındaki dosyadadır."
       },
       "CDSNote": {
         "properties": {

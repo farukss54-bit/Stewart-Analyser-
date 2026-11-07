@@ -18,6 +18,8 @@ from fastapi import FastAPI, HTTPException, Response
 from api.schemas import (
     AnalyzeRequest,
     AnalyzeResponse,
+    BatchRequest,
+    BatchResponse,
     Case,
     Consistency,
     DerivedRequest,
@@ -63,6 +65,7 @@ from core import (
     check_hco3_consistency,
     output_to_dict,
 )
+from api.batch import run_batch
 from services import check_be_sign_error
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -229,6 +232,16 @@ def analyze_csv(req: AnalyzeRequest) -> Response:
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": 'attachment; filename="stewart_result.csv"'},
     )
+
+
+@app.post("/api/batch")
+def batch(req: BatchRequest) -> BatchResponse:
+    """CSV metnindeki her satırı analiz eder (Streamlit'teki toplu analizle aynı yol).
+
+    Geçersiz satır diğerlerini durdurmaz; satırın durumu ERROR olur ve nedeni yazılır.
+    Dosya okunamazsa ya da sınırı aşarsa 200 döner, is_valid=False olur.
+    """
+    return run_batch(req.csv, req.mode)
 
 
 @app.get("/api/cases")

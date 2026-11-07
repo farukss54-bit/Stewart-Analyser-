@@ -91,6 +91,41 @@ class AnalyzeResponse(BaseModel):
     result: StewartOutput | None
 
 
+# === /api/batch ===
+
+class BatchRequest(BaseModel):
+    """CSV dosyasının metni. Sütunlar Streamlit'teki örnek CSV ile aynıdır (ph, pco2, na, cl, ...)."""
+
+    csv: str
+    mode: Literal["quick", "advanced"] = "quick"
+
+
+class BatchRow(BaseModel):
+    """Tabloda gösterilen özet; tüm sütunlar `csv` alanındaki dosyadadır."""
+
+    row: int
+    status: Literal["OK", "ERROR"]
+    errors: str | None = None
+    warnings: list[str]
+    flags: list[str]
+    ph: float | None = None
+    pco2: float | None = None
+    be_used: float | None = None
+    headline: str | None = None
+
+
+class BatchResponse(BaseModel):
+    """Dosya okunamazsa ya da sınırı aşarsa is_valid=False olur ve nedeni errors'ta yazar."""
+
+    is_valid: bool
+    errors: list[str]
+    total: int
+    ok: int
+    failed: int
+    rows: list[BatchRow]
+    csv: str
+
+
 # === /api/derived ===
 
 class DerivedRequest(BaseModel):

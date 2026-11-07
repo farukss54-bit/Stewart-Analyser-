@@ -115,6 +115,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Batch
+         * @description CSV metnindeki her satırı analiz eder (Streamlit'teki toplu analizle aynı yol).
+         *
+         *     Geçersiz satır diğerlerini durdurmaz; satırın durumu ERROR olur ve nedeni yazılır.
+         *     Dosya okunamazsa ya da sınırı aşarsa 200 döner, is_valid=False olur.
+         */
+        post: operations["batch_api_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases": {
         parameters: {
             query?: never;
@@ -202,6 +225,67 @@ export interface components {
             /** Warnings */
             warnings: string[];
             result: components["schemas"]["StewartOutput"] | null;
+        };
+        /**
+         * BatchRequest
+         * @description CSV dosyasının metni. Sütunlar Streamlit'teki örnek CSV ile aynıdır (ph, pco2, na, cl, ...).
+         */
+        BatchRequest: {
+            /** Csv */
+            csv: string;
+            /**
+             * Mode
+             * @default quick
+             * @enum {string}
+             */
+            mode?: "quick" | "advanced";
+        };
+        /**
+         * BatchResponse
+         * @description Dosya okunamazsa ya da sınırı aşarsa is_valid=False olur ve nedeni errors'ta yazar.
+         */
+        BatchResponse: {
+            /** Is Valid */
+            is_valid: boolean;
+            /** Errors */
+            errors: string[];
+            /** Total */
+            total: number;
+            /** Ok */
+            ok: number;
+            /** Failed */
+            failed: number;
+            /** Rows */
+            rows: components["schemas"]["BatchRow"][];
+            /** Csv */
+            csv: string;
+        };
+        /**
+         * BatchRow
+         * @description Tabloda gösterilen özet; tüm sütunlar `csv` alanındaki dosyadadır.
+         */
+        BatchRow: {
+            /** Row */
+            row: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "OK" | "ERROR";
+            /** Errors */
+            errors?: string | null;
+            /** Warnings */
+            warnings: string[];
+            /** Flags */
+            flags: string[];
+            /** Ph */
+            ph?: number | null;
+            /** Pco2 */
+            pco2?: number | null;
+            /** Be Used */
+            be_used?: number | null;
+            /** Headline */
+            headline?: string | null;
         };
         /**
          * CDSNote
@@ -715,6 +799,39 @@ export interface operations {
                 };
                 content: {
                     "text/csv": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    batch_api_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchResponse"];
                 };
             };
             /** @description Validation Error */
