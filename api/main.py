@@ -27,6 +27,7 @@ from api.schemas import (
     HealthResponse,
     Limit,
     MetaResponse,
+    Reference,
     ReferenceRange,
     SignCheck,
 )
@@ -50,6 +51,7 @@ from constants import (
     PO4_MAX,
     PO4_MIN,
     REFERENCE_RANGES,
+    REFERENCES,
     SAMPLE_CASES,
     SID_NORMAL_BASIC,
     SID_NORMAL_FULL,
@@ -242,6 +244,12 @@ def batch(req: BatchRequest) -> BatchResponse:
     Dosya okunamazsa ya da sınırı aşarsa 200 döner, is_valid=False olur.
     """
     return run_batch(req.csv, req.mode)
+
+
+@app.get("/api/references")
+def references() -> list[Reference]:
+    """Streamlit alt bilgisindeki "Referanslar" listesi (constants.REFERENCES), aynı sırayla."""
+    return [Reference(id=ref_id, text=text) for ref_id, text in REFERENCES.items()]
 
 
 @app.get("/api/cases")

@@ -138,6 +138,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/references": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * References
+         * @description Streamlit alt bilgisindeki "Referanslar" listesi (constants.REFERENCES), aynı sırayla.
+         */
+        get: operations["references_api_references_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases": {
         parameters: {
             query?: never;
@@ -515,6 +535,13 @@ export interface components {
             /** Anion Gap Screening Threshold */
             anion_gap_screening_threshold: number;
         };
+        /** Reference */
+        Reference: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+        };
         /** ReferenceRange */
         ReferenceRange: {
             /** Low */
@@ -841,6 +868,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    references_api_references_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reference"][];
                 };
             };
         };

@@ -199,6 +199,29 @@
         }
       }
     },
+    "/api/references": {
+      "get": {
+        "summary": "References",
+        "description": "Streamlit alt bilgisindeki \"Referanslar\" listesi (constants.REFERENCES), aynı sırayla.",
+        "operationId": "references_api_references_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Reference"
+                  },
+                  "type": "array",
+                  "title": "Response References Api References Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases": {
       "get": {
         "summary": "Cases",
@@ -1137,6 +1160,24 @@
           "anion_gap_screening_threshold"
         ],
         "title": "MetaResponse"
+      },
+      "Reference": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "text"
+        ],
+        "title": "Reference"
       },
       "ReferenceRange": {
         "properties": {

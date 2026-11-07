@@ -91,6 +91,13 @@ class AnalyzeResponse(BaseModel):
     result: StewartOutput | None
 
 
+# === /api/references ===
+
+class Reference(BaseModel):
+    id: str
+    text: str
+
+
 # === /api/batch ===
 
 class BatchRequest(BaseModel):

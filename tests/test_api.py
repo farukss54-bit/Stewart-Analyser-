@@ -25,6 +25,7 @@ from constants import (
     MG_NORMAL,
     PHYSIOLOGIC_LIMITS,
     PO4_NORMAL,
+    REFERENCES,
     SAMPLE_CASES,
 )
 from core import StewartInput, StewartOutput, analyze_stewart, calculate_be, calculate_hco3, output_to_dict
@@ -306,3 +307,13 @@ class TestCases:
         assert first["name"] == source["name"]
         assert first["values"] == source["values"]
         assert first["teaching_point"] == source["teaching_point"]
+
+
+class TestReferences:
+    def test_lists_the_streamlit_references_in_order(self):
+        body = client.get("/api/references").json()
+        assert [r["id"] for r in body] == list(REFERENCES)
+        assert [r["text"] for r in body] == list(REFERENCES.values())
+
+    def test_every_reference_has_text(self):
+        assert all(r["text"].strip() for r in client.get("/api/references").json())
