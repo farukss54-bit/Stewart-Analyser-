@@ -10,11 +10,18 @@ interface Props {
   esik: number;
 }
 
+// Etiketleri ayırma eşiği: iki işaret arası (çubuk genişliğinin yüzdesi)
+const YAKINLIK_YUZDESI = 12;
+
 /** Ölçülen ve albümine göre düzeltilmiş anyon açığı, tarama eşiğiyle birlikte */
 export default function AnyonAcigi({ sonuc, normal, esik }: Props) {
   const ag = anyonAcigi(sonuc, normal ?? { low: 0, high: 0 }, esik);
   const konum = (deger: number) => yuzde(deger, ag.olcek);
   const { olculen, duzeltilmis } = ag;
+  // İşaretler çubuğun %12'sinden yakınsa etiketler ayrı yönlere yaslanır
+  const yakin = duzeltilmis !== null && Math.abs(konum(olculen) - konum(duzeltilmis)) < YAKINLIK_YUZDESI;
+  const olculenAlt = duzeltilmis !== null && olculen <= duzeltilmis;
+  const yasla = (kucuk: boolean) => (!yakin ? "" : kucuk ? styles.solaYasli : styles.sagaYasli);
 
   return (
     <section aria-labelledby="ag-baslik">
@@ -60,7 +67,7 @@ export default function AnyonAcigi({ sonuc, normal, esik }: Props) {
             Tarama eşiği {esik}
           </span>
           <span className={`${styles.isaret} ${styles.olculen}`} style={{ left: `calc(${konum(olculen)}% - 2px)` }} />
-          <span className={styles.etiket} style={{ left: `${konum(olculen)}%` }}>
+          <span className={`${styles.etiket} ${yasla(olculenAlt)}`} style={{ left: `${konum(olculen)}%` }}>
             {sayiYaz(olculen)}
           </span>
           {duzeltilmis !== null && (
@@ -69,7 +76,7 @@ export default function AnyonAcigi({ sonuc, normal, esik }: Props) {
                 className={`${styles.isaret} ${styles.duzeltilmisIsaret}`}
                 style={{ left: `calc(${konum(duzeltilmis)}% - 2px)` }}
               />
-              <span className={`${styles.etiket} ${styles.etiketAsit}`} style={{ left: `${konum(duzeltilmis)}%` }}>
+              <span className={`${styles.etiket} ${styles.etiketAsit} ${yasla(!olculenAlt)}`} style={{ left: `${konum(duzeltilmis)}%` }}>
                 {sayiYaz(duzeltilmis)}
               </span>
             </>

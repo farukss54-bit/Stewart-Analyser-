@@ -24,6 +24,7 @@ import { girilmeyenCumlesi, type Sonuc } from "../lib/sonuc";
 import { useTuretilmis } from "../lib/useTuretilmis";
 import styles from "./Analiz.module.css";
 import BosEkran from "./BosEkran";
+import GirdiOzeti from "./GirdiOzeti";
 import GirisPaneli from "./GirisPaneli";
 import { useMeta } from "./MetaProvider";
 import SonucEkrani from "./SonucEkrani";
@@ -123,7 +124,20 @@ export default function Analiz() {
 
   // "Eksik alanlara git": girilmeyen alana odaklanır (dar ekranda sayfa oraya kayar)
   function alanaGit(ad: string) {
-    document.querySelector<HTMLInputElement>(`[data-alan="${ad}"]`)?.focus();
+    const kutu = document.querySelector<HTMLInputElement>(`[data-alan="${ad}"]`);
+    // Dar ekranda sonuç açıkken form gizlidir: önce formu açar (önceki sonuç gizlenir), sonra odaklanır
+    if (kutu && kutu.offsetParent === null) {
+      sonucuGizle();
+      requestAnimationFrame(() => document.querySelector<HTMLInputElement>(`[data-alan="${ad}"]`)?.focus());
+      return;
+    }
+    kutu?.focus();
+  }
+
+  // "Değerleri düzenle" (dar ekran): sonuç gizlenir, form açılır, ilk alana odaklanır
+  function duzenle() {
+    sonucuGizle();
+    requestAnimationFrame(() => document.querySelector<HTMLInputElement>('[data-alan="ph"]')?.focus());
   }
 
   function alanAyrildi(ad: AlanAnahtari) {
@@ -218,6 +232,7 @@ export default function Analiz() {
             meta={meta.tur === "hazir" ? meta.meta : undefined}
             onVakalar={() => setVakaPaneliAcik(true)}
             onAlanaGit={alanaGit}
+            onDuzenle={duzenle}
           />
         </main>
       </div>
@@ -243,11 +258,13 @@ function AnaAlan({
   meta,
   onVakalar,
   onAlanaGit,
+  onDuzenle,
 }: {
   durum: AnalizDurumu;
   meta: Meta | undefined;
   onVakalar: () => void;
   onAlanaGit: (alan: string) => void;
+  onDuzenle: () => void;
 }) {
   switch (durum.tur) {
     case "bos":
@@ -256,7 +273,12 @@ function AnaAlan({
       return <p role="status">Analiz ediliyor…</p>;
     case "hazir":
       // Sonuç yalnızca analizin yapıldığı girdilerle gösterilir; meta yoksa (olmaz) gösterilmez
-      return meta ? <SonucEkrani istek={durum.istek} sonuc={durum.sonuc} meta={meta} onAlanaGit={onAlanaGit} /> : null;
+      return meta ? (
+        <>
+          <GirdiOzeti istek={durum.istek} onDuzenle={onDuzenle} />
+          <SonucEkrani istek={durum.istek} sonuc={durum.sonuc} meta={meta} onAlanaGit={onAlanaGit} />
+        </>
+      ) : null;
     case "gecersiz":
       return (
         <div className={styles.durum} role="alert">

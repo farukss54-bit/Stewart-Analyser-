@@ -173,12 +173,20 @@ function Sonuc({ yanit }: { yanit: TopluYanit }) {
               const hatali = satir.status === "ERROR";
               return (
                 <tr key={satir.row}>
-                  <th scope="row">{satir.row}</th>
-                  <td className={hatali ? styles.hataDurumu : undefined}>{hatali ? "Hata" : "Tamam"}</td>
-                  <td className={styles.sayi}>{satir.ph == null ? "–" : satir.ph.toFixed(2)}</td>
-                  <td className={styles.sayi}>{satir.pco2 == null ? "–" : sayiYaz(satir.pco2)}</td>
-                  <td className={styles.sayi}>{satir.be_used == null ? "–" : sayiYaz(satir.be_used, true)}</td>
-                  <td>
+                  <th scope="row" className={styles.hSatir} data-etiket="Satır">
+                    {satir.row}
+                  </th>
+                  <td className={`${styles.hDurum} ${hatali ? styles.hataDurumu : ""}`}>{hatali ? "Hata" : "Tamam"}</td>
+                  <td className={`${styles.sayi} ${styles.hPh}`} data-etiket="pH">
+                    {satir.ph == null ? "–" : satir.ph.toFixed(2)}
+                  </td>
+                  <td className={`${styles.sayi} ${styles.hPco2}`} data-etiket="pCO₂">
+                    {satir.pco2 == null ? "–" : sayiYaz(satir.pco2)}
+                  </td>
+                  <td className={`${styles.sayi} ${styles.hBe}`} data-etiket="BE">
+                    {satir.be_used == null ? "–" : sayiYaz(satir.be_used, true)}
+                  </td>
+                  <td className={styles.hSonuc}>
                     {hatali ? (
                       <span className={styles.hataDurumu}>{simgesizMetin(satir.errors ?? "")}</span>
                     ) : (

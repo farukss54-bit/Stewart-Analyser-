@@ -127,3 +127,84 @@
     font-size: var(--text-l);
   }
 }
+
+/* Telefon: her satır bir kart. Tablo yatay kaydırılırsa sonuç sütunu görünmez kalırdı. */
+@media (max-width: 640px) {
+  .tablo {
+    min-width: 0;
+  }
+
+  /* Sütun başlıkları kartlarda etiket olarak yazılır; ekran okuyucu için başlık satırı kalır */
+  .tablo thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .tablo tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "satir durum durum"
+      "ph pco2 be"
+      "sonuc sonuc sonuc";
+    gap: 6px 12px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tablo tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .tablo th,
+  .tablo td {
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+
+  .hSatir {
+    grid-area: satir;
+  }
+
+  .hSatir::before {
+    content: attr(data-etiket) " ";
+  }
+
+  .hDurum {
+    grid-area: durum;
+  }
+
+  .hPh {
+    grid-area: ph;
+  }
+
+  .hPco2 {
+    grid-area: pco2;
+  }
+
+  .hBe {
+    grid-area: be;
+  }
+
+  .hSonuc {
+    grid-area: sonuc;
+  }
+
+  .tablo .sayi {
+    text-align: left;
+  }
+
+  .hPh::before,
+  .hPco2::before,
+  .hBe::before {
+    display: block;
+    font-size: var(--text-s);
+    font-weight: 500;
+    color: var(--subtle);
+    content: attr(data-etiket);
+  }
+}

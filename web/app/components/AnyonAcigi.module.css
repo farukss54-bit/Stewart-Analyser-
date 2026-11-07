@@ -118,6 +118,15 @@
   color: var(--acid);
 }
 
+/* İki işaret birbirine yakınsa etiketler üst üste binmesin: küçük değerin etiketi işaretin soluna, büyüğünün sağına yaslanır */
+.solaYasli {
+  transform: translateX(calc(-100% + 2px));
+}
+
+.sagaYasli {
+  transform: translateX(-2px);
+}
+
 .metin {
   max-width: 76ch;
   font-size: var(--text-s);

@@ -43,7 +43,7 @@ export default function GirisPaneli(p: Props) {
   }
 
   return (
-    <form className={styles.panel} aria-label="Girilen değerler" noValidate onSubmit={gonder}>
+    <form className={`${styles.panel} ${p.analizYapildi ? styles.sonucVar : ""}`} aria-label="Girilen değerler" noValidate onSubmit={gonder}>
       {gruplar(p.mod).map((grup) => {
         const albuminGrubu = grup.alanlar.some((a) => a.ad === "albumin");
         return (

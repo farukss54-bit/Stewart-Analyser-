@@ -62,7 +62,19 @@
   font-weight: 500;
 }
 
-@media (max-width: 900px) {
+/* Tablet: iki sütun kalır, giriş paneli daralır */
+@media (max-width: 1000px) {
+  .govde {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .ana {
+    padding: 24px;
+  }
+}
+
+/* Telefon: giriş paneli ve sonuç alt alta */
+@media (max-width: 700px) {
   .govde {
     display: block;
   }
