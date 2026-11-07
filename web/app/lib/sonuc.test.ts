@@ -38,12 +38,12 @@ const ORNEK = {
   lactate_effect: -2.8,
   residual_effect: -0.8,
   compensation_details: "Beklenen pCO2: 30 ± 2",
-  warnings: ["SID_full yaklaşık: Eksik parametreler (K+, Ca2+, Mg2+) nedeniyle hesaplama sınırlı"],
+  warnings: ["K⁺, Ca²⁺ ve Mg²⁺ girilmedi; ileri analiz için Gelişmiş mod gerekir."],
   soft_warnings: [],
   headline: {
-    dominant_mechanism: "Güçlü iyon (SID) aracılı metabolik asidoz (80% katkı)",
-    significant_mechanisms: ["Zayıf asit azalması (hipoalbüminemi) etkisi (30%)"],
-    contributing_mechanisms: ["Laktat aracılı etki (20%)"],
+    dominant_mechanism: "Güçlü iyon (SID) aracılı metabolik asidoz (−11.0 mEq/L)",
+    significant_mechanisms: ["Zayıf asit azalması (hipoalbüminemi) etkisi (+4.2 mEq/L)"],
+    contributing_mechanisms: ["Laktat aracılı etki (−2.8 mEq/L)"],
     respiratory_status: "Uygun solunumsal kompanzasyon",
   },
   mechanism_analysis: {
@@ -261,7 +261,7 @@ describe("ozetSatirlari ve uyarilar", () => {
     const o = Object.fromEntries(ozetSatirlari(ORNEK).map((s) => [s.ad, s.deger]));
     expect(o["Net metabolik etki"]).toBe("−10.4 mEq/L");
     expect(o["Solunumsal yanıt"]).toBe("Uygun solunumsal kompanzasyon (Beklenen pCO2: 30 ± 2)");
-    expect(o["Anlamlı katkı"]).toBe("Zayıf asit azalması (hipoalbüminemi) etkisi (30%)");
+    expect(o["Anlamlı katkı"]).toBe("Zayıf asit azalması (hipoalbüminemi) etkisi (+4.2 mEq/L)");
     expect(o["Baz fazlası kaynağı"]).toBe("pH ve pCO₂’den hesaplandı");
   });
 
@@ -283,6 +283,7 @@ describe("klasikKarsilastirma", () => {
       "Karşıt etkiler birbirini dengelemiş → klasik tek parametre değerlendirmesi yetersiz kalabilir.",
     ],
     missed_by_classic: ["Hipoalbüminemi maskeleme etkisi", "Karşıt etkiler birbirini maskelemiş"],
+    // Çekirdek artık bu cümleyi üretmiyor; arayüzün yine de almadığını eski yanıtla doğrularız
     stewart_advantage: "Stewart-Fencl yaklaşımı, klasik analizde gözden kaçabilecek bozuklukları ortaya çıkardı.",
   };
 

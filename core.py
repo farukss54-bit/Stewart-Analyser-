@@ -986,6 +986,56 @@ def analyze_mechanisms(
     )
 
 
+# SID_full eksik listesindeki iyon adları -> ekranda yazılan biçim
+_IYON_ADI = {"K+": "K⁺", "Ca2+": "Ca²⁺", "Mg2+": "Mg²⁺"}
+
+
+def _ve_ile_birlestir(adlar: List[str]) -> str:
+    """["K⁺", "Ca²⁺", "Mg²⁺"] -> "K⁺, Ca²⁺ ve Mg²⁺"; tek ad olduğu gibi döner."""
+    if len(adlar) <= 1:
+        return "".join(adlar)
+    return f"{', '.join(adlar[:-1])} ve {adlar[-1]}"
+
+
+def _meq_metni(deger: float) -> str:
+    """Başlıkta etki büyüklüğü: işaretli, bir ondalık, tipografik eksi ("−12.2")."""
+    return f"{deger:+.1f}".replace("-", "\u2212")
+
+
+def _en_buyuk_pay_cumlesi(
+    be: float,
+    component_effects: Dict[str, Optional[float]],
+) -> Optional[str]:
+    """
+    Baz açığının (fazlasının) en büyük payı açıklanamayan kalan ise başlık cümlesi; değilse None.
+
+    Karşılaştırma yalnızca baz açığıyla aynı yöndeki etkiler arasında yapılır (karşıt yönlü bir etki
+    açığa "pay" değildir). Laktat ya da albümin girilmediyse kalan onların payını da içerir; bu durumda
+    "ölçülmemiş anyon" denmez, eksik değerler söylenir.
+    """
+    if abs(be) < CLINICAL_SIGNIFICANCE_THRESHOLD:
+        return None
+    yon = -1 if be < 0 else 1
+    adaylar = {
+        ad: etki for ad, etki in component_effects.items()
+        if etki is not None and etki * yon >= CLINICAL_SIGNIFICANCE_THRESHOLD
+    }
+    if not adaylar or max(adaylar, key=lambda ad: abs(adaylar[ad])) != "residual":
+        return None
+
+    kalan = adaylar["residual"]
+    giris = "Baz açığının" if be < 0 else "Baz fazlasının"
+    cumle = f"{giris} en büyük payı açıklanamayan kalan ({_meq_metni(kalan)} mEq/L)"
+    eksik = [
+        ad for ad, anahtar in (("laktat", "lactate"), ("albümin", "albumin"))
+        if component_effects.get(anahtar) is None
+    ]
+    if eksik:
+        return f"{cumle}; girilmeyen {' ve '.join(eksik)} etkisini de içerir."
+    olcul = "anyonlarla" if kalan < 0 else "katyonlarla"
+    return f"{cumle}; ölçülmemiş {olcul} uyumlu olabilir."
+
+
 def generate_headline(
     mechanism_analysis: MechanismAnalysis,
     ph: float,
@@ -993,17 +1043,23 @@ def generate_headline(
     be: float,
     dominant_disorder: str = "",
     compensation_status: CompensationStatus = CompensationStatus.NONE,
+    component_effects: Optional[Dict[str, Optional[float]]] = None,
 ) -> Headline:
     """
     Generate mechanism-based headline (non-diagnostic).
 
     KRİTİK: Primer respiratuvar bozuklukları düzgün raporla.
-    Uses contribution percentages, not presence-based detection.
+    Mekanizma sırası mEq/L katkısına göredir; başlıkta etkiler yüzde değil mEq/L olarak yazılır.
+
+    component_effects: {"sid", "albumin", "lactate", "residual"} etkileri (mEq/L). Verilirse ve baz
+    açığının en büyük payı açıklanamayan kalan ise başlık bunu söyler (mekanizma listesi artığı dışarıda
+    bıraksa bile).
     """
 
     dominant_str = ""
     significant_list = []
     contributing_list = []
+    residual_largest = False
 
     # ÖNCE PRİMER RESPİRATUVAR BOZUKLUKLARı KONTROL ET
     is_acidemia = ph < PH_NORMAL_LOW
@@ -1030,10 +1086,13 @@ def generate_headline(
     # METABOLİK BOZUKLUKLARı RAPORLA (respiratuvar primer değilse)
     if abs(be) < CLINICAL_SIGNIFICANCE_THRESHOLD and not (is_resp_acidosis or is_resp_alkalosis):
         dominant_str = "Normal asit-baz dengesi"
+    elif component_effects is not None and _en_buyuk_pay_cumlesi(be, component_effects):
+        dominant_str = _en_buyuk_pay_cumlesi(be, component_effects)
+        residual_largest = True
     elif mechanism_analysis.dominant_mechanism:
         dm = mechanism_analysis.dominant_mechanism
-        # Format: "Mechanism (XX% katkı)"
-        dominant_str = f"{dm.description} ({dm.contribution_percent:.0f}% katkı)"
+        # Format: "Mechanism (−11.0 mEq/L)"
+        dominant_str = f"{dm.description} ({_meq_metni(dm.effect_meq)} mEq/L)"
     else:
         if be < -CLINICAL_SIGNIFICANCE_THRESHOLD:
             dominant_str = "Metabolik asidoz (mekanizma belirlenemedi)"
@@ -1042,17 +1101,33 @@ def generate_headline(
         else:
             dominant_str = "Normal metabolik durum"
 
+    # Başlık artığı söylüyorsa mekanizma listesinin baskın mekanizması başlıktan düşer; bilgi kaybolmasın
+    # diye anlamlı mekanizmalara taşınır. Artığın kendisi (ölçülmemiş bileşen) zaten başlık cümlesindedir.
+    if residual_largest:
+        dm = mechanism_analysis.dominant_mechanism
+        if dm is not None and dm.identifier != "unmeasured":
+            significant_list.append(f"{dm.description} ({_meq_metni(dm.effect_meq)} mEq/L)")
+
     # Significant mechanisms
     for sm in mechanism_analysis.significant_mechanisms:
-        significant_list.append(f"{sm.description} ({sm.contribution_percent:.0f}%)")
+        if residual_largest and sm.identifier == "unmeasured":
+            continue
+        significant_list.append(f"{sm.description} ({_meq_metni(sm.effect_meq)} mEq/L)")
 
     # Contributing mechanisms
     for cm in mechanism_analysis.contributing_mechanisms:
+        if residual_largest and cm.identifier == "unmeasured":
+            continue
         if cm.contribution_percent >= 10:  # Only show >10%
-            contributing_list.append(f"{cm.name} ({cm.contribution_percent:.0f}%)")
+            contributing_list.append(f"{cm.name} ({_meq_metni(cm.effect_meq)} mEq/L)")
 
     # Pattern note
     pattern_note = mechanism_analysis.pattern_description
+    if residual_largest:
+        # Başlık artığı söylüyorsa, başka bir mekanizmaya işaret eden patern cümlesi çelişirdi;
+        # yalnızca "karşıt etkiler maskeleyebilir" uyarısı kalır
+        maske = "Karşıt yönlü metabolik etkiler birbirini kısmen maskeleyebilir."
+        pattern_note = maske if maske in pattern_note else ""
 
     return Headline(
         dominant_mechanism=dominant_str,
@@ -1105,8 +1180,9 @@ def generate_classic_comparison(
             differences.append(CLASSIC_COMPARISON["mixed_hidden"])
             missed.append("Karşıt etkiler birbirini maskelemiş")
     
+    # Fark varsa kapanış cümlesi yazılmaz (reklam tonlu; farklar ve "gözden kaçabilecekler" yeterli)
     if differences:
-        advantage = "Stewart-Fencl yaklaşımı, klasik analizde gözden kaçabilecek bozuklukları ortaya çıkardı."
+        advantage = ""
     else:
         advantage = "Bu vakada klasik ve Stewart yaklaşımları benzer sonuç veriyor."
     
@@ -1485,9 +1561,16 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
 
     if sid_values.sid_full_status != "complete":
         missing_list = ", ".join(sid_values.sid_full_missing)
-        warnings.append(
-            f"SID_full yaklaşık: Eksik parametreler ({missing_list}) nedeniyle hesaplama sınırlı"
-        )
+        if mode == "quick":
+            # Hızlı modda K⁺, Ca²⁺ ve Mg²⁺ girilemez: teknik uyarı yerine yönlendirici cümle.
+            # (Laktat eksikliği kendi yumuşak uyarısıyla bildirilir.)
+            iyonlar = [_IYON_ADI[m] for m in sid_values.sid_full_missing if m in _IYON_ADI]
+            if iyonlar:
+                warnings.append(f"{_ve_ile_birlestir(iyonlar)} girilmedi; ileri analiz için Gelişmiş mod gerekir.")
+        else:
+            warnings.append(
+                f"SID_full yaklaşık: Eksik parametreler ({missing_list}) nedeniyle hesaplama sınırlı"
+            )
         flags.append("SID_FULL_APPROXIMATE")
         log_calculation_warning("sid_full_approximate", {"missing": sid_values.sid_full_missing})
     
@@ -1562,7 +1645,11 @@ def analyze_stewart(inp: StewartInput, mode: str = "quick") -> Tuple[StewartOutp
     # Headline (refactored - mechanism-based)
     headline = generate_headline(
         mechanism_analysis, inp.ph, inp.pco2, be_used,
-        compensation_status=comp_code
+        compensation_status=comp_code,
+        component_effects={
+            "sid": sid_effect, "albumin": albumin_effect,
+            "lactate": lactate_effect, "residual": residual_effect,
+        },
     )
     
     # Classic Comparison
