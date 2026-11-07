@@ -44,6 +44,18 @@ class ValidationResult:
 # VALUE SANITIZATION
 # =============================================================================
 
+# Hücre boşsa ya da bunlardan biriyse değer "girilmemiş" sayılır (hata değil)
+_EKSIK_ISARETLERI = ("", "nan", "none", "null", "-", "n/a")
+
+# Geçerli sayı: isteğe bağlı eksi, rakamlar, isteğe bağlı ondalık kısmı (virgül önceden noktaya çevrilir)
+_SAYI_DESENI = re.compile(r"-?([0-9]+(\.[0-9]*)?|\.[0-9]+)")  # yalnızca ASCII rakam
+
+
+def okunamayan_hucre(ham: Any, deger: Optional[float]) -> bool:
+    """Hücre dolu ama sayı olarak okunamadı (boş ya da "n/a" gibi eksik işareti değil)."""
+    return deger is None and isinstance(ham, str) and ham.strip().lower() not in _EKSIK_ISARETLERI
+
+
 def sanitize_numeric(value: Any, allow_negative: bool = False) -> Optional[float]:
     """
     Sanitize and convert value to float.
@@ -52,7 +64,8 @@ def sanitize_numeric(value: Any, allow_negative: bool = False) -> Optional[float
     - String with comma decimal separator ("7,40" -> 7.40)
     - String with spaces ("140 " -> 140)
     - Empty strings -> None
-    - Invalid values -> None
+    - Invalid values -> None (sayı dışı karakter içeren metin, örn. "7.3x", "1e0", "13 8", geçersiz sayılır;
+      eskiden bu karakterler sessizce silinip değer kabul ediliyordu)
     """
     if value is None:
         return None
@@ -66,14 +79,15 @@ def sanitize_numeric(value: Any, allow_negative: bool = False) -> Optional[float
         # Strip whitespace
         value = value.strip()
         
-        if not value or value.lower() in ("", "nan", "none", "null", "-", "n/a"):
+        if not value or value.lower() in _EKSIK_ISARETLERI:
             return None
         
         # Replace comma with dot for decimal
         value = value.replace(",", ".")
         
-        # Remove any non-numeric characters except dot and minus
-        value = re.sub(r"[^\d.\-]", "", value)
+        # Sayı dışı karakter içeren değer reddedilir (sessizce temizlenip kabul edilmez)
+        if not _SAYI_DESENI.fullmatch(value):
+            return None
         
         try:
             result = float(value)
@@ -249,7 +263,10 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
         
         if value is None:
             result.is_valid = False
-            result.errors.append(f"{param.upper()} değeri eksik veya geçersiz")
+            if okunamayan_hucre(raw_value, value):
+                result.errors.append(f"{param.upper()} değeri geçersiz: '{raw_value.strip()[:30]}' sayı olarak okunamadı")
+            else:
+                result.errors.append(f"{param.upper()} değeri eksik veya geçersiz")
             continue
         
         normalized[param] = value
@@ -292,6 +309,9 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     # BE (can be negative)
     be_raw = data.get("be")
     be_value = sanitize_numeric(be_raw, allow_negative=True)
+    if okunamayan_hucre(be_raw, be_value):
+        result.is_valid = False
+        result.errors.append(f"BE değeri geçersiz: '{be_raw.strip()[:30]}' sayı olarak okunamadı")
     if be_value is not None:
         is_valid, error = validate_range(be_value, BE_MIN, BE_MAX, "BE")
         if not is_valid:
@@ -302,6 +322,9 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     # HCO3 (optional, will be calculated if missing)
     hco3_raw = data.get("hco3")
     hco3_value = sanitize_numeric(hco3_raw, allow_negative=False)
+    if okunamayan_hucre(hco3_raw, hco3_value):
+        result.is_valid = False
+        result.errors.append(f"HCO₃ değeri geçersiz: '{hco3_raw.strip()[:30]}' sayı olarak okunamadı")
     if hco3_value is not None:
         if 5 <= hco3_value <= 50:
             normalized["hco3"] = hco3_value
@@ -311,6 +334,9 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     # Albumin (handle unit detection)
     albumin_raw = data.get("albumin") or data.get("albumin_gl") or data.get("albumin_gdl")
     albumin_value = sanitize_numeric(albumin_raw, allow_negative=False)
+    if okunamayan_hucre(albumin_raw, albumin_value):
+        result.is_valid = False
+        result.errors.append(f"Albümin değeri geçersiz: '{albumin_raw.strip()[:30]}' sayı olarak okunamadı")
     
     if albumin_value is not None:
         detected_unit = detect_albumin_unit(albumin_value)
@@ -376,7 +402,9 @@ def sanitize_csv_row(row: Dict[str, Any]) -> Dict[str, Any]:
         key_lower = key.lower() if isinstance(key, str) else key
 
         if key_lower in NUMERIC_FIELDS:
-            sanitized[key_lower] = parse_maybe_number(value, key_lower)
+            sayi = parse_maybe_number(value, key_lower)
+            # Dolu ama okunamayan hücre boş sayılmaz: ham metin korunur, validasyon satırı hatalı bulur
+            sanitized[key_lower] = value.strip() if okunamayan_hucre(value, sayi) else sayi
         elif isinstance(value, str):
             sanitized[key_lower] = value.strip()
         else:
@@ -507,6 +535,9 @@ def validate_csv_row(row: Dict[str, Any], row_index: int) -> ValidationResult:
     # Na/Cl swap şüphesi analizi - ASLA OTOMATİK DÜZELTME YOK
     na_val = row.get("na")
     cl_val = row.get("cl")
+    # Okunamayan hücre ham metin olarak kalır (yukarıda satır hatalı sayılır); yer değiştirme analizi sayı ister
+    na_val = na_val if isinstance(na_val, (int, float)) else None
+    cl_val = cl_val if isinstance(cl_val, (int, float)) else None
     swap_suspicion = analyze_na_cl_swap_suspicion(na_val, cl_val)
     
     if swap_suspicion.is_suspicious:

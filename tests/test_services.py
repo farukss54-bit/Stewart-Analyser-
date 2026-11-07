@@ -91,3 +91,28 @@ class TestBatchSwapWarning:
         assert results[0]["warnings"] == ""
         assert "Satır 2" in results[1]["warnings"]
 
+
+class TestBatchJunkValues:
+    """Sayı dışı karakter içeren hücre sessizce temizlenip kabul edilmez: satır hatalı sayılır, nedeni yazılır."""
+
+    def test_junk_row_is_an_error_with_its_reason_and_others_continue(self):
+        df = pd.DataFrame([
+            {"ph": "7.3x", "pco2": 31, "na": 141, "cl": 114},
+            {"ph": "7.30", "pco2": 31, "na": 141, "cl": 114},
+        ])
+        results, errors = process_batch(df, "quick")
+        assert [r["status"] for r in results] == ["ERROR", "OK"]
+        assert "'7.3x'" in errors[0]["errors"]
+        assert errors[0]["row"] == 1
+
+    def test_junk_optional_value_is_not_silently_dropped(self):
+        """Bozuk BE yok sayılırsa BE pH ve pCO2'den hesaplanıp kullanılırdı."""
+        df = pd.DataFrame([{"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, "be": "-6x"}])
+        results, errors = process_batch(df, "quick")
+        assert results[0]["status"] == "ERROR"
+        assert "BE" in errors[0]["errors"]
+
+    def test_unit_suffixed_cell_is_rejected(self):
+        df = pd.DataFrame([{"ph": 7.30, "pco2": 31, "na": "141 mmol/L", "cl": 114}])
+        results, _ = process_batch(df, "quick")
+        assert results[0]["status"] == "ERROR"
