@@ -60,3 +60,44 @@ jobs:
 
       - name: Derle
         run: npm run build
+
+  docker:
+    # Ev sunucusu kurulumunun (docker-compose.yml) gerçekten ayağa kalktığını doğrular
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: İmajları derle ve başlat
+        run: docker compose up -d --build --wait --wait-timeout 240
+
+      - name: Duman testi (web üzerinden)
+        run: |
+          curl -fsS http://127.0.0.1:3000/api/health
+          echo
+          curl -fsS http://127.0.0.1:3000/api/meta | head -c 160
+          echo
+          curl -fsS -o /dev/null -w "ana sayfa: %{http_code}\n" http://127.0.0.1:3000/
+          curl -fsS -X POST -H 'Content-Type: application/json' \
+            -d '{"ph":7.30,"pco2":31,"na":141,"cl":114,"lactate":2.8,"albumin":25}' \
+            http://127.0.0.1:3000/api/analyze | head -c 240
+          echo
+
+      - name: API dışarıya açılmamış olmalı
+        run: "! curl -fsS --max-time 3 http://127.0.0.1:8000/api/health"
+
+      - name: API günlüğü kapalı olmalı (hasta değeri sunucuda iz bırakmasın)
+        run: |
+          tur=$(docker inspect --format '{{.HostConfig.LogConfig.Type}}' stewart-api-1)
+          echo "api log sürücüsü: $tur"
+          test "$tur" = "none"
+
+      - name: Hata durumunda kayıtlar
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs web
+
+      - name: Kapat
+        if: always()
+        run: docker compose down -v

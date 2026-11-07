@@ -1,0 +1,36 @@
+# Stewart Asit-Baz Analizi: React arayüzü (web) + API, tek komutla:
+#   docker compose up -d --build
+# Kurulum ve güncelleme: docs/SUNUCU_KURULUMU.md
+# (Eski Streamlit uygulaması bu dosyada değildir; onun imajı kökteki Dockerfile'dır.)
+
+name: stewart
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    restart: unless-stopped
+    # Dışarıya açılmaz: yalnızca web servisi bu ağdan erişir
+    expose:
+      - "8000"
+    # API, analiz edilen değerleri konsola yazar. Docker bu konsolu diskte saklar; hasta değerleri
+    # sunucuda iz bırakmasın diye günlük kapalıdır. Sorun ararken geçici olarak bu iki satırı silin.
+    logging:
+      driver: none
+
+  web:
+    build:
+      context: web
+      args:
+        STEWART_API_URL: http://api:8000
+    restart: unless-stopped
+    environment:
+      STEWART_API_URL: http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    # Varsayılan yalnızca bu bilgisayardan erişilir. Tailnet'ten erişim için .env dosyasına
+    # STEWART_BIND=<sunucunun Tailscale IP'si> yazın (tailscale ip -4).
+    ports:
+      - "${STEWART_BIND:-127.0.0.1}:${STEWART_PORT:-3000}:3000"
