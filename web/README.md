@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Stewart asit-baz analizi: web arayüzü
 
-## Getting Started
+Next.js (App Router, TypeScript) arayüzü. Hesaplama yapmaz; `/api/*` isteklerini Python API'sine (`api/`, varsayılan `localhost:8000`) yönlendirir ve çekirdeğin sonucunu gösterir. Kök dizindeki `README.md` projenin genel açıklamasını içerir.
 
-First, run the development server:
+## Çalıştırma
+
+Depo kökünden `.\scripts\dev.ps1` (Windows) API ve web'i birlikte başlatır. Elle:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# depo kökünde
+pip install -r requirements.txt -r api/requirements.txt
+uvicorn api.main:app --port 8000
+
+# web/ klasöründe
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Komutlar
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Komut | Ne yapar |
+|---|---|
+| `npm test` | Vitest birim testleri (`app/lib/*.test.ts`) |
+| `npm run lint` | ESLint |
+| `npm run build` | Üretim derlemesi (tip denetimi dahil) |
+| `npm run api:tipleri` | `openapi.json`'dan `app/lib/api-types.ts` üretir |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+API şeması değişince önce depo kökünde `python scripts/export_openapi.py`, sonra `npm run api:tipleri` çalıştırılır. Üretilen iki dosya da depoda tutulur; eski kalırsa CI hata verir.
 
-## Learn More
+## Yapı
 
-To learn more about Next.js, take a look at the following resources:
+- `app/components`: ekranlar ve bileşenler (CSS Modules; renk ve yazı ölçeği `app/globals.css` değişkenleriyle)
+- `app/lib`: saf yardımcılar (biçimlendirme, form kuralları, sonuç satırları, grafik verisi) ve testleri; API istemcisi `api.ts`
+- Klinik sayı, eşik ve metin çekirdekten ve `/api/meta`'dan gelir; arayüzde sabit yazılmaz.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Bu klasördeki `AGENTS.md`, `next dev` tarafından yazılır ve yeniden oluşturulur.

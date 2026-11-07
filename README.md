@@ -78,6 +78,31 @@ docker run -p 8501:8501 stewart-analyzer
 
 ---
 
+## 🖥️ React/Next.js interface (experimental)
+
+A second front end lives next to the Streamlit app. The calculation engine (`core.py`) is shared and untouched: the web interface only displays what the engine returns and never computes clinical values itself.
+
+- `api/` — stateless FastAPI layer (`/api/analyze`, `/api/batch`, `/api/cases`, `/api/references`, …) that calls `core.py`, `validation.py` and `services.py`
+- `web/` — Next.js (App Router, TypeScript) interface: quick and advanced mode, ready cases, classic comparison, single and batch CSV, charts, references, light/dark theme, phone/tablet layout
+
+```bash
+pip install -r requirements.txt -r api/requirements.txt
+cd web && npm install && cd ..
+
+# Windows: starts API (8000) and web (3000) together
+.\scripts\dev.ps1
+
+# Any system: two terminals
+uvicorn api.main:app --port 8000
+cd web && npm run dev          # http://localhost:3000
+```
+
+Tests: `pytest` also covers the API; web tests are `cd web && npm test`, plus `npm run lint` and `npm run build`. CI runs both (`.github/workflows/tests.yml`). TypeScript types are generated from the API schema (`python scripts/export_openapi.py`, then `cd web && npm run api:tipleri`); CI fails if they are out of date.
+
+The Streamlit app remains the reference implementation and the online demo. The React interface is not deployed publicly yet.
+
+---
+
 ## 🧪 Testing
 
 ```bash
@@ -90,6 +115,10 @@ pytest tests/test_validation.py -v
 pytest tests/test_regression.py -v
 pytest tests/test_cds_differential.py -v
 pytest tests/test_ui_imports.py -v
+pytest tests/test_api.py tests/test_api_batch.py tests/test_services.py tests/test_app_bd.py -v
+
+# Web interface
+cd web && npm test
 
 # Coverage
 pytest --cov=. --cov-report=html
@@ -104,22 +133,30 @@ pytest --cov=. --cov-report=html
 ├── app.py              # Streamlit UI orchestrator
 ├── core.py             # Analysis engine
 ├── constants.py        # Clinical constants, thresholds, sample cases
+├── services.py         # Framework-free helpers shared by Streamlit and the API
 ├── ui_components.py    # UI render functions
 ├── visualization.py    # Plotly charts
 ├── validation.py       # 3-tier validation, Na/Cl swap detection
 ├── logger.py           # Structured logging (no PHI)
+├── api/                # FastAPI layer for the React interface
+├── web/                # Next.js (React) interface
+├── scripts/            # dev.ps1 (start API + web), export_openapi.py
 ├── tests/
+│   ├── test_api.py, test_api_batch.py  # HTTP API tests (golden tests against core)
+│   ├── test_app_bd.py            # Streamlit BD-box behaviour (AppTest)
 │   ├── test_cds_differential.py  # CDS differential module tests
 │   ├── test_core.py              # Unit tests
 │   ├── test_regression.py        # Regression tests
+│   ├── test_services.py          # Shared service functions
 │   ├── test_ui_imports.py        # UI import smoke tests
 │   └── test_validation.py        # Edge case tests
-├── requirements.txt    # Dependencies
-├── Dockerfile          # Production container
+├── requirements.txt    # Dependencies (Streamlit app)
+├── Dockerfile          # Production container (Streamlit)
 ├── docs/
 │   ├── AGENTS.md       # Agent guide (for AI developers)
 │   └── BE_FORMUL_RAPORU.txt  # BE formula verification report
-└── README_EN.md        # This file
+├── README.md           # This file
+└── README_TR.md        # Turkish version
 ```
 
 ---
@@ -186,4 +223,4 @@ MIT License
 
 ---
 
-*🇹🇷 [Türkçe versiyon → README.md](README.md)*
+*🇹🇷 [Türkçe versiyon → README_TR.md](README_TR.md)*

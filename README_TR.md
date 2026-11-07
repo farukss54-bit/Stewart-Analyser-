@@ -78,6 +78,31 @@ docker run -p 8501:8501 stewart-analyzer
 
 ---
 
+## 🖥️ React/Next.js arayüzü (deneysel)
+
+Streamlit uygulamasının yanında ikinci bir ön yüz bulunur. Hesaplama çekirdeği (`core.py`) ortaktır ve değiştirilmemiştir: web arayüzü yalnızca çekirdeğin döndürdüğünü gösterir, klinik değer hesaplamaz.
+
+- `api/` — durumsuz FastAPI katmanı (`/api/analyze`, `/api/batch`, `/api/cases`, `/api/references`, …); `core.py`, `validation.py` ve `services.py`'yi çağırır
+- `web/` — Next.js (App Router, TypeScript) arayüzü: hızlı ve gelişmiş mod, hazır vakalar, klasik karşılaştırma, tekli ve toplu CSV, grafikler, referanslar, açık/koyu tema, telefon/tablet düzeni
+
+```bash
+pip install -r requirements.txt -r api/requirements.txt
+cd web && npm install && cd ..
+
+# Windows: API (8000) ve web (3000) birlikte başlar
+.\scripts\dev.ps1
+
+# Her sistemde: iki terminal
+uvicorn api.main:app --port 8000
+cd web && npm run dev          # http://localhost:3000
+```
+
+Testler: `pytest` API'yi de kapsar; web testleri `cd web && npm test`, ayrıca `npm run lint` ve `npm run build`. CI ikisini de çalıştırır (`.github/workflows/tests.yml`). TypeScript tipleri API şemasından üretilir (`python scripts/export_openapi.py`, ardından `cd web && npm run api:tipleri`); güncel değilse CI hata verir.
+
+Streamlit uygulaması referans uygulama ve çevrimiçi demo olarak kalır. React arayüzü henüz herkese açık olarak yayınlanmamıştır.
+
+---
+
 ## 🧪 Test
 
 ```bash
@@ -90,6 +115,10 @@ pytest tests/test_validation.py -v
 pytest tests/test_regression.py -v
 pytest tests/test_cds_differential.py -v
 pytest tests/test_ui_imports.py -v
+pytest tests/test_api.py tests/test_api_batch.py tests/test_services.py tests/test_app_bd.py -v
+
+# Web arayüzü
+cd web && npm test
 
 # Coverage
 pytest --cov=. --cov-report=html
@@ -104,22 +133,30 @@ pytest --cov=. --cov-report=html
 ├── app.py              # Streamlit UI orchestrator
 ├── core.py             # Hesaplama motoru
 ├── constants.py        # Klinik sabitler, eşikler, hazır vakalar
+├── services.py         # Streamlit ve API'nin ortak, çerçevesiz yardımcıları
 ├── ui_components.py    # UI render fonksiyonları
 ├── visualization.py    # Plotly grafikleri
 ├── validation.py       # 3-katmanlı validasyon, Na/Cl swap tespiti
 ├── logger.py           # Yapılandırılmış loglama (PHI içermez)
+├── api/                # React arayüzü için FastAPI katmanı
+├── web/                # Next.js (React) arayüzü
+├── scripts/            # dev.ps1 (API + web birlikte), export_openapi.py
 ├── tests/
+│   ├── test_api.py, test_api_batch.py  # HTTP API testleri (çekirdekle altın testler)
+│   ├── test_app_bd.py            # Streamlit BD kutusu davranışı (AppTest)
 │   ├── test_cds_differential.py  # CDS diferansiyel modül testleri
 │   ├── test_core.py              # Birim testleri
 │   ├── test_regression.py        # Regresyon testleri
+│   ├── test_services.py          # Ortak servis fonksiyonları
 │   ├── test_ui_imports.py        # UI import duman testleri
 │   └── test_validation.py        # Edge case testleri
-├── requirements.txt    # Bağımlılıklar
-├── Dockerfile          # Üretim konteyneri
+├── requirements.txt    # Bağımlılıklar (Streamlit uygulaması)
+├── Dockerfile          # Üretim konteyneri (Streamlit)
 ├── docs/
 │   ├── AGENTS.md       # Ajan rehberi (AI geliştiriciler için)
 │   └── BE_FORMUL_RAPORU.txt  # BE formül doğrulama raporu
-└── README.md           # Bu dosya
+├── README.md           # İngilizce sürüm
+└── README_TR.md        # Bu dosya
 ```
 
 ---
@@ -186,4 +223,4 @@ MIT License
 
 ---
 
-*🇬🇧 [English version → README_EN.md](README_EN.md)*
+*🇬🇧 [English version → README.md](README.md)*
