@@ -229,6 +229,26 @@ export function notGruplari(notlar: KlinikNot[]): NotGrubu[] {
 }
 
 // ---------------------------------------------------------------------------
+// Klasik yaklaşımla karşılaştırma
+// ---------------------------------------------------------------------------
+
+export interface KlasikKarsilastirma {
+  farklar: string[];
+  kacirilanlar: string[];
+}
+
+/**
+ * Çekirdeğin klasik karşılaştırması. Fark yoksa null döner ve bölüm gösterilmez (Streamlit'teki gibi).
+ * Çekirdeğin kapanış cümlesi (stewart_advantage) kasıtlı olarak alınmaz: "Stewart ortaya çıkardı" ya da
+ * "yaklaşımlar benzer" gibi bir yargı ekranda yer almaz.
+ */
+export function klasikKarsilastirma(sonuc: Sonuc): KlasikKarsilastirma | null {
+  const klasik = sonuc.classic_comparison;
+  if (!klasik || klasik.differences.length === 0) return null;
+  return { farklar: klasik.differences, kacirilanlar: klasik.missed_by_classic };
+}
+
+// ---------------------------------------------------------------------------
 // Özet satırları
 // ---------------------------------------------------------------------------
 

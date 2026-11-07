@@ -23,7 +23,12 @@ export type ApiSonuc<T> =
   | { tur: "reddedildi" }
   | { tur: "sunucu" };
 
-async function istek<T>(yol: string, init?: RequestInit, signal?: AbortSignal): Promise<ApiSonuc<T>> {
+async function istek<T>(
+  yol: string,
+  init?: RequestInit,
+  signal?: AbortSignal,
+  oku: (yanit: Response) => Promise<T> = (yanit) => yanit.json() as Promise<T>,
+): Promise<ApiSonuc<T>> {
   const zamanAsimi = AbortSignal.timeout(ZAMAN_ASIMI_MS);
   try {
     const yanit = await fetch(yol, {
@@ -33,7 +38,7 @@ async function istek<T>(yol: string, init?: RequestInit, signal?: AbortSignal): 
     if (yanit.status === 422) return { tur: "reddedildi" };
     if (!yanit.ok) return { tur: "sunucu" };
     try {
-      return { tur: "tamam", veri: (await yanit.json()) as T };
+      return { tur: "tamam", veri: await oku(yanit) };
     } catch (hata) {
       // Yanıt JSON değilse API'ye ulaşılmıştır ama doğru çalışmıyordur
       if (hata instanceof SyntaxError) return { tur: "sunucu" };
@@ -61,4 +66,7 @@ export const api = {
   analiz: (govde: AnalyzeRequest, signal?: AbortSignal) =>
     istek<AnalyzeResponse>("/api/analyze", gonder(govde), signal),
   vakalar: (signal?: AbortSignal) => istek<Vaka[]>("/api/cases", undefined, signal),
+  // Tek analizin CSV dosyası; içeriği Streamlit'teki indirmeyle aynıdır
+  csv: (govde: AnalyzeRequest, signal?: AbortSignal) =>
+    istek<Blob>("/api/analyze/csv", gonder(govde), signal, (yanit) => yanit.blob()),
 };

@@ -4,6 +4,7 @@ import {
   degerDurumu,
   DEGERLER,
   gosterilenDeger,
+  klasikKarsilastirma,
   mekanizmaSatirlari,
   normalMetni,
   notGruplari,
@@ -270,5 +271,41 @@ describe("ozetSatirlari ve uyarilar", () => {
 
   it("uyarılar tekrarsız birleşir", () => {
     expect(uyarilar(sonuc({ warnings: ["a", "b"], soft_warnings: ["b", "c"] }))).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("klasikKarsilastirma", () => {
+  // Çekirdeğin gerçek çıktısı (pH 7.30, pCO₂ 31, Na 141, Cl 114, laktat 2.8, albümin 25)
+  const FARKLI = {
+    differences: [
+      "Düşük albümin mevcut asidozu maskelemiş olabilir → klasik AG düzeltmesi gerekli.",
+      "Karşıt etkiler birbirini dengelemiş → klasik tek parametre değerlendirmesi yetersiz kalabilir.",
+    ],
+    missed_by_classic: ["Hipoalbüminemi maskeleme etkisi", "Karşıt etkiler birbirini maskelemiş"],
+    stewart_advantage: "Stewart-Fencl yaklaşımı, klasik analizde gözden kaçabilecek bozuklukları ortaya çıkardı.",
+  };
+
+  it("farkları ve klasik analizde gözden kaçabilecekleri çekirdekten aynen alır", () => {
+    const k = klasikKarsilastirma(sonuc({ classic_comparison: FARKLI }));
+    expect(k).toEqual({ farklar: FARKLI.differences, kacirilanlar: FARKLI.missed_by_classic });
+  });
+
+  it("çekirdeğin kapanış cümlesini (stewart_advantage) almaz", () => {
+    const k = klasikKarsilastirma(sonuc({ classic_comparison: FARKLI }));
+    expect(JSON.stringify(k)).not.toContain("ortaya çıkardı");
+  });
+
+  it("fark yoksa null döner; 'benzer sonuç veriyor' cümlesi de gösterilmez", () => {
+    const benzer = {
+      differences: [],
+      missed_by_classic: [],
+      stewart_advantage: "Bu vakada klasik ve Stewart yaklaşımları benzer sonuç veriyor.",
+    };
+    expect(klasikKarsilastirma(sonuc({ classic_comparison: benzer }))).toBeNull();
+  });
+
+  it("karşılaştırma hiç yoksa null döner", () => {
+    expect(klasikKarsilastirma(sonuc({ classic_comparison: null }))).toBeNull();
+    expect(klasikKarsilastirma(sonuc({}))).toBeNull();
   });
 });

@@ -56,4 +56,26 @@ describe("api istemcisi", () => {
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body)).toEqual({ ph: 7.3, pco2: 31, na: 141, cl: 114 });
   });
+
+  it("CSV isteğini JSON olarak gönderir ve dosyayı Blob olarak döndürür", async () => {
+    const csv = ["ph,pco2", "7.3,31.0", ""].join("\n");
+    const sahteFetch = vi
+      .fn()
+      .mockResolvedValue(new Response(csv, { status: 200, headers: { "Content-Type": "text/csv" } }));
+    vi.stubGlobal("fetch", sahteFetch);
+    const sonuc = await api.csv({ ph: 7.3, pco2: 31, na: 141, cl: 114 });
+    const [yol, init] = sahteFetch.mock.calls[0];
+    expect(yol).toBe("/api/analyze/csv");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ ph: 7.3, pco2: 31, na: 141, cl: 114 });
+    expect(sonuc.tur).toBe("tamam");
+    if (sonuc.tur === "tamam") expect(await sonuc.veri.text()).toBe(csv);
+  });
+
+  it("CSV'de 422'yi 'reddedildi', ağ hatasını 'ag' olarak ayırır", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(yanitla(422, '{"detail":["pH"]}')));
+    expect(await api.csv({ ph: 9.5, pco2: 31, na: 141, cl: 114 })).toEqual({ tur: "reddedildi" });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    expect(await api.csv({ ph: 7.3, pco2: 31, na: 141, cl: 114 })).toEqual({ tur: "ag" });
+  });
 });

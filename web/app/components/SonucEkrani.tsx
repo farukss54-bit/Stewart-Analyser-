@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import type { AnalyzeRequest, Meta } from "../lib/api";
-import { notGruplari, ozetSatirlari, uyarilar, type Sonuc } from "../lib/sonuc";
+import { klasikKarsilastirma, notGruplari, ozetSatirlari, uyarilar, type Sonuc } from "../lib/sonuc";
 import AnyonAcigi from "./AnyonAcigi";
+import CsvIndir from "./CsvIndir";
+import KlasikKarsilastirma from "./KlasikKarsilastirma";
 import MekanizmaListesi from "./MekanizmaListesi";
 import Notlar from "./Notlar";
 import SidBolumu from "./SidBolumu";
@@ -28,6 +30,7 @@ export default function SonucEkrani({ istek, sonuc, meta, onAlanaGit }: Props) {
   const ozet = ozetSatirlari(sonuc);
   const notlar = notGruplari(sonuc.cds_notes ?? []);
   const uyari = uyarilar(sonuc);
+  const klasik = klasikKarsilastirma(sonuc);
   const desenNotu = sonuc.headline?.pattern_note;
 
   return (
@@ -66,6 +69,7 @@ export default function SonucEkrani({ istek, sonuc, meta, onAlanaGit }: Props) {
         gelismis={istek.mode === "advanced"}
       />
       {notlar.length > 0 && <Notlar gruplar={notlar} />}
+      {klasik && <KlasikKarsilastirma karsilastirma={klasik} />}
 
       {uyari.length > 0 && (
         <section aria-labelledby="uyarilar-baslik">
@@ -79,6 +83,8 @@ export default function SonucEkrani({ istek, sonuc, meta, onAlanaGit }: Props) {
           </ul>
         </section>
       )}
+
+      <CsvIndir istek={istek} />
     </div>
   );
 }

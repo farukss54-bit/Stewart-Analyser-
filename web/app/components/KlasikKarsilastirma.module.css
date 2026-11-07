@@ -1,0 +1,69 @@
+.kutu {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+/* Başlık satırı tüm genişlikte tıklanır; ok işareti sağda */
+.ozet {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ozet::-webkit-details-marker {
+  display: none;
+}
+
+.ozet::after {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+}
+
+.kutu[open] .ozet::after {
+  transform: rotate(-135deg);
+}
+
+.h2 {
+  font-size: var(--text-l);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.icerik {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0 20px;
+}
+
+.altBaslik {
+  margin-bottom: 6px;
+  font-size: var(--text-s);
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  max-width: 78ch;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ozet::after {
+    transition: transform 0.15s;
+  }
+}
