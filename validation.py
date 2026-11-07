@@ -56,6 +56,15 @@ def okunamayan_hucre(ham: Any, deger: Optional[float]) -> bool:
     return deger is None and isinstance(ham, str) and ham.strip().lower() not in _EKSIK_ISARETLERI
 
 
+def _okunamayani_hata_say(result: "ValidationResult", ad: str, ham: Any, deger: Optional[float]) -> bool:
+    """Dolu ama okunamayan hücre varsa sonucu geçersiz yapar ve nedenini yazar; hata eklediyse True döner."""
+    if not okunamayan_hucre(ham, deger):
+        return False
+    result.is_valid = False
+    result.errors.append(f"{ad} değeri geçersiz: '{ham.strip()[:30]}' sayı olarak okunamadı")
+    return True
+
+
 def sanitize_numeric(value: Any, allow_negative: bool = False) -> Optional[float]:
     """
     Sanitize and convert value to float.
@@ -262,10 +271,8 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
         value = sanitize_numeric(raw_value, allow_negative=(param == "be"))
         
         if value is None:
-            result.is_valid = False
-            if okunamayan_hucre(raw_value, value):
-                result.errors.append(f"{param.upper()} değeri geçersiz: '{raw_value.strip()[:30]}' sayı olarak okunamadı")
-            else:
+            if not _okunamayani_hata_say(result, param.upper(), raw_value, value):
+                result.is_valid = False
                 result.errors.append(f"{param.upper()} değeri eksik veya geçersiz")
             continue
         
@@ -309,9 +316,7 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     # BE (can be negative)
     be_raw = data.get("be")
     be_value = sanitize_numeric(be_raw, allow_negative=True)
-    if okunamayan_hucre(be_raw, be_value):
-        result.is_valid = False
-        result.errors.append(f"BE değeri geçersiz: '{be_raw.strip()[:30]}' sayı olarak okunamadı")
+    _okunamayani_hata_say(result, "BE", be_raw, be_value)
     if be_value is not None:
         is_valid, error = validate_range(be_value, BE_MIN, BE_MAX, "BE")
         if not is_valid:
@@ -322,9 +327,7 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     # HCO3 (optional, will be calculated if missing)
     hco3_raw = data.get("hco3")
     hco3_value = sanitize_numeric(hco3_raw, allow_negative=False)
-    if okunamayan_hucre(hco3_raw, hco3_value):
-        result.is_valid = False
-        result.errors.append(f"HCO₃ değeri geçersiz: '{hco3_raw.strip()[:30]}' sayı olarak okunamadı")
+    _okunamayani_hata_say(result, "HCO₃", hco3_raw, hco3_value)
     if hco3_value is not None:
         if 5 <= hco3_value <= 50:
             normalized["hco3"] = hco3_value
@@ -334,9 +337,7 @@ def validate_input_dict(data: Dict[str, Any], mode: str = "quick") -> Validation
     # Albumin (handle unit detection)
     albumin_raw = data.get("albumin") or data.get("albumin_gl") or data.get("albumin_gdl")
     albumin_value = sanitize_numeric(albumin_raw, allow_negative=False)
-    if okunamayan_hucre(albumin_raw, albumin_value):
-        result.is_valid = False
-        result.errors.append(f"Albümin değeri geçersiz: '{albumin_raw.strip()[:30]}' sayı olarak okunamadı")
+    _okunamayani_hata_say(result, "Albümin", albumin_raw, albumin_value)
     
     if albumin_value is not None:
         detected_unit = detect_albumin_unit(albumin_value)
