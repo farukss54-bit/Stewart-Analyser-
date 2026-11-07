@@ -190,13 +190,13 @@ pytest --cov=. --cov-report=html
 
 Proje aşağıdaki literatüre dayanmaktadır:
 
-- **Stewart PA.** Modern quantitative acid-base chemistry. *Can J Physiol Pharmacol.* 1983
-- **Figge J, Mydosh T, Fencl V.** Serum proteins and acid-base equilibria. *J Lab Clin Med.* 1991
-- **Fencl V, Jabor A, Kazda A, Figge J.** Diagnosis of metabolic acid-base disturbances. *Am J Respir Crit Care.* 2000
-- **Morgan TJ.** The Stewart approach. *Crit Care Clin.* 2009
-- **Kellum JA.** Disorders of acid-base balance. *Crit Care Med.* 2009
-- **Berend K, et al.** Physiological approach to assessment of acid-base disturbances. *NEJM.* 2014
-- **Story DA.** Stewart acid-base: A simplified bedside approach. *Anesth Analg.* 2016
+- **Stewart PA.** Modern quantitative acid-base chemistry. *Can J Physiol Pharmacol.* 1983;61(12):1444-61. PMID 6423247
+- **Figge J, Mydosh T, Fencl V.** Serum proteins and acid-base equilibria: a follow-up. *J Lab Clin Med.* 1992;120(5):713-9. PMID 1431499
+- **Fencl V, Jabor A, Kazda A, Figge J.** Diagnosis of metabolic acid-base disturbances in critically ill patients. *Am J Respir Crit Care Med.* 2000;162(6):2246-51. PMID 11112147
+- **Morgan TJ.** The Stewart approach: one clinician's perspective. *Clin Biochem Rev.* 2009;30(2):41-54. PMID 19565024
+- **Kellum JA.** Disorders of acid-base balance. *Crit Care Med.* 2007;35(11):2630-6. PMID 17893626
+- **Berend K, de Vries APJ, Gans ROB.** Physiological approach to assessment of acid-base disturbances. *N Engl J Med.* 2014;371(15):1434-45. PMID 25295502
+- **Story DA.** Stewart acid-base: a simplified bedside approach. *Anesth Analg.* 2016;123(2):511-5. PMID 27140683
 
 ---
 

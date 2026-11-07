@@ -707,20 +707,23 @@ SID_INTERPRETATION = {
     "normal_high": {"threshold": 42, "direction": "normal", "label": "Normal aralığın üst sınırı"},
     "high": {"threshold": 44, "direction": "alkalosis", "label": "Güçlü iyon aracılı metabolik alkaloz yönünde"},
 }
+# Referanslar PubMed'de tek tek sorgulanarak doğrulandı (2026-11-07); künyeler PubMed kaydından alındı.
+# Doğrulanamayan üç eski girdi listeden çıkarıldı (PubMed'de yazar/başlık/yıl eşleşmesi bulunamadı):
+#   "Maria TH, et al. Traditional vs Stewart approach comparison. 2017"
+#   "Tsuboi N, et al. Clinical application modeling. 2020"
+#   "Kimura S, et al. Albumin masking effect. 2018"
+# Gerçek künyeleri sağlanırsa PMID/DOI ile doğrulanarak geri eklenebilir.
 REFERENCES = {
-    "fencl_1993": "Fencl V, Leith DE. Stewart's quantitative acid-base chemistry. Respir Physiol. 1993",
-    "rehm_2004": "Rehm M, et al. Stewart's theory of acid-base chemistry. Anaesthesist. 2004",
-    "quintard_2007": "Quintard H, et al. Strong ion gap and metabolic acidosis in ICU. Crit Care Med. 2007",
-    "szrama_2016": "Szrama J, Smuszkiewicz P. Stewart approach in sepsis patients. J Crit Care. 2016",
-    "maria_2017": "Maria TH, et al. Traditional vs Stewart approach comparison. 2017",
-    "masevicius_2015": "Masevicius FD, Dubin A. Clinical performance of Stewart variables. 2015",
-    "kilic_2020": "Kilic O, et al. IV fluids and acid-base effects. 2020",
-    "franconieri_2025": "Franconieri F, et al. Ketosis and unmeasured anions. 2025",
-    "tsuboi_2020": "Tsuboi N, et al. Clinical application modeling. 2020",
-    "kimura_2018": "Kimura S, et al. Albumin masking effect. 2018",
-    "stewart_1983": "Stewart PA. Modern quantitative acid-base chemistry. Can J Physiol Pharmacol. 1983",
-    "morgan_2019": "Morgan TJ. The Stewart approach. Clinica Chimica Acta. 2019",
-    "story_2016": "Story DA. Stewart acid-base. Anaesthesia Intensive Care. 2016",
+    "stewart_1983": "Stewart PA. Modern quantitative acid-base chemistry. Can J Physiol Pharmacol. 1983;61(12):1444-61. PMID 6423247. doi:10.1139/y83-207",
+    "fencl_1993": "Fencl V, Leith DE. Stewart's quantitative acid-base chemistry: applications in biology and medicine. Respir Physiol. 1993;91(1):1-16. PMID 8441866. doi:10.1016/0034-5687(93)90085-O",
+    "rehm_2004": "Rehm M, Conzen PF, Peter K, Finsterer U. The Stewart model: \"modern\" approach to the interpretation of the acid-base metabolism [German]. Anaesthesist. 2004;53(4):347-57. PMID 15088097. doi:10.1007/s00101-004-0660-x",
+    "quintard_2007": "Quintard H, Hubert S, Ichai C. What is the contribution of Stewart's concept in acid-base disorders analysis? [French]. Ann Fr Anesth Reanim. 2007;26(5):423-33. PMID 17462852. doi:10.1016/j.annfar.2007.02.012",
+    "morgan_2009": "Morgan TJ. The Stewart approach: one clinician's perspective. Clin Biochem Rev. 2009;30(2):41-54. PMID 19565024",
+    "masevicius_2015": "Masevicius FD, Dubin A. Has Stewart approach improved our ability to diagnose acid-base disorders in critically ill patients? World J Crit Care Med. 2015;4(1):62-70. PMID 25685724. doi:10.5492/wjccm.v4.i1.62",
+    "szrama_2016": "Szrama J, Smuszkiewicz P. An acid-base disorders analysis with the use of the Stewart approach in patients with sepsis treated in an intensive care unit. Anaesthesiol Intensive Ther. 2016;48(3):180-4. PMID 27000203. doi:10.5603/AIT.a2016.0020",
+    "story_2016": "Story DA. Stewart acid-base: a simplified bedside approach. Anesth Analg. 2016;123(2):511-5. PMID 27140683. doi:10.1213/ANE.0000000000001261",
+    "kilic_2020": "Kilic O, Gultekin Y, Yazici S. The impact of intravenous fluid therapy on acid-base status of critically ill adults: a Stewart approach-based perspective. Int J Nephrol Renovasc Dis. 2020;13:219-30. PMID 33061531. doi:10.2147/IJNRD.S266864",
+    "franconieri_2025": "Franconieri F, Fayolle S, Raviol P. Non-diabetic ketoacidosis in a patient with amyotrophic lateral sclerosis: the role of Stewart's approach in analyzing acid-base disorders. Cureus. 2025;17(4):e82585. PMID 40390742. doi:10.7759/cureus.82585",
 }
 
 # ============================================================
