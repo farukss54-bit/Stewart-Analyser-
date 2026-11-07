@@ -8,9 +8,12 @@ Bu testler fastapi ve httpx2 gerektirir (api/requirements.txt). Kurulu değilse 
 toplama aşamasında hata verir; böylece test sayısı sessizce düşmez.
 """
 
+import csv
 import importlib.util
+import io
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import TypeAdapter
@@ -24,7 +27,7 @@ from constants import (
     PO4_NORMAL,
     SAMPLE_CASES,
 )
-from core import StewartInput, StewartOutput, analyze_stewart, calculate_be, calculate_hco3
+from core import StewartInput, StewartOutput, analyze_stewart, calculate_be, calculate_hco3, output_to_dict
 from scripts.export_openapi import SCHEMA_PATH, render_schema
 from services import check_be_sign_error
 
@@ -243,6 +246,55 @@ class TestAnalyzeValidation:
     def test_unknown_mode_is_422(self):
         payload = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, "mode": "turbo"}
         assert client.post("/api/analyze", json=payload).status_code == 422
+
+
+class TestAnalyzeCsv:
+    REQUEST = {"ph": 7.30, "pco2": 31, "na": 141, "cl": 114, "lactate": 2.8, "albumin": 25}
+
+    def test_content_matches_the_streamlit_download(self):
+        """Dosya içeriği Streamlit'teki create_download_csv ile aynı: aynı sütun, aynı değer."""
+        r = client.post("/api/analyze/csv", json=self.REQUEST)
+        assert r.status_code == 200
+        inp = StewartInput(ph=7.30, pco2=31.0, na=141.0, cl=114.0, lactate=2.8, albumin_gl=25.0)
+        out, _ = analyze_stewart(inp, "quick")
+        expected = pd.DataFrame([output_to_dict(inp, out)]).to_csv(index=False)
+        assert r.text.splitlines() == expected.splitlines()
+
+    def test_is_a_single_data_row_that_can_be_read_back(self):
+        r = client.post("/api/analyze/csv", json=self.REQUEST)
+        rows = list(csv.DictReader(io.StringIO(r.text)))
+        assert len(rows) == 1
+        assert float(rows[0]["be_used"]) == pytest.approx(-10.4)
+
+    def test_is_sent_as_a_utf8_attachment_without_bom(self):
+        r = client.post("/api/analyze/csv", json=self.REQUEST)
+        assert r.headers["content-type"].startswith("text/csv")
+        assert "charset=utf-8" in r.headers["content-type"]
+        assert 'filename="stewart_result.csv"' in r.headers["content-disposition"]
+        # BOM ilk sütun adını bozar (CSV toplu yüklemeye geri verildiğinde "ph" bulunamaz)
+        assert r.content.startswith(b"ph,")
+
+    def test_advanced_mode_matches_the_streamlit_download(self):
+        request = {**self.REQUEST, "k": 4.1, "ca": CA_NORMAL, "mg": MG_NORMAL, "po4": PO4_NORMAL, "mode": "advanced"}
+        r = client.post("/api/analyze/csv", json=request)
+        inp = StewartInput(ph=7.30, pco2=31.0, na=141.0, cl=114.0, k=4.1, ca=CA_NORMAL, mg=MG_NORMAL,
+                           po4=PO4_NORMAL, lactate=2.8, albumin_gl=25.0)
+        out, _ = analyze_stewart(inp, "advanced")
+        expected = pd.DataFrame([output_to_dict(inp, out)]).to_csv(index=False)
+        assert r.text.splitlines() == expected.splitlines()
+
+    def test_albumin_in_gdl_is_converted_like_analyze(self):
+        in_gl = client.post("/api/analyze/csv", json={**self.REQUEST, "albumin": 25.0, "albumin_unit": "g/L"})
+        in_gdl = client.post("/api/analyze/csv", json={**self.REQUEST, "albumin": 2.5, "albumin_unit": "g/dL"})
+        assert in_gdl.text == in_gl.text
+
+    def test_invalid_input_has_nothing_to_download(self):
+        r = client.post("/api/analyze/csv", json={"ph": 9.5, "pco2": 31, "na": 141, "cl": 114})
+        assert r.status_code == 422
+        assert any("pH" in e for e in r.json()["detail"])
+
+    def test_malformed_request_is_422(self):
+        assert client.post("/api/analyze/csv", json={"ph": 7.3}).status_code == 422
 
 
 class TestCases:

@@ -8,10 +8,12 @@ olarak sunar. Durumsuzdur: girilen değerleri saklamaz.
     uvicorn api.main:app --port 8000
 """
 
+import csv
 import importlib.util
+import io
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Response
 
 from api.schemas import (
     AnalyzeRequest,
@@ -59,6 +61,7 @@ from core import (
     calculate_hco3,
     check_be_consistency,
     check_hco3_consistency,
+    output_to_dict,
 )
 from services import check_be_sign_error
 
@@ -160,13 +163,8 @@ def derived(req: DerivedRequest) -> DerivedResponse:
     return response
 
 
-@app.post("/api/analyze")
-def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
-    """Stewart analizini çalıştırır.
-
-    Girdi doğrulamayı geçmezse 200 döner, is_valid=False olur ve hatalar listelenir
-    (istek biçimi bozuksa FastAPI 422 verir).
-    """
+def _run_analysis(req: AnalyzeRequest):
+    """İsteği çekirdeğe uygun girdiye çevirir ve analizi çalıştırır (analyze ve csv ortak yolu)."""
     albumin_gl = req.albumin
     if albumin_gl is not None and req.albumin_unit == "g/dL":
         albumin_gl = albumin_gl * ALBUMIN_GDL_TO_GL
@@ -187,11 +185,49 @@ def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
         is_be_base_deficit=req.is_be_base_deficit,
     )
     out, validation = analyze_stewart(inp, req.mode)
+    return inp, out, validation
+
+
+@app.post("/api/analyze")
+def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
+    """Stewart analizini çalıştırır.
+
+    Girdi doğrulamayı geçmezse 200 döner, is_valid=False olur ve hatalar listelenir
+    (istek biçimi bozuksa FastAPI 422 verir).
+    """
+    _, out, validation = _run_analysis(req)
     return AnalyzeResponse(
         is_valid=validation.is_valid,
         errors=validation.errors,
         warnings=validation.warnings,
         result=out if validation.is_valid else None,
+    )
+
+
+@app.post(
+    "/api/analyze/csv",
+    response_class=Response,
+    responses={200: {"content": {"text/csv": {"schema": {"type": "string"}}}}},
+)
+def analyze_csv(req: AnalyzeRequest) -> Response:
+    """Tek analizin sonucunu CSV olarak döndürür (başlık satırı + tek satır).
+
+    Sütunlar ve değerler Streamlit'teki "Sonucu İndir (CSV)" ile aynıdır: core.output_to_dict.
+    Girdi doğrulamayı geçmezse indirilecek sonuç yoktur; 422 ve hata listesi döner.
+    """
+    inp, out, validation = _run_analysis(req)
+    if not validation.is_valid:
+        raise HTTPException(status_code=422, detail=validation.errors)
+
+    row = output_to_dict(inp, out)
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=list(row), lineterminator="\n")
+    writer.writeheader()
+    writer.writerow(row)
+    return Response(
+        content=buffer.getvalue().encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="stewart_result.csv"'},
     )
 
 

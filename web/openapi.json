@@ -121,6 +121,45 @@
         }
       }
     },
+    "/api/analyze/csv": {
+      "post": {
+        "summary": "Analyze Csv",
+        "description": "Tek analizin sonucunu CSV olarak döndürür (başlık satırı + tek satır).\n\nSütunlar ve değerler Streamlit'teki \"Sonucu İndir (CSV)\" ile aynıdır: core.output_to_dict.\nGirdi doğrulamayı geçmezse indirilecek sonuç yoktur; 422 ve hata listesi döner.",
+        "operationId": "analyze_csv_api_analyze_csv_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/cases": {
       "get": {
         "summary": "Cases",

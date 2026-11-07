@@ -92,6 +92,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analyze/csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze Csv
+         * @description Tek analizin sonucunu CSV olarak döndürür (başlık satırı + tek satır).
+         *
+         *     Sütunlar ve değerler Streamlit'teki "Sonucu İndir (CSV)" ile aynıdır: core.output_to_dict.
+         *     Girdi doğrulamayı geçmezse indirilecek sonuç yoktur; 422 ve hata listesi döner.
+         */
+        post: operations["analyze_csv_api_analyze_csv_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cases": {
         parameters: {
             query?: never;
@@ -659,6 +682,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnalyzeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    analyze_csv_api_analyze_csv_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnalyzeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
                 };
             };
             /** @description Validation Error */
